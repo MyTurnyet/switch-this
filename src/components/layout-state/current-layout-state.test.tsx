@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import LayoutStatePage from '../layout-state/page';
+import CurrentLayoutState from '../../components/layout-state/current-layout-state';
 import { LayoutState } from '../../state/layout-state';
-import { Location, RollingStock, Industry } from '../../app/shared/types/models';
+import { Location, RollingStock, Industry } from '../shared/types/models';
 
-describe('LayoutStatePage', () => {
+describe('CurrentLayoutState', () => {
   const mockLocation: Location = {
     _id: { $oid: 'test-location-1' },
     stationName: 'Test Station',
@@ -42,7 +42,7 @@ describe('LayoutStatePage', () => {
   it('should display empty state when no cars are placed', () => {
     const layoutState = new LayoutState();
     render(
-      <LayoutStatePage 
+      <CurrentLayoutState 
         layoutState={layoutState} 
         locations={[mockLocation]}
         industries={[mockIndustry]} 
@@ -66,7 +66,7 @@ describe('LayoutStatePage', () => {
     };
     
     render(
-      <LayoutStatePage 
+      <CurrentLayoutState 
         layoutState={layoutState} 
         locations={[mockLocation]}
         industries={[industryWithCar]}
@@ -111,7 +111,7 @@ describe('LayoutStatePage', () => {
 
     const layoutState = new LayoutState();
     render(
-      <LayoutStatePage 
+      <CurrentLayoutState 
         layoutState={layoutState} 
         locations={[mockLocation, location2, location3]}
         industries={[mockIndustry, industry2, industry3]} 
@@ -128,7 +128,7 @@ describe('LayoutStatePage', () => {
   it('should handle empty locations and industries arrays', () => {
     const layoutState = new LayoutState();
     render(
-      <LayoutStatePage 
+      <CurrentLayoutState 
         layoutState={layoutState} 
         locations={[]}
         industries={[]} 
@@ -150,7 +150,7 @@ describe('LayoutStatePage', () => {
     };
     
     render(
-      <LayoutStatePage 
+      <CurrentLayoutState 
         layoutState={layoutState} 
         locations={[mockLocation]}
         industries={[industryWithCar]}
@@ -181,7 +181,7 @@ describe('LayoutStatePage', () => {
     };
     
     render(
-      <LayoutStatePage 
+      <CurrentLayoutState 
         layoutState={new LayoutState()} 
         locations={[mockLocation]}
         industries={[multiTrackIndustry]}
@@ -196,7 +196,7 @@ describe('LayoutStatePage', () => {
 
   it('should display industry type chip', () => {
     render(
-      <LayoutStatePage 
+      <CurrentLayoutState 
         layoutState={new LayoutState()} 
         locations={[mockLocation]}
         industries={[mockIndustry]} 
@@ -215,7 +215,7 @@ describe('LayoutStatePage', () => {
     };
 
     render(
-      <LayoutStatePage 
+      <CurrentLayoutState 
         layoutState={new LayoutState()} 
         locations={[locationWithoutIndustries]}
         industries={[]} 

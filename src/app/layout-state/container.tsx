@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { LayoutState } from '../../state/layout-state';
 import { Location, Industry, RollingStock } from '../shared/types/models';
-import CurrentLayoutState from './page';
+import CurrentLayoutState from '../../components/layout-state/current-layout-state';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
 export default function LayoutStateContainer() {
