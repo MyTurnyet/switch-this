@@ -21,13 +21,20 @@ export default function Navigation() {
         >
           Switchlist Generator
         </Typography>
-        <Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             component={Link}
             href="/industries"
             sx={{ color: 'text.primary', fontWeight: 500 }}
           >
             Industries
+          </Button>
+          <Button
+            component={Link}
+            href="/locations"
+            sx={{ color: 'text.primary', fontWeight: 500 }}
+          >
+            Locations
           </Button>
         </Box>
       </Toolbar>
