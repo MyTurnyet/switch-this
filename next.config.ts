@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
-  experimental: {
-    swcMinify: true,
-  },
 };
 
 export default nextConfig;

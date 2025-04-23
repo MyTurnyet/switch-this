@@ -1,0 +1,36 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+
+export default function Navigation() {
+  return (
+    <AppBar position="static" sx={{ bgcolor: 'white', boxShadow: 'none' }}>
+      <Toolbar>
+        <Typography
+          variant="h6"
+          component={Link}
+          href="/"
+          sx={{
+            flexGrow: 1,
+            textDecoration: 'none',
+            color: 'primary.main',
+            fontWeight: 700
+          }}
+        >
+          Switchlist Generator
+        </Typography>
+        <Box>
+          <Button
+            component={Link}
+            href="/industries"
+            sx={{ color: 'text.primary', fontWeight: 500 }}
+          >
+            Industries
+          </Button>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+} 
