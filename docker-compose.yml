@@ -12,7 +12,8 @@ services:
     volumes:
       - mongodb_data:/data/db
       - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-      - ./docker/seed-data.js:/docker-entrypoint-initdb.d/seed-data.js:ro
+      - ./docker/seed-all-data.js:/docker-entrypoint-initdb.d/seed-all-data.js:ro
+      - ./src/data:/src/data:ro
 
 volumes:
   mongodb_data: 
