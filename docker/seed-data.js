@@ -1,69 +1,62 @@
 db = db.getSiblingDB('switch-this');
 
-// Seed rolling stock data
-const rollingStock = [
-  {
-    id: "1",
-    carType: "Box Car",
-    reportingMark: "BNSF",
-    carNumber: "12345",
-    length: 50,
-    capacity: 100000,
-    status: "Available",
-    location: "Yard A"
-  },
-  {
-    id: "2",
-    carType: "Tank Car",
-    reportingMark: "UP",
-    carNumber: "67890",
-    length: 40,
-    capacity: 30000,
-    status: "In Use",
-    location: "Industry B"
-  },
-  {
-    id: "3",
-    carType: "Flat Car",
-    reportingMark: "CSX",
-    carNumber: "54321",
-    length: 60,
-    capacity: 150000,
-    status: "Available",
-    location: "Yard C"
-  }
-];
-
 // Seed locations data
 const locations = [
   {
     id: "1",
-    name: "Yard A",
+    name: "Edmonton, AB",
     type: "Yard",
+    block: "NORTH",
     capacity: 100,
     currentOccupancy: 50,
-    coordinates: { lat: 40.7128, lng: -74.0060 }
+    coordinates: { lat: 53.5444, lng: -113.4909 }
   },
   {
     id: "2",
-    name: "Industry B",
-    type: "Industry",
-    capacity: 20,
-    currentOccupancy: 15,
-    coordinates: { lat: 41.8781, lng: -87.6298 }
-  },
-  {
-    id: "3",
-    name: "Yard C",
+    name: "Seattle, WA",
     type: "Yard",
-    capacity: 80,
-    currentOccupancy: 30,
-    coordinates: { lat: 34.0522, lng: -118.2437 }
+    block: "SEA",
+    capacity: 100,
+    currentOccupancy: 50,
+    coordinates: { lat: 47.6062, lng: -122.3321 }
+  }
+];
+
+// Seed rolling stock data
+const rollingStock = [
+  {
+    id: "1",
+    carType: "Flatcar BlhHd",
+    reportingMark: "GSVR",
+    carNumber: "459003",
+    aarType: "FB",
+    color: "RED",
+    status: "Available",
+    location: "Edmonton, AB"
+  }
+];
+
+// Seed industries data
+const industries = [
+  {
+    id: "1",
+    name: "Weyerhaeuser",
+    industryType: "FREIGHT",
+    location: "Seattle, WA",
+    tracks: [
+      {
+        id: "1",
+        name: "shipping",
+        maxCars: 3,
+        placedCars: []
+      }
+    ]
   }
 ];
 
 // Insert data
-db['rolling-stock'].insertMany(rollingStock);
 db['locations'].insertMany(locations);
+db['rolling-stock'].insertMany(rollingStock);
+db['industries'].insertMany(industries);
 
 print('Database seeded successfully!'); 
