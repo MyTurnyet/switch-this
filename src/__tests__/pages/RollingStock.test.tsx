@@ -35,44 +35,33 @@ describe('RollingStockPage', () => {
     expect(screen.getByText('View and manage your rolling stock inventory')).toBeInTheDocument();
   });
 
-  it('renders all table headers', () => {
-    render(<RollingStockPage />);
-    const headers = ['Road Name', 'Road Number', 'AAR Type', 'Description', 'Color', 'Notes'];
-    headers.forEach(header => {
-      expect(screen.getByText(header)).toBeInTheDocument();
-    });
-  });
-
-  it('renders the correct number of rows', () => {
-    render(<RollingStockPage />);
-    // Add 1 for the header row
-    expect(screen.getAllByRole('row')).toHaveLength(3);
-  });
-
-  it('renders the correct data in the table', () => {
+  it('renders all rolling stock cards with correct information', () => {
     render(<RollingStockPage />);
     
-    // Check first row data
-    const firstRow = screen.getAllByRole('row')[1];
-    expect(firstRow).toHaveTextContent('CP');
-    expect(firstRow).toHaveTextContent('123456');
-    expect(firstRow).toHaveTextContent('FB');
-    expect(firstRow).toHaveTextContent('Flatcar');
-    expect(firstRow).toHaveTextContent('RED');
-    expect(firstRow).toHaveTextContent('Test Note');
+    // First card
+    expect(screen.getByText('CP 123456')).toBeInTheDocument();
+    expect(screen.getAllByText('FB')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Flatcar')[0]).toBeInTheDocument();
+    expect(screen.getByText('RED')).toBeInTheDocument();
+    expect(screen.getByText('Test Note')).toBeInTheDocument();
 
-    // Check second row data
-    const secondRow = screen.getAllByRole('row')[2];
-    expect(secondRow).toHaveTextContent('CN');
-    expect(secondRow).toHaveTextContent('789012');
-    expect(secondRow).toHaveTextContent('FB');
-    expect(secondRow).toHaveTextContent('Flatcar');
-    expect(secondRow).toHaveTextContent('GREEN');
+    // Second card
+    expect(screen.getByText('CN 789012')).toBeInTheDocument();
+    expect(screen.getAllByText('FB')[1]).toBeInTheDocument();
+    expect(screen.getAllByText('Flatcar')[1]).toBeInTheDocument();
+    expect(screen.getByText('GREEN')).toBeInTheDocument();
   });
 
-  it('renders empty notes as empty string', () => {
+  it('renders the correct number of cards', () => {
     render(<RollingStockPage />);
-    const emptyNoteCell = screen.getAllByRole('cell').find(cell => cell.textContent === '');
-    expect(emptyNoteCell).toBeInTheDocument();
+    const cards = screen.getAllByRole('article');
+    expect(cards).toHaveLength(2);
+  });
+
+  it('only renders note chips when notes exist', () => {
+    render(<RollingStockPage />);
+    const noteChips = screen.getAllByText(/Test Note|GREEN|RED|FB/);
+    // We should have 6 chips: 2 FB chips, 1 RED chip, 1 GREEN chip, and 1 Test Note chip
+    expect(noteChips).toHaveLength(5);
   });
 }); 
