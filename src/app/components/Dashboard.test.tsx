@@ -131,14 +131,38 @@ describe('Dashboard', () => {
     expect(screen.getByText('Rolling Stock (3 total)')).toBeInTheDocument();
   });
 
-  it('displays correct rolling stock by type', () => {
+  it('displays car type badges with correct counts', () => {
     render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
-    const fbType = screen.getByText('FB');
-    const fbCount = fbType.nextSibling;
-    expect(fbCount).toHaveTextContent('2');
+    
+    // Check for FB badge (2 cars)
+    const fbBadge = screen.getByText('FB');
+    expect(fbBadge).toBeInTheDocument();
+    expect(fbBadge.parentElement).toHaveTextContent('2');
+    
+    // Check for FBC badge (1 car)
+    const fbcBadge = screen.getByText('FBC');
+    expect(fbcBadge).toBeInTheDocument();
+    expect(fbcBadge.parentElement).toHaveTextContent('1');
+  });
 
-    const fbcType = screen.getByText('FBC');
-    const fbcCount = fbcType.nextSibling;
-    expect(fbcCount).toHaveTextContent('1');
+  it('displays car type badges in a flex container', () => {
+    render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
+    const badgesContainer = screen.getByText('Car Types').parentElement?.querySelector('div');
+    expect(badgesContainer).toHaveStyle({ display: 'flex', flexWrap: 'wrap' });
+  });
+
+  it('handles empty data gracefully', () => {
+    render(<Dashboard locations={[]} industries={[]} rollingStock={[]} />);
+    
+    // Check for zero counts
+    expect(screen.getByText('Total Locations: 0')).toBeInTheDocument();
+    expect(screen.getByText('Total Industries: 0')).toBeInTheDocument();
+    expect(screen.getByText('Total Track Capacity: 0 cars')).toBeInTheDocument();
+    expect(screen.getByText('Rolling Stock (0 total)')).toBeInTheDocument();
+    
+    // Check that no car type badges are displayed
+    const carTypesSection = screen.getByText('Car Types').parentElement;
+    expect(carTypesSection).not.toContainElement(screen.queryByText('FB'));
+    expect(carTypesSection).not.toContainElement(screen.queryByText('FBC'));
   });
 }); 
