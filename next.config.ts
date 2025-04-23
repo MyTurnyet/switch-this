@@ -1,11 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    appDir: true,
   typescript: {
     ignoreBuildErrors: false,
   },
-  swcMinify: true,
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+  experimental: {
+    swcMinify: true,
+  },
 };
 
 export default nextConfig;
