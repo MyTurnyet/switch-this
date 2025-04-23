@@ -17,7 +17,7 @@ interface LocationWithIndustries extends Location {
   industries: Industry[];
 }
 
-const Page: FC<LayoutStatePageProps> = ({ 
+const CurrentLayoutState: FC<LayoutStatePageProps> = ({ 
   layoutState, 
   locations, 
   industries,
@@ -131,4 +131,4 @@ const Page: FC<LayoutStatePageProps> = ({
   );
 };
 
-export default Page; 
+export default CurrentLayoutState; 

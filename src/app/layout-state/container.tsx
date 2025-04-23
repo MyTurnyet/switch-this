@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { LayoutState } from '../../state/layout-state';
 import { Location, Industry, RollingStock } from '../shared/types/models';
-import LayoutStatePage from './page';
+import CurrentLayoutState from './page';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
 export default function LayoutStateContainer() {
@@ -68,8 +68,8 @@ export default function LayoutStateContainer() {
   }
 
   return (
-    <LayoutStatePage 
-      layoutState={layoutState} 
+    <CurrentLayoutState 
+      layoutState={layoutState}
       locations={locations}
       industries={industries}
       rollingStock={rollingStock}
