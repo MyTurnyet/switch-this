@@ -4,29 +4,7 @@ import React from 'react';
 import { Container, Box, Typography, Paper } from '@mui/material';
 import industriesData from '../../data/industries.json';
 import locationsData from '../../data/locations.json';
-
-interface Track {
-  _id: { $oid: string };
-  name: string;
-  maxCars: { $numberInt: string };
-  placedCars: unknown[];
-}
-
-interface Industry {
-  _id: { $oid: string };
-  name: string;
-  industryType: string;
-  tracks: Track[];
-  locationId: { $oid: string };
-  ownerId: { $oid: string };
-}
-
-interface Location {
-  _id: { $oid: string };
-  stationName: string;
-  block: string;
-  ownerId: { $oid: string };
-}
+import { Industry, Location } from '../shared/types/models';
 
 export default function IndustriesPage() {
   const industriesByBlock = React.useMemo(() => {
