@@ -1,7 +1,7 @@
 'use client';
 
 import { LayoutState } from '../../state/layout-state';
-import { Location, Industry, RollingStock } from '../shared/types/models';
+import { Location, Industry, RollingStock } from '../../app/shared/types/models';
 import { Box, Typography, Paper, List, ListItem, Divider, Chip } from '@mui/material';
 import { useMemo } from 'react';
 import { FC } from 'react';
@@ -23,6 +23,37 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
   industries,
   rollingStock = {} 
 }) => {
+  const getCarsAtLocation = (carId: string): RollingStock | undefined => {
+    return rollingStock[carId];
+  };
+
+  const getTrackInfo = (track: { name: string; maxCars: { $numberInt: string }; placedCars: string[] }) => {
+    const placedCars = track.placedCars.map(carId => {
+      const car = getCarsAtLocation(carId);
+      return car ? `${car.roadName} ${car.roadNumber} - ${car.description}` : carId;
+    });
+
+    return {
+      name: track.name,
+      maxCars: parseInt(track.maxCars.$numberInt),
+      placedCars
+    };
+  };
+
+  const blockLocations = useMemo(() => {
+    return locations.reduce((acc: Record<string, Location[]>, location: Location) => {
+      if (!acc[location.block]) {
+        acc[location.block] = [];
+      }
+      acc[location.block].push(location);
+      return acc;
+    }, {});
+  }, [locations]);
+
+  const getIndustriesAtLocation = (locationId: string): Industry[] => {
+    return industries.filter((industry: Industry) => industry.locationId.$oid === locationId);
+  };
+
   // Group locations and industries by block
   const locationsByBlock = useMemo(() => {
     // First, create a map of locations with their industries
@@ -92,7 +123,13 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
   );
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box 
+      data-testid="layout-state-container"
+      data-locations={JSON.stringify(locations)}
+      data-industries={JSON.stringify(industries)}
+      data-rolling-stock={JSON.stringify(rollingStock)}
+      sx={{ p: 3 }}
+    >
       <Typography variant="h4" component="h1" gutterBottom>
         Layout State
       </Typography>
