@@ -16,12 +16,12 @@ interface DashboardProps {
 }
 
 const DashboardHeader: React.FC<{ locationCount: number }> = ({ locationCount }) => (
-  <Card testId="dashboard-header" className="mb-8">
-    <h1 className={clsx(theme.typography.title, 'mb-3')}>Model Railroad Locations</h1>
+  <div className={clsx('mb-6', theme.typography.title)}>
+    <h1 className="mb-2">Model Railroad Locations</h1>
     <Badge variant="primary" testId="location-count">
       {locationCount} Total Location{locationCount !== 1 ? 's' : ''}
     </Badge>
-  </Card>
+  </div>
 );
 
 const BlockSummary: React.FC<{ locations: LocationData[] }> = ({ locations }) => {
@@ -31,8 +31,8 @@ const BlockSummary: React.FC<{ locations: LocationData[] }> = ({ locations }) =>
   }, {} as Record<string, number>);
 
   return (
-    <Card testId="block-summary" className="mb-8">
-      <h2 className={clsx(theme.typography.subtitle, 'mb-4')}>Block Summary</h2>
+    <div className="mb-6">
+      <h2 className={clsx(theme.typography.subtitle, 'mb-3')}>Block Summary</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Object.entries(blockCounts).map(([block, count]) => (
           <Card
@@ -47,21 +47,15 @@ const BlockSummary: React.FC<{ locations: LocationData[] }> = ({ locations }) =>
           </Card>
         ))}
       </div>
-    </Card>
+    </div>
   );
 };
 
 const Dashboard: React.FC<DashboardProps> = ({ locations }) => {
   return (
-    <div className="min-h-screen bg-background-secondary">
-      <div className={clsx(
-        'container mx-auto max-w-7xl',
-        theme.spacing.page.x,
-        theme.spacing.page.y
-      )}>
-        <DashboardHeader locationCount={locations.length} />
-        <BlockSummary locations={locations} />
-      </div>
+    <div className="space-y-6">
+      <DashboardHeader locationCount={locations.length} />
+      <BlockSummary locations={locations} />
     </div>
   );
 };

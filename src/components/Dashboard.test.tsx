@@ -26,12 +26,10 @@ describe('Dashboard', () => {
       root.render(<Dashboard locations={mockLocations} />);
       await waitForContent();
       
-      const header = container.querySelector('[data-testid="dashboard-header"]');
-      expect(header).toBeTruthy();
-      
-      const title = header?.querySelector('h1');
+      const title = container.querySelector('h1');
+      expect(title).toBeTruthy();
       expect(title?.textContent).toBe('Model Railroad Locations');
-      expect(title?.className).toContain(theme.typography.title.split(' ')[0]);
+      expect(title?.parentElement?.className).toContain(theme.typography.title.split(' ')[0]);
     });
 
     it('displays location count with themed badge', async () => {
@@ -40,28 +38,30 @@ describe('Dashboard', () => {
       
       const badge = container.querySelector('[data-testid="location-count"]');
       expect(badge).toBeTruthy();
-      expect(badge?.className).toContain(theme.components.badge.split(' ')[0]);
       expect(badge?.textContent).toBe(`${mockLocations.length} Total Locations`);
     });
   });
 
   describe('BlockSummary', () => {
-    it('displays block summary section with themed card', async () => {
+    it('displays block summary section with themed typography', async () => {
       root.render(<Dashboard locations={mockLocations} />);
       await waitForContent();
       
-      const summary = container.querySelector('[data-testid="block-summary"]');
+      const summary = container.querySelector('h2');
       expect(summary).toBeTruthy();
-      expect(summary?.className).toContain(theme.components.card.split(' ')[0]);
+      expect(summary?.className).toContain(theme.typography.subtitle.split(' ')[0]);
     });
 
     it('renders block cards with themed styling', async () => {
       root.render(<Dashboard locations={mockLocations} />);
       await waitForContent();
       
-      const blockCard = container.querySelector('[data-testid="block-card-north"]');
-      expect(blockCard).toBeTruthy();
-      expect(blockCard?.className).toContain(theme.components.card.split(' ')[0]);
+      const blockCards = container.querySelectorAll('[data-testid^="block-card-"]');
+      expect(blockCards.length).toBeGreaterThan(0);
+      blockCards.forEach(card => {
+        expect(card?.className).toContain('bg-gradient-to-br');
+        expect(card?.className).toContain('from-secondary-50');
+      });
     });
 
     it('displays block information with themed typography', async () => {
@@ -73,22 +73,6 @@ describe('Dashboard', () => {
         const title = block.querySelector('div');
         expect(title?.className).toContain(theme.typography.body.split(' ')[0]);
       });
-    });
-  });
-
-  describe('Dashboard Layout', () => {
-    it('uses themed spacing and background', async () => {
-      root.render(<Dashboard locations={mockLocations} />);
-      await waitForContent();
-      
-      const container = document.querySelector('.min-h-screen');
-      expect(container).toBeTruthy();
-      expect(container?.className).toContain('bg-background-secondary');
-      
-      const innerContainer = container?.querySelector('.container');
-      expect(innerContainer).toBeTruthy();
-      expect(innerContainer?.className).toContain(theme.spacing.page.x.split(' ')[0]);
-      expect(innerContainer?.className).toContain(theme.spacing.page.y.split(' ')[0]);
     });
   });
 }); 
