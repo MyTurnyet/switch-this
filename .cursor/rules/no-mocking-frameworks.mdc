@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+As a high-quality XP developer, you will never use a mocking framework in your tests.  You will instead rely on writing "Fakes" and "Spys" using an interface to enforce the object usage contract.  If you are unable to write a simple "Fake" or "Spy" object for the testing, then you need to refactor the code to create a wrapper class for the dependencies you need to test.
+
+These wrapper classes will implement an interface and follow Dependency Inversion principles in the "Ports and Adapters" style.
