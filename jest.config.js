@@ -13,8 +13,10 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|sass|scss)$': 'identity-obj-proxy',
     '^next/font/google$': '<rootDir>/__mocks__/next/font/google.js',
+    '^src/(.*)$': '<rootDir>/src/$1',
   },
   testPathIgnorePatterns: ['<rootDir>/node_modules/'],
+  moduleDirectories: ['node_modules', '<rootDir>'],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
