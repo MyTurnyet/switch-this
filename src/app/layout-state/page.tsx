@@ -16,11 +16,12 @@ interface LocationWithIndustries extends Location {
   industries: Industry[];
 }
 
-const LayoutStatePage = ({ 
+export default function Page({ 
+  layoutState, 
   locations, 
   industries,
   rollingStock = {} 
-}: LayoutStatePageProps) => {
+}: LayoutStatePageProps) {
   // Group locations and industries by block
   const locationsByBlock = useMemo(() => {
     // First, create a map of locations with their industries
@@ -42,9 +43,10 @@ const LayoutStatePage = ({
     }, {} as Record<string, LocationWithIndustries[]>);
   }, [locations, industries]);
 
-  const renderTrack = (track: Industry['tracks'][0]) => {
+  const renderTrack = (track: Industry['tracks'][0], locationId: string) => {
     const carCount = track.placedCars.length;
     const maxCars = parseInt(track.maxCars.$numberInt);
+    const carsAtLocation = layoutState.getCarsAtLocation(locationId);
     
     return (
       <Box key={track._id.$oid} sx={{ ml: 2, mb: 1 }}>
@@ -53,8 +55,17 @@ const LayoutStatePage = ({
         </Box>
         {track.placedCars.map(carId => {
           const car = rollingStock[carId];
+          const isAtLocation = carsAtLocation.includes(carId);
           return (
-            <Box key={carId} component="div" sx={{ ml: 2, color: 'text.secondary' }}>
+            <Box 
+              key={carId} 
+              component="div" 
+              sx={{ 
+                ml: 2, 
+                color: isAtLocation ? 'text.primary' : 'text.secondary',
+                fontWeight: isAtLocation ? 'bold' : 'normal'
+              }}
+            >
               {car ? `${car.roadName} ${car.roadNumber} - ${car.description}` : carId}
             </Box>
           );
@@ -75,7 +86,7 @@ const LayoutStatePage = ({
           sx={{ ml: 1, fontSize: '0.75rem' }} 
         />
       </Box>
-      {industry.tracks.map(track => renderTrack(track))}
+      {industry.tracks.map(track => renderTrack(track, industry.locationId.$oid))}
     </Box>
   );
 
@@ -117,6 +128,4 @@ const LayoutStatePage = ({
       ))}
     </Box>
   );
-};
-
-export default LayoutStatePage; 
+} 
