@@ -43,6 +43,13 @@ export default function Navigation() {
           >
             Locations
           </Button>
+          <Button
+            component={Link}
+            href="/layout-state"
+            sx={{ color: 'text.primary', fontWeight: 500 }}
+          >
+            Layout State
+          </Button>
         </Box>
       </Toolbar>
     </AppBar>

@@ -23,6 +23,7 @@ describe('Navigation', () => {
     expect(screen.getByText('Rolling Stock')).toBeInTheDocument();
     expect(screen.getByText('Industries')).toBeInTheDocument();
     expect(screen.getByText('Locations')).toBeInTheDocument();
+    expect(screen.getByText('Layout State')).toBeInTheDocument();
   });
 
   it('has correct href attributes for navigation links', () => {
@@ -30,5 +31,6 @@ describe('Navigation', () => {
     expect(screen.getByText('Rolling Stock').closest('a')).toHaveAttribute('href', '/rolling-stock');
     expect(screen.getByText('Industries').closest('a')).toHaveAttribute('href', '/industries');
     expect(screen.getByText('Locations').closest('a')).toHaveAttribute('href', '/locations');
+    expect(screen.getByText('Layout State').closest('a')).toHaveAttribute('href', '/layout-state');
   });
 }); 
