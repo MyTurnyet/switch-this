@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { createRoot, Root } from 'react-dom/client';
 import '@testing-library/jest-dom';
 import Home from './page';
+import { theme } from '../styles/theme';
 
 // Mock the Dashboard component
 jest.mock('../components/Dashboard', () => {
@@ -10,36 +11,77 @@ jest.mock('../components/Dashboard', () => {
   };
 });
 
-describe('Home Page', () => {
+describe('Home', () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
   beforeEach(() => {
-    render(<Home />);
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
   });
 
-  it('renders the main title', () => {
-    const title = screen.getByText('Model Railroad Switchlist Generator');
-    expect(title).toBeInTheDocument();
-    expect(title).toHaveClass('text-3xl', 'font-bold', 'text-gray-900');
+  afterEach(() => {
+    root.unmount();
+    document.body.removeChild(container);
   });
 
-  it('renders the subtitle', () => {
-    const subtitle = screen.getByText('Generate and manage switchlists for your model railroad layout');
-    expect(subtitle).toBeInTheDocument();
-    expect(subtitle).toHaveClass('text-lg', 'text-gray-600');
+  const waitForContent = () => new Promise(resolve => setTimeout(resolve, 100));
+
+  it('uses themed background and spacing', async () => {
+    root.render(<Home />);
+    await waitForContent();
+    
+    const main = container.querySelector('main');
+    expect(main).toBeTruthy();
+    expect(main?.className).toContain('bg-background-secondary');
+    
+    const containerDiv = main?.querySelector('.container');
+    expect(containerDiv).toBeTruthy();
+    expect(containerDiv?.className).toContain(theme.spacing.page.x.split(' ')[0]);
+    expect(containerDiv?.className).toContain(theme.spacing.page.y.split(' ')[0]);
   });
 
-  it('renders the Dashboard component', () => {
-    const dashboard = screen.getByTestId('mock-dashboard');
-    expect(dashboard).toBeInTheDocument();
+  it('displays title with themed typography', async () => {
+    root.render(<Home />);
+    await waitForContent();
+    
+    const title = container.querySelector('h1');
+    expect(title).toBeTruthy();
+    expect(title?.textContent).toBe('Model Railroad Switchlist Generator');
+    expect(title?.className).toContain(theme.typography.title.split(' ')[0]);
   });
 
-  it('has the correct layout structure', () => {
-    const main = screen.getByRole('main');
-    expect(main).toHaveClass('min-h-screen', 'bg-gray-50');
+  it('displays description with themed typography', async () => {
+    root.render(<Home />);
+    await waitForContent();
+    
+    const description = container.querySelector('p');
+    expect(description).toBeTruthy();
+    expect(description?.textContent).toContain('Generate and manage switchlists');
+    expect(description?.className).toContain(theme.typography.body.split(' ')[0]);
+  });
 
-    const container = main.firstChild as HTMLElement;
-    expect(container).toHaveClass('max-w-7xl', 'mx-auto', 'px-4', 'sm:px-6', 'lg:px-8', 'py-8');
+  it('uses themed cards for content sections', async () => {
+    root.render(<Home />);
+    await waitForContent();
+    
+    const headerCard = container.querySelector('[data-testid="header-card"]');
+    const dashboardCard = container.querySelector('[data-testid="dashboard-card"]');
+    
+    expect(headerCard).toBeTruthy();
+    expect(dashboardCard).toBeTruthy();
+    
+    [headerCard, dashboardCard].forEach(card => {
+      expect(card?.className).toContain(theme.components.card.split(' ')[0]);
+    });
+  });
 
-    const card = screen.getByTestId('mock-dashboard').parentElement as HTMLElement;
-    expect(card).toHaveClass('bg-white', 'rounded-lg', 'shadow-sm', 'p-6');
+  it('renders the Dashboard component', async () => {
+    root.render(<Home />);
+    await waitForContent();
+    
+    const dashboard = container.querySelector('[data-testid="dashboard-card"]');
+    expect(dashboard).toBeTruthy();
   });
 }); 

@@ -1,20 +1,27 @@
 import React from 'react';
 import Dashboard from '../components/Dashboard';
 import locations from '../data/locations.json';
+import { theme } from '../styles/theme';
+import { Card } from '../components/ui/Card';
+import clsx from 'clsx';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Model Railroad Switchlist Generator</h1>
-          <p className="mt-2 text-lg text-gray-600">
+    <main className="min-h-screen bg-background-secondary">
+      <div className={clsx(
+        'container mx-auto max-w-7xl',
+        theme.spacing.page.x,
+        theme.spacing.page.y
+      )}>
+        <Card className="mb-8" testId="header-card">
+          <h1 className={theme.typography.title}>Model Railroad Switchlist Generator</h1>
+          <p className={clsx(theme.typography.body, 'mt-2')}>
             Generate and manage switchlists for your model railroad layout
           </p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        </Card>
+        <Card testId="dashboard-card">
           <Dashboard locations={locations} />
-        </div>
+        </Card>
       </div>
     </main>
   );
