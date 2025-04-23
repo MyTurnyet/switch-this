@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import LayoutStatePage from './page';
+import LayoutStatePage from '../layout-state/page';
 import { LayoutState } from '../../state/layout-state';
-import { Location, RollingStock, Industry } from '../shared/types/models';
+import { Location, RollingStock, Industry } from '../../app/shared/types/models';
 
 describe('LayoutStatePage', () => {
   const mockLocation: Location = {

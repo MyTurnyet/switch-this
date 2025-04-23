@@ -2,7 +2,7 @@ export interface Track {
   _id: { $oid: string };
   name: string;
   maxCars: { $numberInt: string };
-  placedCars: unknown[];
+  placedCars: string[];
 }
 
 export interface Industry {
@@ -19,4 +19,22 @@ export interface Location {
   stationName: string;
   block: string;
   ownerId: { $oid: string };
+}
+
+export interface RollingStock {
+  _id: {
+    $oid: string;
+  };
+  roadName: string;
+  roadNumber: number;
+  aarType: string;
+  description: string;
+  color: string;
+  note: string;
+  homeYard: {
+    $oid: string;
+  };
+  ownerId: {
+    $oid: string;
+  };
 } 

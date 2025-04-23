@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { LayoutState } from '../../state/layout-state';
-import { Location } from '../shared/types/models';
+import { Location, Industry, RollingStock } from '../shared/types/models';
 import LayoutStatePage from './page';
+import { Box, CircularProgress, Typography } from '@mui/material';
 
 export default function LayoutStateContainer() {
-  const [layoutState, setLayoutState] = useState<LayoutState>(new LayoutState());
+  const [layoutState] = useState<LayoutState>(new LayoutState());
   const [locations, setLocations] = useState<Location[]>([]);
+  const [industries, setIndustries] = useState<Industry[]>([]);
+  const [rollingStock, setRollingStock] = useState<Record<string, RollingStock>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,15 +23,23 @@ export default function LayoutStateContainer() {
         const locationsData = await locationsResponse.json();
         setLocations(locationsData);
 
+        // Fetch industries
+        const industriesResponse = await fetch('/api/industries');
+        if (!industriesResponse.ok) throw new Error('Failed to fetch industries');
+        const industriesData = await industriesResponse.json();
+        setIndustries(industriesData);
+
         // Fetch rolling stock
         const rollingStockResponse = await fetch('/api/rolling-stock');
         if (!rollingStockResponse.ok) throw new Error('Failed to fetch rolling stock');
-        const rollingStockData: any[] = await rollingStockResponse.json();
-
-        // Initialize layout state with current positions
-        const newLayoutState = new LayoutState();
-        // TODO: Set initial car positions based on fetched data
-        setLayoutState(newLayoutState);
+        const rollingStockData = await rollingStockResponse.json();
+        
+        // Convert rolling stock array to a map for easier lookup
+        const rollingStockMap = rollingStockData.reduce((acc: Record<string, RollingStock>, car: RollingStock) => {
+          acc[car._id.$oid] = car;
+          return acc;
+        }, {});
+        setRollingStock(rollingStockMap);
 
         setLoading(false);
       } catch (err) {
@@ -41,12 +52,27 @@ export default function LayoutStateContainer() {
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <Box sx={{ p: 3, color: 'error.main' }}>
+        <Typography variant="h6">Error: {error}</Typography>
+      </Box>
+    );
   }
 
-  return <LayoutStatePage layoutState={layoutState} locations={locations} />;
+  return (
+    <LayoutStatePage 
+      layoutState={layoutState} 
+      locations={locations}
+      industries={industries}
+      rollingStock={rollingStock}
+    />
+  );
 } 
