@@ -1,4 +1,8 @@
 import React from 'react';
+import { theme } from '../styles/theme';
+import { Card } from './ui/Card';
+import { Badge } from './ui/Badge';
+import clsx from 'clsx';
 
 interface LocationData {
   _id: { $oid: string };
@@ -12,14 +16,12 @@ interface DashboardProps {
 }
 
 const DashboardHeader: React.FC<{ locationCount: number }> = ({ locationCount }) => (
-  <div className="mb-8 bg-white rounded-xl shadow-sm p-6" data-testid="dashboard-header">
-    <h1 className="text-3xl font-bold text-gray-900 mb-3">Model Railroad Locations</h1>
-    <div className="flex items-center">
-      <div className="bg-blue-100 text-blue-800 rounded-full px-4 py-1 text-sm font-medium">
-        {locationCount} Total Location{locationCount !== 1 ? 's' : ''}
-      </div>
-    </div>
-  </div>
+  <Card testId="dashboard-header" className="mb-8">
+    <h1 className={clsx(theme.typography.title, 'mb-3')}>Model Railroad Locations</h1>
+    <Badge variant="primary" testId="location-count">
+      {locationCount} Total Location{locationCount !== 1 ? 's' : ''}
+    </Badge>
+  </Card>
 );
 
 const BlockSummary: React.FC<{ locations: LocationData[] }> = ({ locations }) => {
@@ -29,30 +31,34 @@ const BlockSummary: React.FC<{ locations: LocationData[] }> = ({ locations }) =>
   }, {} as Record<string, number>);
 
   return (
-    <div className="mb-8 bg-white rounded-xl shadow-sm p-6" data-testid="block-summary">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-4">Block Summary</h2>
+    <Card testId="block-summary" className="mb-8">
+      <h2 className={clsx(theme.typography.subtitle, 'mb-4')}>Block Summary</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Object.entries(blockCounts).map(([block, count]) => (
-          <div 
-            key={block} 
-            className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200"
-            data-testid={`block-card-${block.toLowerCase()}`}
+          <Card
+            key={block}
+            testId={`block-card-${block.toLowerCase()}`}
+            className="bg-gradient-to-br from-secondary-50 to-secondary-100"
           >
-            <div className="text-lg font-medium text-gray-900">{block}</div>
-            <div className="text-sm text-gray-600">
+            <div className={theme.typography.body}>{block}</div>
+            <div className={theme.typography.small}>
               {count} location{count !== 1 ? 's' : ''}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
-    </div>
+    </Card>
   );
 };
 
 const Dashboard: React.FC<DashboardProps> = ({ locations }) => {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-background-secondary">
+      <div className={clsx(
+        'container mx-auto max-w-7xl',
+        theme.spacing.page.x,
+        theme.spacing.page.y
+      )}>
         <DashboardHeader locationCount={locations.length} />
         <BlockSummary locations={locations} />
       </div>
