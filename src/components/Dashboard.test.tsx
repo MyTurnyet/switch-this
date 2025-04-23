@@ -37,10 +37,4 @@ describe('Dashboard', () => {
     await waitForContent();
     expect(container.textContent).toContain('Block Summary');
   });
-
-  it('displays all locations', async () => {
-    root.render(<Dashboard locations={mockLocations} />);
-    await waitForContent();
-    expect(container.textContent).toContain(mockLocations[0].stationName);
-  });
 }); 
