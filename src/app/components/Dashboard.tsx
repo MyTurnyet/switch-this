@@ -35,8 +35,11 @@ export default function Dashboard({ locations, industries, rollingStock }: Dashb
 
   // Calculate rolling stock statistics
   const totalRollingStock = rollingStock.length;
-  const rollingStockByType = rollingStock.reduce((acc: Record<string, number>, car) => {
-    acc[car.aarType] = (acc[car.aarType] || 0) + 1;
+  const rollingStockByType = rollingStock.reduce((acc: Record<string, { count: number; description: string }>, car) => {
+    if (!acc[car.aarType]) {
+      acc[car.aarType] = { count: 0, description: car.description };
+    }
+    acc[car.aarType].count += 1;
     return acc;
   }, {});
 
@@ -100,8 +103,13 @@ export default function Dashboard({ locations, industries, rollingStock }: Dashb
               Car Types
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-              {Object.entries(rollingStockByType).map(([type, count]) => (
-                <CarTypeBadge key={type} type={type} count={count} />
+              {Object.entries(rollingStockByType).map(([type, data]) => (
+                <CarTypeBadge 
+                  key={type} 
+                  type={type} 
+                  count={data.count}
+                  description={data.description}
+                />
               ))}
             </Box>
           </Box>

@@ -4,11 +4,12 @@ import { Box, Typography, Tooltip } from '@mui/material';
 interface CarTypeBadgeProps {
   type: string;
   count: number;
+  description: string;
 }
 
-export default function CarTypeBadge({ type, count }: CarTypeBadgeProps) {
+export default function CarTypeBadge({ type, count, description }: CarTypeBadgeProps) {
   return (
-    <Tooltip title={`${type}: ${count} cars`}>
+    <Tooltip title={description || `${type} car`}>
       <Box
         sx={{
           display: 'inline-flex',
