@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const client = new MongoClient(uri);
+export async function GET() {
+  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+  const client = new MongoClient(uri);
 
-export async function GET(request: Request) {
   try {
     await client.connect();
     const database = client.db('switch-this');
