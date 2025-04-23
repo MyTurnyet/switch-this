@@ -15,44 +15,60 @@ const RollingStockPage: React.FC = () => {
         </Typography>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3 }}>
         {rollingStockData.map((item) => (
-          <Grid item xs={12} sm={6} md={4} key={item._id.$oid}>
-            <Box component="article">
-              <Card 
-                sx={{ 
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  '&:hover': {
-                    boxShadow: 6,
-                    transition: 'box-shadow 0.3s ease-in-out'
-                  }
-                }}
-              >
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Typography variant="h6" component="div" color="primary">
-                      {item.roadName} {item.roadNumber}
-                    </Typography>
-                    <Chip 
-                      label={item.aarType}
-                      size="small"
-                      sx={{ 
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        fontWeight: 'bold'
-                      }}
-                    />
-                  </Box>
-                  
-                  <Typography variant="body1" color="text.secondary" gutterBottom>
-                    {item.description}
+          <Box 
+            key={item._id.$oid}
+            component="article"
+            sx={{
+              height: '100%',
+              display: 'flex'
+            }}
+          >
+            <Card 
+              sx={{ 
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                '&:hover': {
+                  boxShadow: 6,
+                  transition: 'box-shadow 0.3s ease-in-out'
+                }
+              }}
+            >
+              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Typography variant="h6" component="div" color="primary">
+                    {item.roadName} {item.roadNumber}
                   </Typography>
+                  <Chip 
+                    label={item.aarType}
+                    size="small"
+                    sx={{ 
+                      bgcolor: 'primary.main',
+                      color: 'white',
+                      fontWeight: 'bold'
+                    }}
+                  />
+                </Box>
+                
+                <Typography variant="body1" color="text.secondary" gutterBottom>
+                  {item.description}
+                </Typography>
 
-                  <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ mt: 'auto', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Chip 
+                    label={item.color}
+                    size="small"
+                    sx={{ 
+                      bgcolor: 'background.default',
+                      border: '1px solid',
+                      borderColor: 'divider'
+                    }}
+                  />
+                  {item.note && (
                     <Chip 
-                      label={item.color}
+                      label={item.note}
                       size="small"
                       sx={{ 
                         bgcolor: 'background.default',
@@ -60,22 +76,11 @@ const RollingStockPage: React.FC = () => {
                         borderColor: 'divider'
                       }}
                     />
-                    {item.note && (
-                      <Chip 
-                        label={item.note}
-                        size="small"
-                        sx={{ 
-                          bgcolor: 'background.default',
-                          border: '1px solid',
-                          borderColor: 'divider'
-                        }}
-                      />
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          </Grid>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
         ))}
       </Grid>
     </Container>
