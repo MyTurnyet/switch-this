@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
+import { Container, Box, Typography } from '@mui/material';
 import { FeatureCard } from './components/FeatureCard';
-import { theme } from './theme';
 
 const features = [
   {
@@ -19,70 +21,72 @@ const features = [
 
 export default function Home() {
   return (
-    <main
-      style={{
+    <Box
+      component="main"
+      sx={{
         minHeight: '100vh',
-        background: `linear-gradient(135deg, ${theme.colors.background.primary} 0%, ${theme.colors.background.secondary} 100%)`,
-        padding: theme.spacing.xl
+        background: 'linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%)',
+        py: 8
       }}
     >
-      <div
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto'
-        }}
-      >
-        <div
-          style={{
-            marginBottom: theme.spacing.xl,
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            mb: 8,
             textAlign: 'center',
-            padding: theme.spacing.xl
+            px: 4
           }}
         >
-          <h1
-            style={{
-              background: theme.colors.text.gradient,
+          <Typography
+            variant="h1"
+            component="h1"
+            sx={{
+              background: 'linear-gradient(135deg, #6B46C1 0%, #4299E1 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              fontSize: '3rem',
-              fontWeight: '800',
-              marginBottom: theme.spacing.md,
+              fontSize: { xs: '2.5rem', md: '3rem' },
+              fontWeight: 800,
+              mb: 3,
               textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
             }}
           >
             Model Railroad Switchlist Generator
-          </h1>
-          <p
-            style={{
-              color: theme.colors.text.secondary,
-              fontSize: '1.5rem',
+          </Typography>
+          <Typography
+            variant="h5"
+            color="text.secondary"
+            sx={{
               maxWidth: '800px',
-              margin: '0 auto',
-              lineHeight: '1.6'
+              mx: 'auto',
+              lineHeight: 1.6
             }}
           >
             Generate and manage switchlists for your model railroad with ease. Keep track of your rolling stock and optimize your operations.
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
-        <div
-          style={{
+        <Box
+          sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: theme.spacing.xl,
-            padding: theme.spacing.lg
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(3, 1fr)'
+            },
+            gap: 4,
+            px: 2
           }}
         >
           {features.map((feature, index) => (
-            <FeatureCard
-              key={index}
-              title={feature.title}
-              description={feature.description}
-            />
+            <Box key={index}>
+              <FeatureCard
+                title={feature.title}
+                description={feature.description}
+              />
+            </Box>
           ))}
-        </div>
-      </div>
-    </main>
+        </Box>
+      </Container>
+    </Box>
   );
 }

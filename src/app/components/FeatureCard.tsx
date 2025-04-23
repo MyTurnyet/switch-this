@@ -1,71 +1,62 @@
 'use client';
 
-import React from 'react';
-import { theme } from '../theme';
+import React, { useState } from 'react';
+import { Card, CardContent, Typography } from '@mui/material';
 
 interface FeatureCardProps {
   title: string;
   description: string;
 }
 
-export const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) => (
-  <div
-    data-testid="feature-card"
-    style={{
-      background: theme.colors.background.gradient,
-      padding: theme.spacing.lg,
-      borderRadius: theme.borderRadius.lg,
-      boxShadow: theme.shadows.md,
-      border: `1px solid ${theme.colors.background.tertiary}`,
-      transition: 'all 0.3s ease-in-out',
-      position: 'relative',
-      overflow: 'hidden'
-    }}
-    onMouseEnter={(e) => {
-      const target = e.currentTarget;
-      const titleElement = target.querySelector('h2');
-      const descElement = target.querySelector('p');
-      
-      target.style.transform = 'translateY(-8px)';
-      target.style.boxShadow = theme.shadows.lg;
-      target.style.background = theme.colors.primary.gradient;
-      
-      if (titleElement) titleElement.style.color = theme.colors.primary.contrast;
-      if (descElement) descElement.style.color = theme.colors.primary.contrast;
-    }}
-    onMouseLeave={(e) => {
-      const target = e.currentTarget;
-      const titleElement = target.querySelector('h2');
-      const descElement = target.querySelector('p');
-      
-      target.style.transform = 'translateY(0)';
-      target.style.boxShadow = theme.shadows.md;
-      target.style.background = theme.colors.background.gradient;
-      
-      if (titleElement) titleElement.style.color = theme.colors.primary.main;
-      if (descElement) descElement.style.color = theme.colors.text.secondary;
-    }}
-  >
-    <h2
-      style={{
-        color: theme.colors.primary.main,
-        marginBottom: theme.spacing.md,
-        fontSize: '1.5rem',
-        fontWeight: '700',
-        transition: 'color 0.3s ease-in-out'
+export const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Card
+      data-testid="feature-card"
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        boxShadow: isHovered ? 8 : 2,
+        transform: isHovered ? 'translateY(-8px)' : 'translateY(0)',
+        transition: 'all 0.3s ease-in-out',
+        position: 'relative',
+        overflow: 'hidden',
+        background: isHovered 
+          ? 'linear-gradient(135deg, #6B46C1 0%, #4299E1 100%)'
+          : 'linear-gradient(135deg, #ffffff 0%, #f7fafc 100%)',
+        border: '1px solid',
+        borderColor: isHovered ? 'primary.main' : 'grey.200',
+        height: '100%'
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {title}
-    </h2>
-    <p
-      style={{
-        color: theme.colors.text.secondary,
-        fontSize: '1.125rem',
-        lineHeight: '1.6',
-        transition: 'color 0.3s ease-in-out'
-      }}
-    >
-      {description}
-    </p>
-  </div>
-); 
+      <CardContent>
+        <Typography
+          variant="h5"
+          component="h2"
+          gutterBottom
+          sx={{
+            color: isHovered ? 'common.white' : 'primary.main',
+            fontWeight: 700,
+            transition: 'color 0.3s ease-in-out'
+          }}
+        >
+          {title}
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{
+            color: isHovered ? 'common.white' : 'text.secondary',
+            fontSize: '1.125rem',
+            lineHeight: 1.6,
+            transition: 'color 0.3s ease-in-out'
+          }}
+        >
+          {description}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}; 
