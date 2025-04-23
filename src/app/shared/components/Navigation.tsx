@@ -24,6 +24,13 @@ export default function Navigation() {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             component={Link}
+            href="/rolling-stock"
+            sx={{ color: 'text.primary', fontWeight: 500 }}
+          >
+            Rolling Stock
+          </Button>
+          <Button
+            component={Link}
             href="/industries"
             sx={{ color: 'text.primary', fontWeight: 500 }}
           >
