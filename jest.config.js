@@ -7,9 +7,13 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: 'tsconfig.json',
-      jsx: 'react'
+      jsx: 'react-jsx'
     }]
   },
-  setupFilesAfterEnv: [],
+  setupFilesAfterEnv: ['@testing-library/jest-dom'],
   testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  testEnvironmentOptions: {
+    url: 'http://localhost'
+  }
 };
