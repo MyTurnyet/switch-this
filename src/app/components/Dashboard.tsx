@@ -3,6 +3,7 @@ import { Box, Paper, Typography } from '@mui/material';
 import { Location } from '../shared/types/models';
 import { Industry } from '../shared/types/models';
 import { RollingStock } from '../shared/types/models';
+import CarTypeBadge from './CarTypeBadge';
 
 interface DashboardProps {
   locations: Location[];
@@ -98,12 +99,9 @@ export default function Dashboard({ locations, industries, rollingStock }: Dashb
             <Typography variant="subtitle2" gutterBottom>
               Car Types
             </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '0 16px' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
               {Object.entries(rollingStockByType).map(([type, count]) => (
-                <React.Fragment key={type}>
-                  <Typography variant="body2" sx={{ fontWeight: 'medium' }}>{type}</Typography>
-                  <Typography variant="body2">{count}</Typography>
-                </React.Fragment>
+                <CarTypeBadge key={type} type={type} count={count} />
               ))}
             </Box>
           </Box>
