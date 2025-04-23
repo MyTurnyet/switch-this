@@ -1,7 +1,5 @@
 import React from 'react';
 import { theme } from '../styles/theme';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
 import clsx from 'clsx';
 
 interface LocationData {
@@ -16,11 +14,11 @@ interface DashboardProps {
 }
 
 const DashboardHeader: React.FC<{ locationCount: number }> = ({ locationCount }) => (
-  <div className={clsx('mb-6', theme.typography.title)}>
-    <h1 className="mb-2">Model Railroad Locations</h1>
-    <Badge variant="primary" testId="location-count">
+  <div className="mb-8 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl p-6 shadow-lg">
+    <h1 className="text-3xl font-bold mb-3">Model Railroad Locations</h1>
+    <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium">
       {locationCount} Total Location{locationCount !== 1 ? 's' : ''}
-    </Badge>
+    </div>
   </div>
 );
 
@@ -31,20 +29,23 @@ const BlockSummary: React.FC<{ locations: LocationData[] }> = ({ locations }) =>
   }, {} as Record<string, number>);
 
   return (
-    <div className="mb-6">
-      <h2 className={clsx(theme.typography.subtitle, 'mb-3')}>Block Summary</h2>
+    <div className="mb-8">
+      <h2 className={clsx(theme.typography.subtitle, 'mb-4')}>Block Summary</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Object.entries(blockCounts).map(([block, count]) => (
-          <Card
+          <div
             key={block}
-            testId={`block-card-${block.toLowerCase()}`}
-            className="bg-gradient-to-br from-secondary-50 to-secondary-100"
+            className="relative group"
+            data-testid={`block-card-${block.toLowerCase()}`}
           >
-            <div className={theme.typography.body}>{block}</div>
-            <div className={theme.typography.small}>
-              {count} location{count !== 1 ? 's' : ''}
+            <div className="absolute inset-0 bg-gradient-to-r from-accent-400 to-accent-500 rounded-lg transform transition-transform group-hover:scale-[1.02] -z-10" />
+            <div className="bg-white rounded-lg p-4 transform transition-transform group-hover:translate-x-1 group-hover:-translate-y-1">
+              <div className="font-semibold text-lg text-gray-900">{block}</div>
+              <div className="text-sm text-gray-600">
+                {count} location{count !== 1 ? 's' : ''}
+              </div>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
     </div>
