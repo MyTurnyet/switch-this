@@ -16,11 +16,11 @@ interface LocationWithIndustries extends Location {
   industries: Industry[];
 }
 
-export default function LayoutStatePage({ 
+const LayoutStatePage = ({ 
   locations, 
   industries,
   rollingStock = {} 
-}: LayoutStatePageProps) {
+}: LayoutStatePageProps) => {
   // Group locations and industries by block
   const locationsByBlock = useMemo(() => {
     // First, create a map of locations with their industries
@@ -117,4 +117,6 @@ export default function LayoutStatePage({
       ))}
     </Box>
   );
-} 
+};
+
+export default LayoutStatePage; 
