@@ -70,12 +70,6 @@ export default function Home() {
           </Typography>
         </Box>
 
-        <Dashboard 
-          locations={locationsData} 
-          industries={industriesData} 
-          rollingStock={rollingStockData}
-        />
-
         <Box
           sx={{
             display: 'grid',
@@ -85,7 +79,7 @@ export default function Home() {
             },
             gap: 4,
             px: 2,
-            mt: 4
+            mb: 8
           }}
         >
           {features.map((feature, index) => (
@@ -97,6 +91,12 @@ export default function Home() {
             </Box>
           ))}
         </Box>
+
+        <Dashboard 
+          locations={locationsData} 
+          industries={industriesData} 
+          rollingStock={rollingStockData}
+        />
       </Container>
     </Box>
   );
