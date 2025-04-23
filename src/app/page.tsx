@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Container, Box, Typography } from '@mui/material';
-import { FeatureCard } from './components/FeatureCard';
+import { FeatureCard } from './shared/components/FeatureCard';
 
 const features = [
   {
