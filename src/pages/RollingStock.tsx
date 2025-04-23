@@ -1,9 +1,26 @@
-import React from 'react';
-import { Box, Container, Typography, Card, CardContent, Chip } from '@mui/material';
+"use client";
+
+import React, { useState } from 'react';
+import { Box, Container, Typography, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, OutlinedInput, SelectChangeEvent } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import rollingStockData from '../data/rolling-stock.json';
 
 const RollingStockPage: React.FC = () => {
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+
+  // Get unique AAR types from the data
+  const aarTypes = Array.from(new Set(rollingStockData.map(item => item.aarType))).sort();
+
+  // Filter rolling stock based on selected types
+  const filteredRollingStock = selectedTypes.length > 0
+    ? rollingStockData.filter(item => selectedTypes.includes(item.aarType))
+    : rollingStockData;
+
+  const handleTypeChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    setSelectedTypes(typeof value === 'string' ? value.split(',') : value);
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -15,8 +32,34 @@ const RollingStockPage: React.FC = () => {
         </Typography>
       </Box>
 
+      <Box sx={{ mb: 4 }}>
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel id="aar-type-filter-label">Filter by AAR Type</InputLabel>
+          <Select
+            labelId="aar-type-filter-label"
+            multiple
+            value={selectedTypes}
+            onChange={handleTypeChange}
+            input={<OutlinedInput label="Filter by AAR Type" />}
+            renderValue={(selected) => (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {selected.map((value) => (
+                  <Chip key={value} label={value} size="small" />
+                ))}
+              </Box>
+            )}
+          >
+            {aarTypes.map((type) => (
+              <MenuItem key={type} value={type}>
+                {type}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
       <Grid container spacing={3} sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3 }}>
-        {rollingStockData.map((item) => (
+        {filteredRollingStock.map((item) => (
           <Box 
             key={item._id.$oid}
             component="article"
