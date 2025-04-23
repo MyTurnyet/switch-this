@@ -4,4 +4,11 @@ module.exports = {
     '@babel/preset-typescript',
     ['@babel/preset-react', { runtime: 'automatic' }],
   ],
+  plugins: [
+    '@babel/plugin-transform-typescript',
+    '@babel/plugin-syntax-typescript',
+    ['@babel/plugin-transform-runtime', {
+      regenerator: true
+    }]
+  ]
 }; 
