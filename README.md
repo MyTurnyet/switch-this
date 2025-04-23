@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Switchlist Generator
+
+A modern web application for generating and managing switchlists, built with Next.js and Material-UI.
+
+## Overview
+
+The Switchlist Generator is a web-based tool designed to help users create and manage switchlists efficiently. The application provides a clean, intuitive interface for organizing and tracking switchlist data across different industries and locations.
+
+## Features
+
+- **Modern UI**: Built with Material-UI for a responsive and professional look
+- **Industry Management**: Organize and manage switchlists by industry
+- **Location Tracking**: Keep track of switchlists across different locations
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org) - React framework for production
+- [Material-UI](https://mui.com) - React UI framework
+- [TypeScript](https://www.typescriptlang.org) - Type-safe JavaScript
+- [Next.js App Router](https://nextjs.org/docs/app) - Modern routing system
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18.0 or later
+- npm or yarn package manager
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd switch-this
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Run the development server:
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The project follows a component-based architecture with a focus on:
+- Clean, maintainable code
+- Type safety with TypeScript
+- Responsive design principles
+- Test-driven development
 
-## Learn More
+### Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app/` - Main application code
+  - `components/` - Reusable UI components
+  - `pages/` - Application pages
+  - `shared/` - Shared components and utilities
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contributing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[Add your license information here]
