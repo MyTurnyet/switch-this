@@ -3,6 +3,10 @@
 import React from 'react';
 import { Container, Box, Typography } from '@mui/material';
 import { FeatureCard } from './shared/components/FeatureCard';
+import Dashboard from './components/Dashboard';
+import locationsData from '../data/locations.json';
+import industriesData from '../data/industries.json';
+import rollingStockData from '../data/rolling-stock.json';
 
 const features = [
   {
@@ -66,6 +70,12 @@ export default function Home() {
           </Typography>
         </Box>
 
+        <Dashboard 
+          locations={locationsData} 
+          industries={industriesData} 
+          rollingStock={rollingStockData}
+        />
+
         <Box
           sx={{
             display: 'grid',
@@ -74,7 +84,8 @@ export default function Home() {
               md: 'repeat(3, 1fr)'
             },
             gap: 4,
-            px: 2
+            px: 2,
+            mt: 4
           }}
         >
           {features.map((feature, index) => (
