@@ -4,6 +4,7 @@ import { LayoutState } from '../../state/layout-state';
 import { Location, Industry, RollingStock } from '../shared/types/models';
 import { Box, Typography, Paper, List, ListItem, Divider, Chip } from '@mui/material';
 import { useMemo } from 'react';
+import { FC } from 'react';
 
 interface LayoutStatePageProps {
   layoutState: LayoutState;
@@ -16,12 +17,12 @@ interface LocationWithIndustries extends Location {
   industries: Industry[];
 }
 
-export default function Page({ 
+const Page: FC<LayoutStatePageProps> = ({ 
   layoutState, 
   locations, 
   industries,
   rollingStock = {} 
-}: LayoutStatePageProps) {
+}) => {
   // Group locations and industries by block
   const locationsByBlock = useMemo(() => {
     // First, create a map of locations with their industries
@@ -128,4 +129,6 @@ export default function Page({
       ))}
     </Box>
   );
-} 
+};
+
+export default Page; 
