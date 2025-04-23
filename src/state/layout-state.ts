@@ -29,7 +29,35 @@ export class LayoutState {
     this.locationCars[locationId].push(carId);
   }
 
+  setCarPositions(carPositions: Record<string, string>): void {
+    // First, remove all cars from their current positions
+    Object.entries(carPositions).forEach(([carId]) => {
+      const currentLocation = this.carPositions[carId];
+      if (currentLocation) {
+        this.locationCars[currentLocation] = this.locationCars[currentLocation]
+          .filter(id => id !== carId);
+      }
+    });
+
+    // Then update all positions
+    Object.entries(carPositions).forEach(([carId, locationId]) => {
+      this.carPositions[carId] = locationId;
+      
+      if (!this.locationCars[locationId]) {
+        this.locationCars[locationId] = [];
+      }
+      this.locationCars[locationId].push(carId);
+    });
+  }
+
   getCarsAtLocation(locationId: string): string[] {
     return [...(this.locationCars[locationId] || [])];
+  }
+
+  getEmptyLocations(locationIds: string[]): string[] {
+    return locationIds.filter(locationId => {
+      const cars = this.locationCars[locationId];
+      return !cars || cars.length === 0;
+    });
   }
 } 
