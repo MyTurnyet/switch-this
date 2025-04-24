@@ -57,6 +57,7 @@ export default function LayoutStateContainer() {
   }
 
   const handleResetState = () => {
+    // Clear current state
     setLayoutState(new LayoutState());
     setLocations([]);
     setIndustries([]);
