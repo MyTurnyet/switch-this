@@ -123,7 +123,7 @@ describe('LayoutContext', () => {
     await waitFor(() => {
       expect(screen.getByTestId('locationError')).toHaveTextContent('Failed to load locations: Location error');
       expect(screen.getByTestId('industryError')).toHaveTextContent('Failed to load industries: Industry error');
-      expect(screen.getByTestId('trainRouteError')).toHaveTextContent('Failed to load train routes: Train route error');
+      expect(screen.getByTestId('trainRouteError')).toHaveTextContent('Failed to load trainRoutes: Train route error');
     });
   });
 

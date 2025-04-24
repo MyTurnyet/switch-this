@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLayoutContext } from '../shared/contexts/LayoutContext';
 
 interface StatCardProps {
@@ -12,6 +12,52 @@ const StatCard: React.FC<StatCardProps> = ({ count, label }) => (
   <div className="bg-white p-6 rounded-lg shadow-md">
     <div className="text-4xl font-bold text-blue-600">{count}</div>
     <div className="text-gray-600 mt-2">{label}</div>
+  </div>
+);
+
+interface LoadingState {
+  isLoadingLocations: boolean;
+  isLoadingIndustries: boolean;
+  isLoadingTrainRoutes: boolean;
+}
+
+interface ErrorState {
+  locationError: string | null;
+  industryError: string | null;
+  trainRouteError: string | null;
+}
+
+const isLoading = (state: LoadingState): boolean => {
+  return state.isLoadingLocations || state.isLoadingIndustries || state.isLoadingTrainRoutes;
+};
+
+const hasError = (state: ErrorState): boolean => {
+  return Boolean(state.locationError || state.industryError || state.trainRouteError);
+};
+
+const LoadingView: React.FC = () => (
+  <div className="text-center p-8">
+    <div className="text-xl text-gray-600">Loading statistics...</div>
+    <div className="mt-4">
+      <div role="status" className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+    </div>
+  </div>
+);
+
+const ErrorView: React.FC<ErrorState & { onRetry: () => void }> = ({ locationError, industryError, trainRouteError, onRetry }) => (
+  <div className="text-center p-8">
+    <div className="text-xl text-red-600 mb-4">Unable to load dashboard data</div>
+    <div className="text-gray-600 mb-4">
+      {locationError && <div>• {locationError}</div>}
+      {industryError && <div>• {industryError}</div>}
+      {trainRouteError && <div>• {trainRouteError}</div>}
+    </div>
+    <button
+      onClick={onRetry}
+      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+    >
+      Retry
+    </button>
   </div>
 );
 
@@ -31,8 +77,14 @@ export const Dashboard: React.FC = () => {
     fetchTrainRoutes,
   } = useLayoutContext();
 
-  const isLoading = isLoadingLocations || isLoadingIndustries || isLoadingTrainRoutes;
-  const hasError = locationError || industryError || trainRouteError;
+  useEffect(() => {
+    fetchLocations();
+    fetchIndustries();
+    fetchTrainRoutes();
+  }, []); // Empty dependency array means this runs once on mount
+
+  const loadingState = { isLoadingLocations, isLoadingIndustries, isLoadingTrainRoutes };
+  const errorState = { locationError, industryError, trainRouteError };
 
   const handleRetry = () => {
     if (locationError) fetchLocations();
@@ -40,34 +92,12 @@ export const Dashboard: React.FC = () => {
     if (trainRouteError) fetchTrainRoutes();
   };
 
-  if (isLoading) {
-    return (
-      <div className="text-center p-8">
-        <div className="text-xl text-gray-600">Loading statistics...</div>
-        <div className="mt-4">
-          <div role="status" className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        </div>
-      </div>
-    );
+  if (isLoading(loadingState)) {
+    return <LoadingView />;
   }
 
-  if (hasError) {
-    return (
-      <div className="text-center p-8">
-        <div className="text-xl text-red-600 mb-4">Unable to load dashboard data</div>
-        <div className="text-gray-600 mb-4">
-          {locationError && <div>• {locationError}</div>}
-          {industryError && <div>• {industryError}</div>}
-          {trainRouteError && <div>• {trainRouteError}</div>}
-        </div>
-        <button
-          onClick={handleRetry}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    );
+  if (hasError(errorState)) {
+    return <ErrorView {...errorState} onRetry={handleRetry} />;
   }
 
   return (

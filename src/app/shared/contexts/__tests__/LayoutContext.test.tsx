@@ -132,15 +132,9 @@ describe('LayoutContext', () => {
         locationError,
         industryError,
         trainRouteError,
-        isLoadingLocations,
-        isLoadingIndustries,
-        isLoadingTrainRoutes,
       } = useLayoutContext();
       return (
         <div>
-          <span data-testid="loading-locations">{isLoadingLocations.toString()}</span>
-          <span data-testid="loading-industries">{isLoadingIndustries.toString()}</span>
-          <span data-testid="loading-train-routes">{isLoadingTrainRoutes.toString()}</span>
           <span data-testid="locationError">{locationError}</span>
           <span data-testid="industryError">{industryError}</span>
           <span data-testid="trainRouteError">{trainRouteError}</span>
@@ -155,14 +149,10 @@ describe('LayoutContext', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('loading-locations').textContent).toBe('false');
-      expect(screen.getByTestId('loading-industries').textContent).toBe('false');
-      expect(screen.getByTestId('loading-train-routes').textContent).toBe('false');
+      expect(screen.getByTestId('locationError')).toHaveTextContent('Failed to load locations: Failed to fetch locations');
+      expect(screen.getByTestId('industryError')).toHaveTextContent('Failed to load industries: Failed to fetch industries');
+      expect(screen.getByTestId('trainRouteError')).toHaveTextContent('Failed to load trainRoutes: Failed to fetch train routes');
     });
-
-    expect(screen.getByTestId('locationError').textContent).toBe('Failed to load locations: Failed to fetch locations');
-    expect(screen.getByTestId('industryError').textContent).toBe('Failed to load industries: Failed to fetch industries');
-    expect(screen.getByTestId('trainRouteError').textContent).toBe('Failed to load train routes: Failed to fetch train routes');
   });
 
   describe('manual refresh', () => {
@@ -219,6 +209,42 @@ describe('LayoutContext', () => {
       });
       await waitFor(() => {
         expect(mockGetAllTrainRoutes).toHaveBeenCalledTimes(2);
+      });
+    });
+  });
+
+  describe('generic data fetching', () => {
+    it('should handle errors consistently across all data types', async () => {
+      const errorMessage = 'Network error';
+      mockGetAllLocations.mockRejectedValueOnce(new Error(errorMessage));
+      mockGetAllIndustries.mockRejectedValueOnce(new Error(errorMessage));
+      mockGetAllTrainRoutes.mockRejectedValueOnce(new Error(errorMessage));
+
+      const TestComponent = () => {
+        const {
+          locationError,
+          industryError,
+          trainRouteError,
+        } = useLayoutContext();
+        return (
+          <div>
+            <span data-testid="locationError">{locationError}</span>
+            <span data-testid="industryError">{industryError}</span>
+            <span data-testid="trainRouteError">{trainRouteError}</span>
+          </div>
+        );
+      };
+
+      render(
+        <LayoutProvider>
+          <TestComponent />
+        </LayoutProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('locationError')).toHaveTextContent(`Failed to load locations: ${errorMessage}`);
+        expect(screen.getByTestId('industryError')).toHaveTextContent(`Failed to load industries: ${errorMessage}`);
+        expect(screen.getByTestId('trainRouteError')).toHaveTextContent(`Failed to load trainRoutes: ${errorMessage}`);
       });
     });
   });

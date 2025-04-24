@@ -23,6 +23,31 @@ interface LayoutContextType {
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
+type DataType = 'locations' | 'industries' | 'trainRoutes';
+
+interface LocationServiceInterface {
+  getAllLocations(): Promise<Location[]>;
+}
+
+interface IndustryServiceInterface {
+  getAllIndustries(): Promise<Industry[]>;
+}
+
+interface TrainRouteServiceInterface {
+  getAllTrainRoutes(): Promise<TrainRoute[]>;
+}
+
+type ServiceType = LocationServiceInterface | IndustryServiceInterface | TrainRouteServiceInterface;
+
+interface DataFetchConfig<T, S extends ServiceType> {
+  service: S;
+  fetchMethod: keyof S;
+  setData: (data: T[]) => void;
+  setError: (error: string | null) => void;
+  setIsLoading: (loading: boolean) => void;
+  dataType: DataType;
+}
+
 export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [industries, setIndustries] = useState<Industry[]>([]);
@@ -34,67 +59,60 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [industryError, setIndustryError] = useState<string | null>(null);
   const [trainRouteError, setTrainRouteError] = useState<string | null>(null);
 
-  const fetchLocations = async () => {
-    setIsLoadingLocations(true);
+  const fetchData = async <T, S extends ServiceType>(config: DataFetchConfig<T, S>) => {
+    const { service, fetchMethod, setData, setError, setIsLoading, dataType } = config;
+    
+    setIsLoading(true);
     try {
-      const locationService = new LocationService();
-      const fetchedLocations = await locationService.getAllLocations();
+      const method = service[fetchMethod] as () => Promise<T[]>;
+      const data = await method();
       React.startTransition(() => {
-        setLocations(fetchedLocations);
-        setLocationError(null);
+        setData(data);
+        setError(null);
       });
     } catch (error) {
-      console.error('Error loading locations:', error);
+      console.error(`Error loading ${dataType}:`, error);
       if (error instanceof Error) {
-        setLocationError(`Failed to load locations: ${error.message}`);
+        setError(`Failed to load ${dataType}: ${error.message}`);
       } else {
-        setLocationError('Failed to load locations');
+        setError(`Failed to load ${dataType}`);
       }
     } finally {
-      setIsLoadingLocations(false);
+      setIsLoading(false);
     }
+  };
+
+  const fetchLocations = async () => {
+    await fetchData<Location, LocationServiceInterface>({
+      service: new LocationService(),
+      fetchMethod: 'getAllLocations',
+      setData: setLocations,
+      setError: setLocationError,
+      setIsLoading: setIsLoadingLocations,
+      dataType: 'locations'
+    });
   };
 
   const fetchIndustries = async () => {
-    setIsLoadingIndustries(true);
-    try {
-      const industryService = new IndustryService();
-      const fetchedIndustries = await industryService.getAllIndustries();
-      React.startTransition(() => {
-        setIndustries(fetchedIndustries);
-        setIndustryError(null);
-      });
-    } catch (error) {
-      console.error('Error loading industries:', error);
-      if (error instanceof Error) {
-        setIndustryError(`Failed to load industries: ${error.message}`);
-      } else {
-        setIndustryError('Failed to load industries');
-      }
-    } finally {
-      setIsLoadingIndustries(false);
-    }
+    await fetchData<Industry, IndustryServiceInterface>({
+      service: new IndustryService(),
+      fetchMethod: 'getAllIndustries',
+      setData: setIndustries,
+      setError: setIndustryError,
+      setIsLoading: setIsLoadingIndustries,
+      dataType: 'industries'
+    });
   };
 
   const fetchTrainRoutes = async () => {
-    setIsLoadingTrainRoutes(true);
-    try {
-      const trainRouteService = new TrainRouteService();
-      const fetchedTrainRoutes = await trainRouteService.getAllTrainRoutes();
-      React.startTransition(() => {
-        setTrainRoutes(fetchedTrainRoutes);
-        setTrainRouteError(null);
-      });
-    } catch (error) {
-      console.error('Error loading train routes:', error);
-      if (error instanceof Error) {
-        setTrainRouteError(`Failed to load train routes: ${error.message}`);
-      } else {
-        setTrainRouteError('Failed to load train routes');
-      }
-    } finally {
-      setIsLoadingTrainRoutes(false);
-    }
+    await fetchData<TrainRoute, TrainRouteServiceInterface>({
+      service: new TrainRouteService(),
+      fetchMethod: 'getAllTrainRoutes',
+      setData: setTrainRoutes,
+      setError: setTrainRouteError,
+      setIsLoading: setIsLoadingTrainRoutes,
+      dataType: 'trainRoutes'
+    });
   };
 
   useEffect(() => {
