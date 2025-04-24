@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, act, waitFor } from '@testing-library/react';
-import { LayoutProvider, useLayout } from '../LayoutContext';
+import { LayoutProvider, useLayoutContext } from '../LayoutContext';
 import { LocationService } from '../../services/LocationService';
 import { IndustryService } from '../../services/IndustryService';
 import { TrainRouteService } from '../../services/TrainRouteService';
@@ -67,11 +67,22 @@ describe('LayoutContext', () => {
 
   it('provides default layout values', () => {
     const TestComponent = () => {
-      const { isSidebarOpen, toggleSidebar } = useLayout();
+      const {
+        locations,
+        industries,
+        trainRoutes,
+        isLoadingLocations,
+        isLoadingIndustries,
+        isLoadingTrainRoutes,
+      } = useLayoutContext();
       return (
         <div>
-          <span data-testid="sidebar-state">{isSidebarOpen.toString()}</span>
-          <button onClick={toggleSidebar}>Toggle Sidebar</button>
+          <span data-testid="loading-locations">{isLoadingLocations.toString()}</span>
+          <span data-testid="loading-industries">{isLoadingIndustries.toString()}</span>
+          <span data-testid="loading-train-routes">{isLoadingTrainRoutes.toString()}</span>
+          <span data-testid="locations-count">{locations.length}</span>
+          <span data-testid="industries-count">{industries.length}</span>
+          <span data-testid="train-routes-count">{trainRoutes.length}</span>
         </div>
       );
     };
@@ -82,12 +93,17 @@ describe('LayoutContext', () => {
       </LayoutProvider>
     );
 
-    expect(screen.getByTestId('sidebar-state').textContent).toBe('false');
+    expect(screen.getByTestId('loading-locations').textContent).toBe('true');
+    expect(screen.getByTestId('loading-industries').textContent).toBe('true');
+    expect(screen.getByTestId('loading-train-routes').textContent).toBe('true');
+    expect(screen.getByTestId('locations-count').textContent).toBe('0');
+    expect(screen.getByTestId('industries-count').textContent).toBe('0');
+    expect(screen.getByTestId('train-routes-count').textContent).toBe('0');
   });
 
   it('toggles sidebar state when toggleSidebar is called', () => {
     const TestComponent = () => {
-      const { isSidebarOpen, toggleSidebar } = useLayout();
+      const { isSidebarOpen, toggleSidebar } = useLayoutContext();
       return (
         <div>
           <span data-testid="sidebar-state">{isSidebarOpen.toString()}</span>
@@ -113,21 +129,27 @@ describe('LayoutContext', () => {
   it('loads all data on mount', async () => {
     const TestComponent = () => {
       const {
-        locations, industries, trainRoutes,
-        isLoadingLocations, isLoadingIndustries, isLoadingTrainRoutes,
-        locationError, industryError, trainRouteError
-      } = useLayout();
+        locations,
+        industries,
+        trainRoutes,
+        isLoadingLocations,
+        isLoadingIndustries,
+        isLoadingTrainRoutes,
+        locationError,
+        industryError,
+        trainRouteError
+      } = useLayoutContext();
       return (
         <div>
           <span data-testid="loading-locations">{isLoadingLocations.toString()}</span>
           <span data-testid="loading-industries">{isLoadingIndustries.toString()}</span>
-          <span data-testid="loading-routes">{isLoadingTrainRoutes.toString()}</span>
-          <span data-testid="error-locations">{locationError || 'no error'}</span>
-          <span data-testid="error-industries">{industryError || 'no error'}</span>
-          <span data-testid="error-routes">{trainRouteError || 'no error'}</span>
+          <span data-testid="loading-train-routes">{isLoadingTrainRoutes.toString()}</span>
           <span data-testid="locations-count">{locations.length}</span>
           <span data-testid="industries-count">{industries.length}</span>
-          <span data-testid="routes-count">{trainRoutes.length}</span>
+          <span data-testid="train-routes-count">{trainRoutes.length}</span>
+          <span data-testid="location-error">{locationError || 'none'}</span>
+          <span data-testid="industry-error">{industryError || 'none'}</span>
+          <span data-testid="train-route-error">{trainRouteError || 'none'}</span>
         </div>
       );
     };
@@ -140,20 +162,20 @@ describe('LayoutContext', () => {
 
     expect(screen.getByTestId('loading-locations').textContent).toBe('true');
     expect(screen.getByTestId('loading-industries').textContent).toBe('true');
-    expect(screen.getByTestId('loading-routes').textContent).toBe('true');
+    expect(screen.getByTestId('loading-train-routes').textContent).toBe('true');
 
     await waitFor(() => {
       expect(screen.getByTestId('loading-locations').textContent).toBe('false');
       expect(screen.getByTestId('loading-industries').textContent).toBe('false');
-      expect(screen.getByTestId('loading-routes').textContent).toBe('false');
+      expect(screen.getByTestId('loading-train-routes').textContent).toBe('false');
     });
 
     expect(screen.getByTestId('locations-count').textContent).toBe('1');
     expect(screen.getByTestId('industries-count').textContent).toBe('1');
-    expect(screen.getByTestId('routes-count').textContent).toBe('1');
-    expect(screen.getByTestId('error-locations').textContent).toBe('no error');
-    expect(screen.getByTestId('error-industries').textContent).toBe('no error');
-    expect(screen.getByTestId('error-routes').textContent).toBe('no error');
+    expect(screen.getByTestId('train-routes-count').textContent).toBe('1');
+    expect(screen.getByTestId('location-error').textContent).toBe('none');
+    expect(screen.getByTestId('industry-error').textContent).toBe('none');
+    expect(screen.getByTestId('train-route-error').textContent).toBe('none');
   });
 
   it('handles loading errors for all data types', async () => {
@@ -169,21 +191,27 @@ describe('LayoutContext', () => {
 
     const TestComponent = () => {
       const {
-        locations, industries, trainRoutes,
-        isLoadingLocations, isLoadingIndustries, isLoadingTrainRoutes,
-        locationError, industryError, trainRouteError
-      } = useLayout();
+        locations,
+        industries,
+        trainRoutes,
+        isLoadingLocations,
+        isLoadingIndustries,
+        isLoadingTrainRoutes,
+        locationError,
+        industryError,
+        trainRouteError
+      } = useLayoutContext();
       return (
         <div>
           <span data-testid="loading-locations">{isLoadingLocations.toString()}</span>
           <span data-testid="loading-industries">{isLoadingIndustries.toString()}</span>
-          <span data-testid="loading-routes">{isLoadingTrainRoutes.toString()}</span>
-          <span data-testid="error-locations">{locationError || 'no error'}</span>
-          <span data-testid="error-industries">{industryError || 'no error'}</span>
-          <span data-testid="error-routes">{trainRouteError || 'no error'}</span>
+          <span data-testid="loading-train-routes">{isLoadingTrainRoutes.toString()}</span>
           <span data-testid="locations-count">{locations.length}</span>
           <span data-testid="industries-count">{industries.length}</span>
-          <span data-testid="routes-count">{trainRoutes.length}</span>
+          <span data-testid="train-routes-count">{trainRoutes.length}</span>
+          <span data-testid="location-error">{locationError || 'none'}</span>
+          <span data-testid="industry-error">{industryError || 'none'}</span>
+          <span data-testid="train-route-error">{trainRouteError || 'none'}</span>
         </div>
       );
     };
@@ -197,14 +225,14 @@ describe('LayoutContext', () => {
     await waitFor(() => {
       expect(screen.getByTestId('loading-locations').textContent).toBe('false');
       expect(screen.getByTestId('loading-industries').textContent).toBe('false');
-      expect(screen.getByTestId('loading-routes').textContent).toBe('false');
+      expect(screen.getByTestId('loading-train-routes').textContent).toBe('false');
     });
 
     expect(screen.getByTestId('locations-count').textContent).toBe('0');
     expect(screen.getByTestId('industries-count').textContent).toBe('0');
-    expect(screen.getByTestId('routes-count').textContent).toBe('0');
-    expect(screen.getByTestId('error-locations').textContent).toBe('Failed to load locations');
-    expect(screen.getByTestId('error-industries').textContent).toBe('Failed to load industries');
-    expect(screen.getByTestId('error-routes').textContent).toBe('Failed to load train routes');
+    expect(screen.getByTestId('train-routes-count').textContent).toBe('0');
+    expect(screen.getByTestId('location-error').textContent).toBe('Failed to load locations');
+    expect(screen.getByTestId('industry-error').textContent).toBe('Failed to load industries');
+    expect(screen.getByTestId('train-route-error').textContent).toBe('Failed to load train routes');
   });
 }); 

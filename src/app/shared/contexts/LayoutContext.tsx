@@ -22,6 +22,14 @@ interface LayoutContextType {
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
+export const useLayoutContext = () => {
+  const context = useContext(LayoutContext);
+  if (!context) {
+    throw new Error('useLayoutContext must be used within a LayoutProvider');
+  }
+  return context;
+};
+
 export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -38,49 +46,49 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsSidebarOpen(prev => !prev);
   };
 
+  const fetchLocations = async () => {
+    try {
+      const locationService = new LocationService();
+      const fetchedLocations = await locationService.getAllLocations();
+      setLocations(fetchedLocations);
+      setLocationError(null);
+    } catch (error) {
+      console.error('Error loading locations:', error);
+      setLocationError('Failed to load locations');
+    } finally {
+      setIsLoadingLocations(false);
+    }
+  };
+
+  const fetchIndustries = async () => {
+    try {
+      const industryService = new IndustryService();
+      const fetchedIndustries = await industryService.getAllIndustries();
+      setIndustries(fetchedIndustries);
+      setIndustryError(null);
+    } catch (error) {
+      console.error('Error loading industries:', error);
+      setIndustryError('Failed to load industries');
+    } finally {
+      setIsLoadingIndustries(false);
+    }
+  };
+
+  const fetchTrainRoutes = async () => {
+    try {
+      const trainRouteService = new TrainRouteService();
+      const fetchedTrainRoutes = await trainRouteService.getAllTrainRoutes();
+      setTrainRoutes(fetchedTrainRoutes);
+      setTrainRouteError(null);
+    } catch (error) {
+      console.error('Error loading train routes:', error);
+      setTrainRouteError('Failed to load train routes');
+    } finally {
+      setIsLoadingTrainRoutes(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const locationService = new LocationService();
-        const fetchedLocations = await locationService.getAllLocations();
-        setLocations(fetchedLocations);
-        setLocationError(null);
-      } catch (error) {
-        console.error('Error loading locations:', error);
-        setLocationError('Failed to load locations');
-      } finally {
-        setIsLoadingLocations(false);
-      }
-    };
-
-    const fetchIndustries = async () => {
-      try {
-        const industryService = new IndustryService();
-        const fetchedIndustries = await industryService.getAllIndustries();
-        setIndustries(fetchedIndustries);
-        setIndustryError(null);
-      } catch (error) {
-        console.error('Error loading industries:', error);
-        setIndustryError('Failed to load industries');
-      } finally {
-        setIsLoadingIndustries(false);
-      }
-    };
-
-    const fetchTrainRoutes = async () => {
-      try {
-        const trainRouteService = new TrainRouteService();
-        const fetchedTrainRoutes = await trainRouteService.getAllTrainRoutes();
-        setTrainRoutes(fetchedTrainRoutes);
-        setTrainRouteError(null);
-      } catch (error) {
-        console.error('Error loading train routes:', error);
-        setTrainRouteError('Failed to load train routes');
-      } finally {
-        setIsLoadingTrainRoutes(false);
-      }
-    };
-
     fetchLocations();
     fetchIndustries();
     fetchTrainRoutes();
@@ -105,12 +113,4 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {children}
     </LayoutContext.Provider>
   );
-};
-
-export const useLayout = () => {
-  const context = useContext(LayoutContext);
-  if (context === undefined) {
-    throw new Error('useLayout must be used within a LayoutProvider');
-  }
-  return context;
 }; 
