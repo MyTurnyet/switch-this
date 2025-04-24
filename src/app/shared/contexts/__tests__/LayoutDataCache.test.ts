@@ -1,5 +1,5 @@
 import { LayoutDataCache } from '../LayoutDataCache';
-import { Location, Industry, TrainRoute } from '@/shared/types/models';
+import { Location, Industry, TrainRoute, RollingStock } from '@/shared/types/models';
 
 describe('LayoutDataCache', () => {
   let cache: LayoutDataCache;
@@ -12,6 +12,7 @@ describe('LayoutDataCache', () => {
   const mockTrainRoutes: TrainRoute[] = [
     { _id: '1', name: 'Route 1', routeNumber: 'R1', routeType: 'MIXED', originatingYardId: 'Yard 1', terminatingYardId: 'Yard 2', stations: [] }
   ];
+  const mockRollingStock: RollingStock = { _id: '1', roadName: 'BNSF', roadNumber: '1234', aarType: 'XM', description: 'Boxcar', color: 'RED', note: '', homeYard: '1', ownerId: 'owner1' };
 
   beforeEach(() => {
     cache = new LayoutDataCache();
@@ -44,6 +45,7 @@ describe('LayoutDataCache', () => {
     cache.setLocations(mockLocations);
     cache.setIndustries(mockIndustries);
     cache.setTrainRoutes(mockTrainRoutes);
+    cache.setRollingStock(mockRollingStock);
     
     expect(cache.isDataLoaded()).toBe(true);
   });
@@ -59,5 +61,41 @@ describe('LayoutDataCache', () => {
     expect(cache.getIndustries()).toBeNull();
     expect(cache.getTrainRoutes()).toBeNull();
     expect(cache.isDataLoaded()).toBe(false);
+  });
+
+  describe('rolling stock operations', () => {
+    it('should store and retrieve rolling stock data', () => {
+      cache.setRollingStock([mockRollingStock]);
+      expect(cache.getRollingStock()).toEqual([mockRollingStock]);
+    });
+
+    it('should handle null rolling stock data', () => {
+      cache.setRollingStock(null);
+      expect(cache.getRollingStock()).toBeNull();
+    });
+
+    it('should clear rolling stock data', () => {
+      cache.setRollingStock([mockRollingStock]);
+      cache.clear();
+      expect(cache.getRollingStock()).toBeNull();
+    });
+  });
+
+  describe('isDataLoaded', () => {
+    it('should return false when rolling stock is null', () => {
+      cache.setLocations(mockLocations);
+      cache.setIndustries(mockIndustries);
+      cache.setTrainRoutes(mockTrainRoutes);
+      cache.setRollingStock(null);
+      expect(cache.isDataLoaded()).toBe(false);
+    });
+
+    it('should return true when all data is loaded', () => {
+      cache.setLocations(mockLocations);
+      cache.setIndustries(mockIndustries);
+      cache.setTrainRoutes(mockTrainRoutes);
+      cache.setRollingStock([mockRollingStock]);
+      expect(cache.isDataLoaded()).toBe(true);
+    });
   });
 }); 

@@ -5,7 +5,7 @@ import { StatCard } from './StatCard';
 import { useLayout } from '../shared/contexts/LayoutContext';
 
 export const Dashboard: React.FC = () => {
-  const { locations, industries, trainRoutes, error, isLoading, refreshData } = useLayout();
+  const { locations, industries, trainRoutes, rollingStock, error, isLoading, refreshData } = useLayout();
 
   useEffect(() => {
     refreshData();
@@ -21,7 +21,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div data-testid="dashboard-grid" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div data-testid="dashboard-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           count={locations?.length ?? 0} 
           label="Locations" 
@@ -35,6 +35,11 @@ export const Dashboard: React.FC = () => {
         <StatCard 
           count={trainRoutes?.length ?? 0} 
           label="Train Routes" 
+          isLoading={isLoading} 
+        />
+        <StatCard 
+          count={rollingStock?.length ?? 0} 
+          label="Rolling Stock" 
           isLoading={isLoading} 
         />
       </div>

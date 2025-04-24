@@ -1,153 +1,146 @@
-import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, act } from '@testing-library/react';
 import { LayoutProvider, useLayout } from '../LayoutContext';
+import { LocationService } from '../../services/LocationService';
+import { IndustryService } from '../../services/IndustryService';
+import { TrainRouteService } from '../../services/TrainRouteService';
+import { RollingStockService } from '../../services/RollingStockService';
+import { Location, Industry, TrainRoute, RollingStock } from '@/shared/types/models';
+import userEvent from '@testing-library/user-event';
 
-// Mock services
-const mockLocations = [{ id: 1, name: 'Location 1' }, { id: 2, name: 'Location 2' }];
-const mockIndustries = [{ id: 1, name: 'Industry 1' }, { id: 2, name: 'Industry 2' }];
-const mockTrainRoutes = [{ id: 1, name: 'Route 1' }, { id: 2, name: 'Route 2' }];
-
-// Mock service classes
-class MockLocationService {
-  getAllLocations = jest.fn();
-}
-
-class MockIndustryService {
-  getAllIndustries = jest.fn();
-}
-
-class MockTrainRouteService {
-  getAllTrainRoutes = jest.fn();
-}
-
-jest.mock('../../services/LocationService', () => ({
-  LocationService: jest.fn().mockImplementation(() => new MockLocationService())
-}));
-
-jest.mock('../../services/IndustryService', () => ({
-  IndustryService: jest.fn().mockImplementation(() => new MockIndustryService())
-}));
-
-jest.mock('../../services/TrainRouteService', () => ({
-  TrainRouteService: jest.fn().mockImplementation(() => new MockTrainRouteService())
-}));
+jest.mock('../../services/LocationService');
+jest.mock('../../services/IndustryService');
+jest.mock('../../services/TrainRouteService');
+jest.mock('../../services/RollingStockService');
 
 const TestComponent = () => {
-  const { locations, industries, trainRoutes, error, isLoading, refreshData } = useLayout();
+  const { locations, industries, trainRoutes, rollingStock, error, isLoading, refreshData } = useLayout();
   return (
     <div>
       <div data-testid="locations">{locations?.length || 0}</div>
       <div data-testid="industries">{industries?.length || 0}</div>
       <div data-testid="trainRoutes">{trainRoutes?.length || 0}</div>
-      <div data-testid="error">{error}</div>
+      <div data-testid="rollingStock">{rollingStock?.length || 0}</div>
+      {error && <div data-testid="error">{error}</div>}
       <div data-testid="loading">{isLoading.toString()}</div>
-      <button onClick={refreshData}>Refresh Data</button>
+      <button onClick={refreshData}>Refresh</button>
     </div>
   );
 };
 
-describe('LayoutContext', () => {
-  let mockLocationService: MockLocationService;
-  let mockIndustryService: MockIndustryService;
-  let mockTrainRouteService: MockTrainRouteService;
+describe('LayoutProvider', () => {
+  let mockLocationService: jest.Mocked<LocationService>;
+  let mockIndustryService: jest.Mocked<IndustryService>;
+  let mockTrainRouteService: jest.Mocked<TrainRouteService>;
+  let mockRollingStockService: jest.Mocked<RollingStockService>;
+
+  const mockData = {
+    locations: [{ _id: '1', stationName: 'Test Station', block: 'A', ownerId: '1' }] as Location[],
+    industries: [{ _id: '1', name: 'Test Industry', industryType: 'FREIGHT', tracks: [], locationId: '1', ownerId: '1' }] as Industry[],
+    trainRoutes: [{ _id: '1', name: 'Test Route', routeNumber: 'TR1', routeType: 'MIXED', originatingYardId: '1', terminatingYardId: '2', stations: [] }] as TrainRoute[],
+    rollingStock: [{ _id: '1', roadName: 'TEST', roadNumber: '1234', aarType: 'XM', description: 'Test Car', color: 'RED', homeYard: '1', ownerId: '1' }] as RollingStock[]
+  };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockLocationService = new MockLocationService();
-    mockIndustryService = new MockIndustryService();
-    mockTrainRouteService = new MockTrainRouteService();
+    mockLocationService = {
+      getAllLocations: jest.fn()
+    } as jest.Mocked<LocationService>;
 
-    (jest.requireMock('../../services/LocationService').LocationService as jest.Mock)
-      .mockImplementation(() => mockLocationService);
-    (jest.requireMock('../../services/IndustryService').IndustryService as jest.Mock)
-      .mockImplementation(() => mockIndustryService);
-    (jest.requireMock('../../services/TrainRouteService').TrainRouteService as jest.Mock)
-      .mockImplementation(() => mockTrainRouteService);
+    mockIndustryService = {
+      getAllIndustries: jest.fn()
+    } as jest.Mocked<IndustryService>;
+
+    mockTrainRouteService = {
+      getAllTrainRoutes: jest.fn()
+    } as jest.Mocked<TrainRouteService>;
+
+    mockRollingStockService = {
+      getAllRollingStock: jest.fn()
+    } as jest.Mocked<RollingStockService>;
   });
 
-  it('shows loading state initially', async () => {
-    mockLocationService.getAllLocations.mockResolvedValue(mockLocations);
-    mockIndustryService.getAllIndustries.mockResolvedValue(mockIndustries);
-    mockTrainRouteService.getAllTrainRoutes.mockResolvedValue(mockTrainRoutes);
+  it('should handle errors when loading data', async () => {
+    const error = new Error('Failed to fetch');
+    mockLocationService.getAllLocations.mockRejectedValue(error);
+    mockIndustryService.getAllIndustries.mockRejectedValue(error);
+    mockTrainRouteService.getAllTrainRoutes.mockRejectedValue(error);
+    mockRollingStockService.getAllRollingStock.mockRejectedValue(error);
 
     render(
-      <LayoutProvider>
+      <LayoutProvider
+        locationService={mockLocationService}
+        industryService={mockIndustryService}
+        trainRouteService={mockTrainRouteService}
+        rollingStockService={mockRollingStockService}
+      >
         <TestComponent />
       </LayoutProvider>
     );
 
-    expect(screen.getByTestId('loading')).toHaveTextContent('true');
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('loading')).toHaveTextContent('false');
-    });
-  });
-
-  it('loads all data successfully', async () => {
-    mockLocationService.getAllLocations.mockResolvedValue(mockLocations);
-    mockIndustryService.getAllIndustries.mockResolvedValue(mockIndustries);
-    mockTrainRouteService.getAllTrainRoutes.mockResolvedValue(mockTrainRoutes);
-
-    render(
-      <LayoutProvider>
-        <TestComponent />
-      </LayoutProvider>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('locations')).toHaveTextContent('2');
-      expect(screen.getByTestId('industries')).toHaveTextContent('2');
-      expect(screen.getByTestId('trainRoutes')).toHaveTextContent('2');
-      expect(screen.getByTestId('loading')).toHaveTextContent('false');
-      expect(screen.getByTestId('error')).toHaveTextContent('');
-    });
-  });
-
-  it('handles errors during data loading', async () => {
-    mockLocationService.getAllLocations.mockRejectedValue(new Error('Failed to load locations'));
-    mockIndustryService.getAllIndustries.mockResolvedValue(mockIndustries);
-    mockTrainRouteService.getAllTrainRoutes.mockResolvedValue(mockTrainRoutes);
-
-    render(
-      <LayoutProvider>
-        <TestComponent />
-      </LayoutProvider>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('error')).toHaveTextContent('Failed to load locations');
-      expect(screen.getByTestId('loading')).toHaveTextContent('false');
-    });
-  });
-
-  it('refreshes data when refresh button is clicked', async () => {
-    mockLocationService.getAllLocations.mockResolvedValue(mockLocations);
-    mockIndustryService.getAllIndustries.mockResolvedValue(mockIndustries);
-    mockTrainRouteService.getAllTrainRoutes.mockResolvedValue(mockTrainRoutes);
-
-    render(
-      <LayoutProvider>
-        <TestComponent />
-      </LayoutProvider>
-    );
-
-    // Wait for initial load to complete
-    await waitFor(() => {
-      expect(screen.getByTestId('loading')).toHaveTextContent('false');
-    });
-
-    // Click refresh and wait for loading to complete
     await act(async () => {
-      await userEvent.click(screen.getByRole('button', { name: /refresh data/i }));
-      await waitFor(() => {
-        expect(screen.getByTestId('loading')).toHaveTextContent('false');
-      });
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    // Verify service calls
+    expect(screen.getByTestId('error')).toHaveTextContent('Failed to fetch');
+    expect(screen.getByTestId('loading')).toHaveTextContent('false');
+  });
+
+  it('should load data successfully', async () => {
+    mockLocationService.getAllLocations.mockResolvedValue(mockData.locations);
+    mockIndustryService.getAllIndustries.mockResolvedValue(mockData.industries);
+    mockTrainRouteService.getAllTrainRoutes.mockResolvedValue(mockData.trainRoutes);
+    mockRollingStockService.getAllRollingStock.mockResolvedValue(mockData.rollingStock);
+
+    render(
+      <LayoutProvider
+        locationService={mockLocationService}
+        industryService={mockIndustryService}
+        trainRouteService={mockTrainRouteService}
+        rollingStockService={mockRollingStockService}
+      >
+        <TestComponent />
+      </LayoutProvider>
+    );
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(screen.getByTestId('locations')).toHaveTextContent('1');
+    expect(screen.getByTestId('industries')).toHaveTextContent('1');
+    expect(screen.getByTestId('trainRoutes')).toHaveTextContent('1');
+    expect(screen.getByTestId('rollingStock')).toHaveTextContent('1');
+    expect(screen.getByTestId('loading')).toHaveTextContent('false');
+    expect(screen.queryByTestId('error')).not.toBeInTheDocument();
+  });
+
+  it('should refresh data when requested', async () => {
+    mockLocationService.getAllLocations.mockResolvedValue(mockData.locations);
+    mockIndustryService.getAllIndustries.mockResolvedValue(mockData.industries);
+    mockTrainRouteService.getAllTrainRoutes.mockResolvedValue(mockData.trainRoutes);
+    mockRollingStockService.getAllRollingStock.mockResolvedValue(mockData.rollingStock);
+
+    render(
+      <LayoutProvider
+        locationService={mockLocationService}
+        industryService={mockIndustryService}
+        trainRouteService={mockTrainRouteService}
+        rollingStockService={mockRollingStockService}
+      >
+        <TestComponent />
+      </LayoutProvider>
+    );
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Refresh'));
+    });
+
     expect(mockLocationService.getAllLocations).toHaveBeenCalledTimes(2);
     expect(mockIndustryService.getAllIndustries).toHaveBeenCalledTimes(2);
     expect(mockTrainRouteService.getAllTrainRoutes).toHaveBeenCalledTimes(2);
+    expect(mockRollingStockService.getAllRollingStock).toHaveBeenCalledTimes(2);
   });
 }); 

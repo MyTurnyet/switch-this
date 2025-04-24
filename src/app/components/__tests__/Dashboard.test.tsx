@@ -16,6 +16,7 @@ describe('Dashboard', () => {
       locations: [],
       industries: [],
       trainRoutes: [],
+      rollingStock: [],
       error: null,
       isLoading: false,
       refreshData: mockRefreshData
@@ -37,6 +38,7 @@ describe('Dashboard', () => {
         locations: [],
         industries: [],
         trainRoutes: [],
+        rollingStock: [],
         error: null,
         isLoading: true,
         refreshData: mockRefreshData
@@ -44,7 +46,7 @@ describe('Dashboard', () => {
 
       render(<Dashboard />);
       const loadingElements = screen.getAllByText('...');
-      expect(loadingElements).toHaveLength(3);
+      expect(loadingElements).toHaveLength(4);
       loadingElements.forEach(element => {
         expect(element).toHaveClass('animate-pulse');
       });
@@ -58,6 +60,7 @@ describe('Dashboard', () => {
         locations: [],
         industries: [],
         trainRoutes: [],
+        rollingStock: [],
         error: errorMessage,
         isLoading: false,
         refreshData: mockRefreshData
@@ -76,6 +79,7 @@ describe('Dashboard', () => {
         locations: [{ _id: '1' }, { _id: '2' }],
         industries: [{ _id: '1' }],
         trainRoutes: [{ _id: '1' }, { _id: '2' }, { _id: '3' }],
+        rollingStock: [{ _id: '1' }, { _id: '2' }, { _id: '3' }, { _id: '4' }],
         error: null,
         isLoading: false,
         refreshData: mockRefreshData
@@ -87,24 +91,26 @@ describe('Dashboard', () => {
 
       // Verify grid layout
       const grid = screen.getByTestId('dashboard-grid');
-      expect(grid).toHaveClass('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-6');
+      expect(grid).toHaveClass('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-4', 'gap-6');
 
       // Verify counts
       expect(screen.getByText('2')).toBeInTheDocument(); // Locations count
       expect(screen.getByText('1')).toBeInTheDocument(); // Industries count
       expect(screen.getByText('3')).toBeInTheDocument(); // Train routes count
+      expect(screen.getByText('4')).toBeInTheDocument(); // Rolling stock count
 
       // Verify labels
       expect(screen.getByText('Locations')).toBeInTheDocument();
       expect(screen.getByText('Industries')).toBeInTheDocument();
       expect(screen.getByText('Train Routes')).toBeInTheDocument();
+      expect(screen.getByText('Rolling Stock')).toBeInTheDocument();
     });
 
     it('displays zero counts when arrays are empty', () => {
       render(<Dashboard />);
       
       const counts = screen.getAllByText('0');
-      expect(counts).toHaveLength(3);
+      expect(counts).toHaveLength(4);
     });
 
     it('displays zero counts when data is null', () => {
@@ -112,6 +118,7 @@ describe('Dashboard', () => {
         locations: null,
         industries: null,
         trainRoutes: null,
+        rollingStock: null,
         error: null,
         isLoading: false,
         refreshData: mockRefreshData
@@ -120,7 +127,7 @@ describe('Dashboard', () => {
       render(<Dashboard />);
       
       const counts = screen.getAllByText('0');
-      expect(counts).toHaveLength(3);
+      expect(counts).toHaveLength(4);
     });
   });
 }); 
