@@ -2,16 +2,13 @@ import { Box, Typography, Chip } from '@mui/material';
 import { Industry as IndustryType, RollingStock } from '@shared/types/models';
 import { FC } from 'react';
 import { TrackDisplay } from './TrackDisplay';
-import { LayoutState } from '@state/layout-state';
 
 interface IndustryDisplayProps {
   industry: IndustryType;
   rollingStock: Record<string, RollingStock>;
-  carsAtLocation: string[];
-  layoutState: LayoutState;
 }
 
-export const IndustryDisplay: FC<IndustryDisplayProps> = ({ industry, rollingStock, carsAtLocation, layoutState }) => {
+export const IndustryDisplay: FC<IndustryDisplayProps> = ({ industry, rollingStock }) => {
   const getIndustryTypeColor = (type: string) => {
     switch (type) {
       case 'FREIGHT':
@@ -26,7 +23,6 @@ export const IndustryDisplay: FC<IndustryDisplayProps> = ({ industry, rollingSto
   return (
     <Box 
       sx={{ 
-        ml: 2, 
         mb: 3,
         p: 2,
         bgcolor: 'background.paper',
@@ -49,7 +45,6 @@ export const IndustryDisplay: FC<IndustryDisplayProps> = ({ industry, rollingSto
           key={track._id.$oid}
           track={track}
           rollingStock={rollingStock}
-          carsAtLocation={carsAtLocation}
         />
       ))}
     </Box>

@@ -1,52 +1,41 @@
-import { Typography, Paper, List, ListItem } from '@mui/material';
-import { Location as LocationType, Industry as IndustryType, RollingStock } from '@shared/types/models';
+import { Box, Typography, List } from '@mui/material';
+import { Location, Industry, RollingStock } from '@shared/types/models';
 import { FC } from 'react';
 import { LocationDisplay } from './LocationDisplay';
-import { LayoutState } from '@state/layout-state';
 
 interface BlockDisplayProps {
   block: string;
-  locations: LocationType[];
-  industries: IndustryType[];
+  locations: Location[];
+  industries: Industry[];
   rollingStock: Record<string, RollingStock>;
-  layoutState: LayoutState;
 }
 
-export const BlockDisplay: FC<BlockDisplayProps> = ({ block, locations, industries, rollingStock, layoutState }) => {
+export const BlockDisplay: FC<BlockDisplayProps> = ({ block, locations, industries, rollingStock }) => {
   return (
-    <Paper 
-      sx={{ 
-        mb: 4, 
-        p: 3,
-        bgcolor: 'background.paper',
-        borderRadius: 2,
-        boxShadow: 2
-      }}
-    >
-      <Typography 
-        variant="h5" 
-        component="h2" 
-        sx={{ 
-          mb: 3,
-          color: 'primary.main',
-          fontWeight: 'bold'
-        }}
-      >
-        {block} Block
+    <Box sx={{ mb: 4 }}>
+      <Typography variant="h5" sx={{ mb: 2 }}>
+        Block {block}
       </Typography>
-      <List sx={{ p: 0 }}>
+      <List>
         {locations.map((location, index) => (
-          <ListItem key={location._id.$oid} sx={{ display: 'block', p: 0 }}>
+          <Box 
+            key={location._id.$oid} 
+            component="li" 
+            sx={{ 
+              display: 'block', 
+              py: 2,
+              listStyle: 'none',
+              borderBottom: index < locations.length - 1 ? '1px solid rgba(0, 0, 0, 0.12)' : 'none'
+            }}
+          >
             <LocationDisplay
               location={location}
               industries={industries.filter(i => i.locationId.$oid === location._id.$oid)}
               rollingStock={rollingStock}
-              layoutState={layoutState}
             />
-            {index < locations.length - 1 && <ListItem divider />}
-          </ListItem>
+          </Box>
         ))}
       </List>
-    </Paper>
+    </Box>
   );
 }; 
