@@ -23,37 +23,6 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
   industries,
   rollingStock = {} 
 }) => {
-  const getCarsAtLocation = (carId: string): RollingStock | undefined => {
-    return rollingStock[carId];
-  };
-
-  const getTrackInfo = (track: { name: string; maxCars: { $numberInt: string }; placedCars: string[] }) => {
-    const placedCars = track.placedCars.map(carId => {
-      const car = getCarsAtLocation(carId);
-      return car ? `${car.roadName} ${car.roadNumber} - ${car.description}` : carId;
-    });
-
-    return {
-      name: track.name,
-      maxCars: parseInt(track.maxCars.$numberInt),
-      placedCars
-    };
-  };
-
-  const blockLocations = useMemo(() => {
-    return locations.reduce((acc: Record<string, Location[]>, location: Location) => {
-      if (!acc[location.block]) {
-        acc[location.block] = [];
-      }
-      acc[location.block].push(location);
-      return acc;
-    }, {});
-  }, [locations]);
-
-  const getIndustriesAtLocation = (locationId: string): Industry[] => {
-    return industries.filter((industry: Industry) => industry.locationId.$oid === locationId);
-  };
-
   // Group locations and industries by block
   const locationsByBlock = useMemo(() => {
     // First, create a map of locations with their industries
@@ -76,8 +45,8 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
   }, [locations, industries]);
 
   const renderTrack = (track: Industry['tracks'][0], locationId: string) => {
-    const carCount = track.placedCars.length;
-    const maxCars = parseInt(track.maxCars.$numberInt);
+    const carCount = track.placedCars?.length || 0;
+    const maxCars = track.maxCars?.$numberInt ? Number(track.maxCars.$numberInt) || 0 : 0;
     const carsAtLocation = layoutState.getCarsAtLocation(locationId);
     
     return (
@@ -85,7 +54,7 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
         <Box component="div" sx={{ mb: 0.5 }}>
           {track.name} ({carCount}/{maxCars} cars)
         </Box>
-        {track.placedCars.map(carId => {
+        {track.placedCars?.map(carId => {
           const car = rollingStock[carId];
           const isAtLocation = carsAtLocation.includes(carId);
           return (

@@ -245,6 +245,63 @@ describe('CurrentLayoutState', () => {
     expect(screen.getByText(`${mockRollingStock['car1'].roadName} ${mockRollingStock['car1'].roadNumber} - ${mockRollingStock['car1'].description}`)).toBeInTheDocument();
   });
 
+  it('should handle tracks with undefined or null data', () => {
+    const industryWithInvalidTrack: Industry = {
+      ...mockIndustry,
+      tracks: [
+        {
+          _id: { $oid: 'test-track-1' },
+          name: 'Track 1',
+          maxCars: undefined as unknown as { $numberInt: string },
+          placedCars: undefined as unknown as string[]
+        },
+        {
+          _id: { $oid: 'test-track-2' },
+          name: 'Track 2',
+          maxCars: null as unknown as { $numberInt: string },
+          placedCars: null as unknown as string[]
+        }
+      ]
+    };
+    
+    render(
+      <CurrentLayoutState 
+        layoutState={new LayoutState()} 
+        locations={[mockLocation]}
+        industries={[industryWithInvalidTrack]}
+        rollingStock={mockRollingStock}
+      />
+    );
+    
+    expect(screen.getByText('Track 1 (0/0 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Track 2 (0/0 cars)')).toBeInTheDocument();
+  });
+
+  it('should handle tracks with invalid maxCars format', () => {
+    const industryWithInvalidMaxCars: Industry = {
+      ...mockIndustry,
+      tracks: [
+        {
+          _id: { $oid: 'test-track-1' },
+          name: 'Track 1',
+          maxCars: { $numberInt: 'invalid' },
+          placedCars: []
+        }
+      ]
+    };
+    
+    render(
+      <CurrentLayoutState 
+        layoutState={new LayoutState()} 
+        locations={[mockLocation]}
+        industries={[industryWithInvalidMaxCars]}
+        rollingStock={mockRollingStock}
+      />
+    );
+    
+    expect(screen.getByText('Track 1 (0/0 cars)')).toBeInTheDocument();
+  });
+
   it('should display industry type chip', () => {
     render(
       <CurrentLayoutState 
