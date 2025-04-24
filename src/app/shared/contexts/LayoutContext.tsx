@@ -75,9 +75,9 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
     rollingStockService: injectedRollingStockService || new RollingStockService()
   }), [injectedLocationService, injectedIndustryService, injectedTrainRouteService, injectedRollingStockService]);
 
-  const fetchData = useMemo(() => async () => {
-    if (initialState) {
-      return; // Don't fetch if we have initial state
+  const fetchData = useMemo(() => async (forceRefresh = false) => {
+    if (initialState && !forceRefresh) {
+      return; // Don't fetch if we have initial state and not forcing refresh
     }
     setIsLoading(true);
     setError('');
@@ -103,7 +103,7 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
 
   useEffect(() => {
     if (!initialState && !cache.isDataLoaded()) {
-      fetchData();
+      fetchData(false);
     } else {
       setIsLoading(false);
     }
@@ -116,7 +116,7 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
     rollingStock: cache.getRollingStock(),
     error,
     isLoading,
-    refreshData: fetchData
+    refreshData: () => fetchData(true)
   }), [cache, error, isLoading, fetchData]);
 
   return (
