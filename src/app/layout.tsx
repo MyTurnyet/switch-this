@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { LayoutProvider } from './shared/contexts/LayoutContext';
+import Header from '@/shared/components/Header';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,7 +22,10 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <LayoutProvider>
-          {children}
+          <Header />
+          <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+            {children}
+          </main>
         </LayoutProvider>
       </body>
     </html>
