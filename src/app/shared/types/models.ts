@@ -37,6 +37,6 @@ export interface RollingStock {
   description: string;
   color: string;
   note: string;
-  homeYard: string;
+  homeYard: MongoId;
   ownerId: string;
 } 
