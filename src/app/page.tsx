@@ -1,25 +1,35 @@
 'use client';
 
 import React from 'react';
-import { Container, Box, Typography } from '@mui/material';
-import { FeatureCard } from './shared/components/FeatureCard';
-import Dashboard from './components/Dashboard';
+import { Box, Container, Typography } from '@mui/material';
+import { FeatureCard } from '@app/shared/components/FeatureCard';
+import { Feature } from '@app/shared/types/feature';
+import Dashboard from '@app/components/Dashboard';
 import locationsData from '@data/locations.json';
 import industriesData from '@data/industries.json';
 import rollingStockData from '@data/rolling-stock.json';
 
-const features = [
+const features: Feature[] = [
   {
+    id: 'switchlist',
     title: 'Switchlist Management',
-    description: 'Create, edit, and organize your switchlists with an intuitive interface.'
+    description: 'Create, edit, and organize your switchlists with an intuitive interface.',
+    icon: 'list',
+    status: 'active' as const
   },
   {
+    id: 'rolling-stock',
     title: 'Rolling Stock Tracking',
-    description: 'Keep detailed records of your locomotives and cars with ease.'
+    description: 'Keep detailed records of your locomotives and cars with ease.',
+    icon: 'train',
+    status: 'active' as const
   },
   {
+    id: 'operations',
     title: 'Operations Planning',
-    description: 'Plan and optimize your railroad operations efficiently.'
+    description: 'Plan and optimize your railroad operations efficiently.',
+    icon: 'schedule',
+    status: 'active' as const
   }
 ];
 
@@ -85,8 +95,7 @@ export default function Home() {
           {features.map((feature, index) => (
             <Box key={index}>
               <FeatureCard
-                title={feature.title}
-                description={feature.description}
+                feature={feature}
               />
             </Box>
           ))}

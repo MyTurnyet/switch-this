@@ -2,8 +2,8 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CurrentLayoutState from '../current-layout-state';
-import { LayoutState } from '../../../state/layout-state';
-import { Location, Industry, RollingStock } from '../../../app/shared/types/models';
+import { LayoutState } from '@state/layout-state';
+import { Location, Industry, RollingStock } from '@shared/types/models';
 
 describe('CurrentLayoutState', () => {
   const mockLayoutState = {

@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import { Feature } from '../types/feature';
 
 interface FeatureCardProps {
-  title: string;
-  description: string;
+  feature: Feature;
 }
 
-export const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) => {
+export const FeatureCard = ({ feature }: FeatureCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -33,18 +33,18 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) 
       onMouseLeave={() => setIsHovered(false)}
     >
       <CardContent>
-        <Typography
-          variant="h5"
-          component="h2"
-          gutterBottom
-          sx={{
-            color: isHovered ? 'common.white' : 'primary.main',
-            fontWeight: 700,
-            transition: 'color 0.3s ease-in-out'
-          }}
-        >
-          {title}
-        </Typography>
+        <Box display="flex" alignItems="center" mb={2}>
+          <Typography
+            variant="h6"
+            sx={{
+              color: isHovered ? 'common.white' : 'primary.main',
+              fontWeight: 700,
+              transition: 'color 0.3s ease-in-out'
+            }}
+          >
+            {feature.title}
+          </Typography>
+        </Box>
         <Typography
           variant="body1"
           sx={{
@@ -54,7 +54,10 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({ title, description }) 
             transition: 'color 0.3s ease-in-out'
           }}
         >
-          {description}
+          {feature.description}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" mt={2}>
+          Status: {feature.status}
         </Typography>
       </CardContent>
     </Card>

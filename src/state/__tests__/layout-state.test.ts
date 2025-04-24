@@ -1,4 +1,4 @@
-import { LayoutState } from '../layout-state';
+import { LayoutState } from '@state/layout-state';
 import { Location, RollingStock } from '@shared/types/models';
 
 describe('LayoutState', () => {
