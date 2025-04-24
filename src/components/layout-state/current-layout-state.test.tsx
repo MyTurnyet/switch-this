@@ -372,4 +372,46 @@ describe('CurrentLayoutState', () => {
     expect(screen.getByText('Medium Track (0/5 cars)')).toBeInTheDocument();
     expect(screen.getByText('Large Track (0/10 cars)')).toBeInTheDocument();
   });
+
+  it('should display correct maxCars for industry fetched from MongoDB', () => {
+    // This simulates an industry document as it would come from MongoDB
+    const mongoIndustry: Industry = {
+      _id: { $oid: 'mongo-industry-1' },
+      name: 'Weyerhaeuser',
+      industryType: 'FREIGHT',
+      locationId: { $oid: 'loc1' },
+      ownerId: { $oid: 'owner1' },
+      tracks: [
+        {
+          _id: { $oid: '67d9f9e6da5d86ace37386c3' },
+          name: 'shipping',
+          maxCars: { $numberInt: '3' },
+          placedCars: []
+        },
+        {
+          _id: { $oid: '67d9f9e6da5d86ace37386c4' },
+          name: 'receiving',
+          maxCars: { $numberInt: '5' },
+          placedCars: []
+        }
+      ]
+    };
+
+    render(
+      <CurrentLayoutState 
+        layoutState={new LayoutState()} 
+        locations={[mockLocation]}
+        industries={[mongoIndustry]}
+        rollingStock={mockRollingStock}
+      />
+    );
+    
+    // Verify the track capacities are displayed correctly
+    expect(screen.getByText('shipping (0/3 cars)')).toBeInTheDocument();
+    expect(screen.getByText('receiving (0/5 cars)')).toBeInTheDocument();
+    
+    // Verify other industry details are displayed correctly
+    expect(screen.getByText('Weyerhaeuser')).toBeInTheDocument();
+    expect(screen.getByText('FREIGHT')).toBeInTheDocument();
+  });
 }); 
