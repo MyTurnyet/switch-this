@@ -18,6 +18,17 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@pages/*": ["src/pages/*"],
+      "@types/*": ["src/types/*"],
+      "@state/*": ["src/state/*"],
+      "@app/*": ["src/app/*"],
+      "@test/*": ["src/test/*"],
+      "@data/*": ["src/data/*"]
+    },
     "types": [
       "jest",
       "node"

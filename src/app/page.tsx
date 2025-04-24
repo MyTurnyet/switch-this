@@ -4,9 +4,9 @@ import React from 'react';
 import { Container, Box, Typography } from '@mui/material';
 import { FeatureCard } from './shared/components/FeatureCard';
 import Dashboard from './components/Dashboard';
-import locationsData from '../data/locations.json';
-import industriesData from '../data/industries.json';
-import rollingStockData from '../data/rolling-stock.json';
+import locationsData from '@data/locations.json';
+import industriesData from '@data/industries.json';
+import rollingStockData from '@data/rolling-stock.json';
 
 const features = [
   {

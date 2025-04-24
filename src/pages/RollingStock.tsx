@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Box, Container, Typography, Card, CardContent, Chip, FormControl, InputLabel, Select, MenuItem, OutlinedInput, SelectChangeEvent } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import rollingStockData from '../data/rolling-stock.json';
+import rollingStockData from '@data/rolling-stock.json';
 
 const RollingStockPage: React.FC = () => {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
