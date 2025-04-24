@@ -46,7 +46,7 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
 
   const renderTrack = (track: Industry['tracks'][0], locationId: string) => {
     const carCount = track.placedCars?.length || 0;
-    const maxCars = track.maxCars?.$numberInt ? Number(track.maxCars.$numberInt) || 0 : 0;
+    const maxCars = track.maxCars?.$numberInt ? parseInt(track.maxCars.$numberInt) || 0 : 0;
     const carsAtLocation = layoutState.getCarsAtLocation(locationId);
     
     return (

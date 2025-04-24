@@ -333,4 +333,43 @@ describe('CurrentLayoutState', () => {
     expect(screen.getByText('Empty Station')).toBeInTheDocument();
     expect(screen.getByText('No industries')).toBeInTheDocument();
   });
+
+  it('should display correct maxCars for tracks with different capacities', () => {
+    const industryWithVariousCapacities: Industry = {
+      ...mockIndustry,
+      tracks: [
+        {
+          _id: { $oid: 'test-track-1' },
+          name: 'Small Track',
+          maxCars: { $numberInt: '2' },
+          placedCars: []
+        },
+        {
+          _id: { $oid: 'test-track-2' },
+          name: 'Medium Track',
+          maxCars: { $numberInt: '5' },
+          placedCars: []
+        },
+        {
+          _id: { $oid: 'test-track-3' },
+          name: 'Large Track',
+          maxCars: { $numberInt: '10' },
+          placedCars: []
+        }
+      ]
+    };
+    
+    render(
+      <CurrentLayoutState 
+        layoutState={new LayoutState()} 
+        locations={[mockLocation]}
+        industries={[industryWithVariousCapacities]}
+        rollingStock={mockRollingStock}
+      />
+    );
+    
+    expect(screen.getByText('Small Track (0/2 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Medium Track (0/5 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Large Track (0/10 cars)')).toBeInTheDocument();
+  });
 }); 
