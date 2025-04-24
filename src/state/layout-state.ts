@@ -1,3 +1,5 @@
+import { MongoId } from '@shared/types/models';
+
 export class LayoutState {
   private carPositions: Record<string, string> = {};
   private locationCars: Record<string, string[]> = {};
@@ -6,62 +8,73 @@ export class LayoutState {
     return { ...this.carPositions };
   }
 
-  getCarPosition(carId: string): string | undefined {
-    return this.carPositions[carId];
+  getCarPosition(carId: string | MongoId): string | undefined {
+    const id = typeof carId === 'string' ? carId : carId.$oid;
+    return this.carPositions[id];
   }
 
-  private removeCarFromLocation(carId: string, locationId: string): void {
-    if (this.locationCars[locationId]) {
-      this.locationCars[locationId] = this.locationCars[locationId]
-        .filter(id => id !== carId);
+  private removeCarFromLocation(carId: string | MongoId, locationId: string | MongoId): void {
+    const carIdStr = typeof carId === 'string' ? carId : carId.$oid;
+    const locationIdStr = typeof locationId === 'string' ? locationId : locationId.$oid;
+    if (this.locationCars[locationIdStr]) {
+      this.locationCars[locationIdStr] = this.locationCars[locationIdStr]
+        .filter(id => id !== carIdStr);
     }
   }
 
-  private addCarToLocation(carId: string, locationId: string): void {
-    if (!this.locationCars[locationId]) {
-      this.locationCars[locationId] = [];
+  private addCarToLocation(carId: string | MongoId, locationId: string | MongoId): void {
+    const carIdStr = typeof carId === 'string' ? carId : carId.$oid;
+    const locationIdStr = typeof locationId === 'string' ? locationId : locationId.$oid;
+    if (!this.locationCars[locationIdStr]) {
+      this.locationCars[locationIdStr] = [];
     }
-    this.locationCars[locationId].push(carId);
+    this.locationCars[locationIdStr].push(carIdStr);
   }
 
-  setCarPosition(carId: string, locationId: string): void {
-    const previousLocation = this.carPositions[carId];
+  setCarPosition(carId: string | MongoId, locationId: string | MongoId): void {
+    const carIdStr = typeof carId === 'string' ? carId : carId.$oid;
+    const locationIdStr = typeof locationId === 'string' ? locationId : locationId.$oid;
+    const previousLocation = this.carPositions[carIdStr];
     
     if (previousLocation) {
-      this.removeCarFromLocation(carId, previousLocation);
+      this.removeCarFromLocation(carIdStr, previousLocation);
     }
 
-    this.carPositions[carId] = locationId;
-    this.addCarToLocation(carId, locationId);
+    this.carPositions[carIdStr] = locationIdStr;
+    this.addCarToLocation(carIdStr, locationIdStr);
   }
 
-  private clearCarPositions(carIds: string[]): void {
+  private clearCarPositions(carIds: (string | MongoId)[]): void {
     carIds.forEach(carId => {
-      const currentLocation = this.carPositions[carId];
+      const carIdStr = typeof carId === 'string' ? carId : carId.$oid;
+      const currentLocation = this.carPositions[carIdStr];
       if (currentLocation) {
-        this.removeCarFromLocation(carId, currentLocation);
+        this.removeCarFromLocation(carIdStr, currentLocation);
       }
     });
   }
 
-  setCarPositions(carPositions: Record<string, string>): void {
+  setCarPositions(carPositions: Record<string, string | MongoId>): void {
     const carIds = Object.keys(carPositions);
     this.clearCarPositions(carIds);
 
     Object.entries(carPositions).forEach(([carId, locationId]) => {
-      this.carPositions[carId] = locationId;
-      this.addCarToLocation(carId, locationId);
+      const locationIdStr = typeof locationId === 'string' ? locationId : locationId.$oid;
+      this.carPositions[carId] = locationIdStr;
+      this.addCarToLocation(carId, locationIdStr);
     });
   }
 
-  getCarsAtLocation(locationId: string): string[] {
-    return [...(this.locationCars[locationId] || [])];
+  getCarsAtLocation(locationId: string | MongoId): string[] {
+    const locationIdStr = typeof locationId === 'string' ? locationId : locationId.$oid;
+    return [...(this.locationCars[locationIdStr] || [])];
   }
 
-  getEmptyLocations(locationIds: string[]): string[] {
-    return locationIds.filter(locationId => {
-      const cars = this.locationCars[locationId];
-      return !cars || cars.length === 0;
-    });
+  getEmptyLocations(locationIds: (string | MongoId)[]): string[] {
+    return locationIds.map(id => typeof id === 'string' ? id : id.$oid)
+      .filter(locationId => {
+        const cars = this.locationCars[locationId];
+        return !cars || cars.length === 0;
+      });
   }
 } 

@@ -1,4 +1,4 @@
-import { Box, Typography, Paper, List, Divider } from '@mui/material';
+import { Typography, Paper, List, ListItem } from '@mui/material';
 import { Location as LocationType, Industry as IndustryType, RollingStock } from '@shared/types/models';
 import { FC } from 'react';
 import { LocationDisplay } from './LocationDisplay';
@@ -36,15 +36,15 @@ export const BlockDisplay: FC<BlockDisplayProps> = ({ block, locations, industri
       </Typography>
       <List sx={{ p: 0 }}>
         {locations.map((location, index) => (
-          <Box key={location._id.$oid}>
+          <ListItem key={location._id.$oid} sx={{ display: 'block', p: 0 }}>
             <LocationDisplay
               location={location}
               industries={industries.filter(i => i.locationId.$oid === location._id.$oid)}
               rollingStock={rollingStock}
               layoutState={layoutState}
             />
-            {index < locations.length - 1 && <Divider />}
-          </Box>
+            {index < locations.length - 1 && <ListItem divider />}
+          </ListItem>
         ))}
       </List>
     </Paper>

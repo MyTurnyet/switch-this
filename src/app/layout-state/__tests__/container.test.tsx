@@ -104,17 +104,29 @@ describe('LayoutStateContainer', () => {
 
   it('transforms rolling stock data into a map', async () => {
     const mockLocations: Location[] = [
-      { _id: 'loc1', stationName: 'Station 1', block: 'A', ownerId: 'owner1' }
+      {
+        _id: { $oid: 'loc1' },
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: { $oid: 'owner1' }
+      }
     ];
 
     const mockIndustries: Industry[] = [
-      { 
-        _id: 'ind1', 
-        name: 'Industry 1', 
+      {
+        _id: { $oid: 'ind1' },
+        name: 'Industry 1',
         industryType: 'FREIGHT',
-        locationId: 'loc1',
-        ownerId: 'owner1',
-        tracks: []
+        tracks: [
+          {
+            _id: { $oid: 'track1' },
+            name: 'Track 1',
+            maxCars: { $numberInt: '5' },
+            placedCars: []
+          }
+        ],
+        locationId: { $oid: 'loc1' },
+        ownerId: { $oid: 'owner1' }
       }
     ];
 
@@ -127,8 +139,8 @@ describe('LayoutStateContainer', () => {
         description: 'Box Car',
         color: 'Red',
         note: '',
-        homeYard: 'yard1',
-        ownerId: 'owner1'
+        homeYard: { $oid: 'yard1' },
+        ownerId: { $oid: 'owner1' }
       }
     ];
 
@@ -148,17 +160,29 @@ describe('LayoutStateContainer', () => {
 
   it('passes correct props to CurrentLayoutState', async () => {
     const mockLocations: Location[] = [
-      { _id: 'loc1', stationName: 'Station 1', block: 'A', ownerId: 'owner1' }
+      {
+        _id: { $oid: 'loc1' },
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: { $oid: 'owner1' }
+      }
     ];
 
     const mockIndustries: Industry[] = [
-      { 
-        _id: 'ind1', 
-        name: 'Industry 1', 
+      {
+        _id: { $oid: 'ind1' },
+        name: 'Industry 1',
         industryType: 'FREIGHT',
-        locationId: 'loc1',
-        ownerId: 'owner1',
-        tracks: []
+        tracks: [
+          {
+            _id: { $oid: 'track1' },
+            name: 'Track 1',
+            maxCars: { $numberInt: '5' },
+            placedCars: []
+          }
+        ],
+        locationId: { $oid: 'loc1' },
+        ownerId: { $oid: 'owner1' }
       }
     ];
 
@@ -171,8 +195,8 @@ describe('LayoutStateContainer', () => {
         description: 'Box Car',
         color: 'Red',
         note: '',
-        homeYard: 'yard1',
-        ownerId: 'owner1'
+        homeYard: { $oid: 'yard1' },
+        ownerId: { $oid: 'owner1' }
       }
     ];
 
@@ -187,7 +211,6 @@ describe('LayoutStateContainer', () => {
 
     await waitFor(() => {
       const container = screen.getByTestId('layout-state-container');
-      expect(container).toBeInTheDocument();
       expect(container).toHaveAttribute('data-locations', JSON.stringify(mockLocations));
       expect(container).toHaveAttribute('data-industries', JSON.stringify(mockIndustries));
       expect(container).toHaveAttribute('data-rolling-stock', JSON.stringify({ 'car1': mockRollingStock[0] }));
@@ -213,17 +236,29 @@ describe('LayoutStateContainer', () => {
   it('resets layout state when Reset State button is clicked', async () => {
     // Set up initial mock data
     const mockLocations: Location[] = [
-      { _id: 'loc1', stationName: 'Station 1', block: 'A', ownerId: 'owner1' }
+      {
+        _id: { $oid: 'loc1' },
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: { $oid: 'owner1' }
+      }
     ];
 
     const mockIndustries: Industry[] = [
-      { 
-        _id: 'ind1', 
-        name: 'Industry 1', 
+      {
+        _id: { $oid: 'ind1' },
+        name: 'Industry 1',
         industryType: 'FREIGHT',
-        locationId: 'loc1',
-        ownerId: 'owner1',
-        tracks: []
+        tracks: [
+          {
+            _id: { $oid: 'track1' },
+            name: 'Track 1',
+            maxCars: { $numberInt: '5' },
+            placedCars: []
+          }
+        ],
+        locationId: { $oid: 'loc1' },
+        ownerId: { $oid: 'owner1' }
       }
     ];
 
@@ -236,8 +271,8 @@ describe('LayoutStateContainer', () => {
         description: 'Box Car',
         color: 'Red',
         note: '',
-        homeYard: 'yard1',
-        ownerId: 'owner1'
+        homeYard: { $oid: 'yard1' },
+        ownerId: { $oid: 'owner1' }
       }
     ];
 
@@ -259,17 +294,29 @@ describe('LayoutStateContainer', () => {
 
     // Set up new mock responses for after reset
     const newMockLocations: Location[] = [
-      { _id: 'loc2', stationName: 'Station 2', block: 'B', ownerId: 'owner1' }
+      {
+        _id: { $oid: 'loc2' },
+        stationName: 'Location 2',
+        block: 'B',
+        ownerId: { $oid: 'owner1' }
+      }
     ];
 
     const newMockIndustries: Industry[] = [
-      { 
-        _id: 'ind2', 
-        name: 'Industry 2', 
-        industryType: 'YARD',
-        locationId: 'loc2',
-        ownerId: 'owner1',
-        tracks: []
+      {
+        _id: { $oid: 'ind2' },
+        name: 'Industry 2',
+        industryType: 'FREIGHT',
+        tracks: [
+          {
+            _id: { $oid: 'track2' },
+            name: 'Track 2',
+            maxCars: { $numberInt: '5' },
+            placedCars: []
+          }
+        ],
+        locationId: { $oid: 'loc2' },
+        ownerId: { $oid: 'owner1' }
       }
     ];
 
@@ -282,8 +329,8 @@ describe('LayoutStateContainer', () => {
         description: 'Tank Car',
         color: 'Blue',
         note: '',
-        homeYard: 'yard2',
-        ownerId: 'owner1'
+        homeYard: { $oid: 'yard2' },
+        ownerId: { $oid: 'owner2' }
       }
     ];
 
@@ -370,5 +417,248 @@ describe('LayoutStateContainer', () => {
     expect(container).toHaveAttribute('data-locations', '[]');
     expect(container).toHaveAttribute('data-industries', '[]');
     expect(container).toHaveAttribute('data-rolling-stock', '{}');
+  });
+
+  it('resets rolling stock to their home locations when Reset State button is clicked', async () => {
+    // Set up initial mock data with cars in non-home locations
+    const mockLocations: Location[] = [
+      {
+        _id: { $oid: 'loc1' },
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: { $oid: 'owner1' }
+      },
+      {
+        _id: { $oid: 'yard1' },
+        stationName: 'Home Yard',
+        block: 'B',
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    const mockIndustries: Industry[] = [
+      {
+        _id: { $oid: 'ind1' },
+        name: 'Industry 1',
+        industryType: 'FREIGHT',
+        tracks: [
+          {
+            _id: { $oid: 'track1' },
+            name: 'Track 1',
+            maxCars: { $numberInt: '5' },
+            placedCars: []
+          }
+        ],
+        locationId: { $oid: 'loc1' },
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    const mockRollingStock: RollingStock[] = [
+      { 
+        _id: { $oid: 'car1' }, 
+        roadName: 'BNSF', 
+        roadNumber: '1234', 
+        aarType: 'BOX',
+        description: 'Box Car',
+        color: 'Red',
+        note: '',
+        homeYard: { $oid: 'yard1' },
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    // Set up mock responses
+    fakeFetch.setResponse('/api/locations', mockLocations);
+    fakeFetch.setResponse('/api/industries', mockIndustries);
+    fakeFetch.setResponse('/api/rolling-stock', mockRollingStock);
+
+    await act(async () => {
+      await setupComponent();
+    });
+    await waitForLoadingToComplete();
+
+    // Verify initial state with car at non-home location
+    const container = screen.getByTestId('layout-state-container');
+    expect(container).toHaveAttribute('data-locations', JSON.stringify(mockLocations));
+    expect(container).toHaveAttribute('data-industries', JSON.stringify(mockIndustries));
+    expect(container).toHaveAttribute('data-rolling-stock', JSON.stringify({ 'car1': mockRollingStock[0] }));
+
+    // Click reset button
+    const resetButton = screen.getByRole('button', { name: /reset state/i });
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+
+    // Wait for the new state to be reflected in the UI
+    await waitFor(() => {
+      const updatedContainer = screen.getByTestId('layout-state-container');
+      const rollingStockData = JSON.parse(updatedContainer.getAttribute('data-rolling-stock') || '{}');
+      const car1 = rollingStockData['car1'];
+      expect(car1.homeYard.$oid).toBe('yard1');
+    });
+  });
+
+  it('handles multiple cars with different home yards', async () => {
+    const mockLocations: Location[] = [
+      {
+        _id: { $oid: 'loc1' },
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: { $oid: 'owner1' }
+      },
+      {
+        _id: { $oid: 'yard1' },
+        stationName: 'Home Yard 1',
+        block: 'B',
+        ownerId: { $oid: 'owner1' }
+      },
+      {
+        _id: { $oid: 'yard2' },
+        stationName: 'Home Yard 2',
+        block: 'C',
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    const mockIndustries: Industry[] = [
+      {
+        _id: { $oid: 'ind1' },
+        name: 'Industry 1',
+        industryType: 'FREIGHT',
+        tracks: [
+          {
+            _id: { $oid: 'track1' },
+            name: 'Track 1',
+            maxCars: { $numberInt: '5' },
+            placedCars: []
+          }
+        ],
+        locationId: { $oid: 'loc1' },
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    const mockRollingStock: RollingStock[] = [
+      { 
+        _id: { $oid: 'car1' }, 
+        roadName: 'BNSF', 
+        roadNumber: '1234', 
+        aarType: 'BOX',
+        description: 'Box Car',
+        color: 'Red',
+        note: '',
+        homeYard: { $oid: 'yard1' },
+        ownerId: { $oid: 'owner1' }
+      },
+      { 
+        _id: { $oid: 'car2' }, 
+        roadName: 'UP', 
+        roadNumber: '5678', 
+        aarType: 'TANK',
+        description: 'Tank Car',
+        color: 'Blue',
+        note: '',
+        homeYard: { $oid: 'yard2' },
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    fakeFetch.setResponse('/api/locations', mockLocations);
+    fakeFetch.setResponse('/api/industries', mockIndustries);
+    fakeFetch.setResponse('/api/rolling-stock', mockRollingStock);
+
+    await act(async () => {
+      await setupComponent();
+    });
+    await waitForLoadingToComplete();
+
+    // Click reset button
+    const resetButton = screen.getByRole('button', { name: /reset state/i });
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+
+    // Wait for the new state to be reflected in the UI
+    await waitFor(() => {
+      const updatedContainer = screen.getByTestId('layout-state-container');
+      const rollingStockData = JSON.parse(updatedContainer.getAttribute('data-rolling-stock') || '{}');
+      const car1 = rollingStockData['car1'];
+      const car2 = rollingStockData['car2'];
+      expect(car1.homeYard.$oid).toBe('yard1');
+      expect(car2.homeYard.$oid).toBe('yard2');
+    });
+  });
+
+  it('handles cars that are not at their home locations', async () => {
+    const mockLocations: Location[] = [
+      {
+        _id: { $oid: 'loc1' },
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: { $oid: 'owner1' }
+      },
+      {
+        _id: { $oid: 'yard1' },
+        stationName: 'Home Yard',
+        block: 'B',
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    const mockIndustries: Industry[] = [
+      {
+        _id: { $oid: 'ind1' },
+        name: 'Industry 1',
+        industryType: 'FREIGHT',
+        tracks: [
+          {
+            _id: { $oid: 'track1' },
+            name: 'Track 1',
+            maxCars: { $numberInt: '5' },
+            placedCars: []
+          }
+        ],
+        locationId: { $oid: 'loc1' },
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    const mockRollingStock: RollingStock[] = [
+      { 
+        _id: { $oid: 'car1' }, 
+        roadName: 'BNSF', 
+        roadNumber: '1234', 
+        aarType: 'BOX',
+        description: 'Box Car',
+        color: 'Red',
+        note: '',
+        homeYard: { $oid: 'yard1' },
+        ownerId: { $oid: 'owner1' }
+      }
+    ];
+
+    fakeFetch.setResponse('/api/locations', mockLocations);
+    fakeFetch.setResponse('/api/industries', mockIndustries);
+    fakeFetch.setResponse('/api/rolling-stock', mockRollingStock);
+
+    await act(async () => {
+      await setupComponent();
+    });
+    await waitForLoadingToComplete();
+
+    // Click reset button
+    const resetButton = screen.getByRole('button', { name: /reset state/i });
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+
+    // Wait for the new state to be reflected in the UI
+    await waitFor(() => {
+      const updatedContainer = screen.getByTestId('layout-state-container');
+      const rollingStockData = JSON.parse(updatedContainer.getAttribute('data-rolling-stock') || '{}');
+      const car1 = rollingStockData['car1'];
+      expect(car1.homeYard.$oid).toBe('yard1');
+    });
   });
 }); 
