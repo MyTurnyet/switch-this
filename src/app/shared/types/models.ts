@@ -30,7 +30,7 @@ export interface Location {
 }
 
 export interface RollingStock {
-  _id: string;
+  _id: MongoId;
   roadName: string;
   roadNumber: string;
   aarType: string;

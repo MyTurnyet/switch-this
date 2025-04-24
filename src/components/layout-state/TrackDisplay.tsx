@@ -5,10 +5,9 @@ import { FC } from 'react';
 interface TrackDisplayProps {
   track: TrackType;
   rollingStock: Record<string, RollingStock>;
-  carsAtLocation: string[];
 }
 
-export const TrackDisplay: FC<TrackDisplayProps> = ({ track, rollingStock, carsAtLocation }) => {
+export const TrackDisplay: FC<TrackDisplayProps> = ({ track, rollingStock }) => {
   const placedCars = track.placedCars.map(carId => rollingStock[carId.$oid]).filter(Boolean);
   const maxCars = typeof track.maxCars === 'object' ? parseInt((track.maxCars as MongoNumber).$numberInt) : track.maxCars || 0;
   const currentCars = placedCars.length;
