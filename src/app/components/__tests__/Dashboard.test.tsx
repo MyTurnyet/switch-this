@@ -20,6 +20,9 @@ describe('Dashboard', () => {
       locationError: null,
       industryError: null,
       trainRouteError: null,
+      fetchLocations: jest.fn(),
+      fetchIndustries: jest.fn(),
+      fetchTrainRoutes: jest.fn(),
     });
   });
 
@@ -52,6 +55,9 @@ describe('Dashboard', () => {
       locationError: null,
       industryError: null,
       trainRouteError: null,
+      fetchLocations: jest.fn(),
+      fetchIndustries: jest.fn(),
+      fetchTrainRoutes: jest.fn(),
     });
 
     render(<Dashboard />);
@@ -69,9 +75,13 @@ describe('Dashboard', () => {
       locationError: 'Failed to load locations',
       industryError: null,
       trainRouteError: null,
+      fetchLocations: jest.fn(),
+      fetchIndustries: jest.fn(),
+      fetchTrainRoutes: jest.fn(),
     });
 
     render(<Dashboard />);
-    expect(screen.getByText('Error loading statistics')).toBeInTheDocument();
+    expect(screen.getByText('Unable to load dashboard data')).toBeInTheDocument();
+    expect(screen.getByText(/Failed to load locations/)).toBeInTheDocument();
   });
 }); 
