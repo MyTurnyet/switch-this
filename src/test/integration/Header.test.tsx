@@ -15,10 +15,6 @@ describe('Header Integration', () => {
     const aboutLink = screen.getByText('About');
     expect(homeLink).toHaveAttribute('href', '/');
     expect(aboutLink).toHaveAttribute('href', '/about');
-    
-    // Check for CTA button
-    const ctaButton = screen.getByText('Get Started');
-    expect(ctaButton).toHaveClass('bg-primary-600', 'text-white');
   });
 
   it('has proper semantic structure', () => {

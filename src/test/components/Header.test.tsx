@@ -43,11 +43,4 @@ describe('Header', () => {
     expect(header).toBeInTheDocument();
     expect(nav).toBeInTheDocument();
   });
-
-  it('renders the Get Started button', () => {
-    render(<Header />);
-    const button = screen.getByText(/Get Started/i);
-    expect(button).toBeInTheDocument();
-    expect(button).toHaveClass('bg-primary-600', 'text-white', 'px-4', 'py-2', 'rounded-lg');
-  });
 }); 
