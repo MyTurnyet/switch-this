@@ -6,11 +6,17 @@ import { Industry, Location } from '@shared/types/models';
 import industriesData from '@data/industries.json';
 import locationsData from '@data/locations.json';
 
+const isValidIndustryType = (type: string): type is Industry['industryType'] => {
+  return ['FREIGHT', 'YARD', 'PASSENGER'].includes(type);
+};
+
 export default function IndustriesPage() {
   const industriesByBlock = React.useMemo(() => {
     const grouped: Record<string, Record<string, Industry[]>> = {};
     
-    industriesData.forEach((industry: Industry) => {
+    industriesData.forEach((rawIndustry) => {
+      if (!isValidIndustryType(rawIndustry.industryType)) return;
+      const industry = rawIndustry as Industry;
       const location = locationsData.find((loc: Location) => loc._id.$oid === industry.locationId.$oid);
       if (!location) return;
       
