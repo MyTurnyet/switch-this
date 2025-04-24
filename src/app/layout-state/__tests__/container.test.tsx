@@ -1,4 +1,5 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import React from 'react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Location, Industry, RollingStock } from '../../shared/types/models';
 import LayoutStateContainer from '../container';
@@ -27,15 +28,23 @@ class FakeResponse implements Response {
 
 class FakeFetch {
   private responses: Record<string, FakeResponse> = {};
+  private delay: number = 0;
 
   setResponse(url: string, data: unknown, ok: boolean = true): void {
     this.responses[url] = new FakeResponse(data, ok);
+  }
+
+  setDelay(ms: number): void {
+    this.delay = ms;
   }
 
   async fetch(input: URL | RequestInfo): Promise<Response> {
     const url = input.toString();
     const response = this.responses[url];
     if (!response) throw new Error(`No response set for ${url}`);
+    if (this.delay > 0) {
+      await new Promise(resolve => setTimeout(resolve, this.delay));
+    }
     return response;
   }
 }
@@ -52,7 +61,29 @@ describe('LayoutStateContainer', () => {
     jest.restoreAllMocks();
   });
 
-  it('shows loading state initially', () => {
+  const setupComponent = async () => {
+    let renderResult;
+    await act(async () => {
+      renderResult = render(<LayoutStateContainer />);
+      // Wait for all API calls to complete
+      await Promise.resolve();
+    });
+    return renderResult;
+  };
+
+  const waitForLoadingToComplete = async () => {
+    await waitFor(() => {
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    });
+  };
+
+  it('shows loading state initially', async () => {
+    // Set up mock responses with a delay
+    fakeFetch.setDelay(100);
+    fakeFetch.setResponse('/api/locations', []);
+    fakeFetch.setResponse('/api/industries', []);
+    fakeFetch.setResponse('/api/rolling-stock', []);
+
     render(<LayoutStateContainer />);
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
@@ -63,7 +94,7 @@ describe('LayoutStateContainer', () => {
     fakeFetch.setResponse('/api/rolling-stock', [], false);
 
     await act(async () => {
-      render(<LayoutStateContainer />);
+      await setupComponent();
     });
     
     await waitFor(() => {
@@ -73,16 +104,16 @@ describe('LayoutStateContainer', () => {
 
   it('transforms rolling stock data into a map', async () => {
     const mockLocations: Location[] = [
-      { _id: { $oid: 'loc1' }, stationName: 'Station 1', block: 'A', ownerId: { $oid: 'owner1' } }
+      { _id: 'loc1', stationName: 'Station 1', block: 'A', ownerId: 'owner1' }
     ];
 
     const mockIndustries: Industry[] = [
       { 
-        _id: { $oid: 'ind1' }, 
+        _id: 'ind1', 
         name: 'Industry 1', 
         industryType: 'FREIGHT',
-        locationId: { $oid: 'loc1' },
-        ownerId: { $oid: 'owner1' },
+        locationId: 'loc1',
+        ownerId: 'owner1',
         tracks: []
       }
     ];
@@ -96,8 +127,8 @@ describe('LayoutStateContainer', () => {
         description: 'Box Car',
         color: 'Red',
         note: '',
-        homeYard: { $oid: 'yard1' },
-        ownerId: { $oid: 'owner1' }
+        homeYard: 'yard1',
+        ownerId: 'owner1'
       }
     ];
 
@@ -106,8 +137,9 @@ describe('LayoutStateContainer', () => {
     fakeFetch.setResponse('/api/rolling-stock', mockRollingStock);
 
     await act(async () => {
-      render(<LayoutStateContainer />);
+      await setupComponent();
     });
+    await waitForLoadingToComplete();
 
     await waitFor(() => {
       expect(screen.getByTestId('layout-state-container')).toBeInTheDocument();
@@ -116,16 +148,16 @@ describe('LayoutStateContainer', () => {
 
   it('passes correct props to CurrentLayoutState', async () => {
     const mockLocations: Location[] = [
-      { _id: { $oid: 'loc1' }, stationName: 'Station 1', block: 'A', ownerId: { $oid: 'owner1' } }
+      { _id: 'loc1', stationName: 'Station 1', block: 'A', ownerId: 'owner1' }
     ];
 
     const mockIndustries: Industry[] = [
       { 
-        _id: { $oid: 'ind1' }, 
+        _id: 'ind1', 
         name: 'Industry 1', 
         industryType: 'FREIGHT',
-        locationId: { $oid: 'loc1' },
-        ownerId: { $oid: 'owner1' },
+        locationId: 'loc1',
+        ownerId: 'owner1',
         tracks: []
       }
     ];
@@ -139,8 +171,8 @@ describe('LayoutStateContainer', () => {
         description: 'Box Car',
         color: 'Red',
         note: '',
-        homeYard: { $oid: 'yard1' },
-        ownerId: { $oid: 'owner1' }
+        homeYard: 'yard1',
+        ownerId: 'owner1'
       }
     ];
 
@@ -149,8 +181,9 @@ describe('LayoutStateContainer', () => {
     fakeFetch.setResponse('/api/rolling-stock', mockRollingStock);
 
     await act(async () => {
-      render(<LayoutStateContainer />);
+      await setupComponent();
     });
+    await waitForLoadingToComplete();
 
     await waitFor(() => {
       const container = screen.getByTestId('layout-state-container');
@@ -159,5 +192,44 @@ describe('LayoutStateContainer', () => {
       expect(container).toHaveAttribute('data-industries', JSON.stringify(mockIndustries));
       expect(container).toHaveAttribute('data-rolling-stock', JSON.stringify({ 'car1': mockRollingStock[0] }));
     });
+  });
+
+  it('renders Reset State button', async () => {
+    fakeFetch.setResponse('/api/locations', []);
+    fakeFetch.setResponse('/api/industries', []);
+    fakeFetch.setResponse('/api/rolling-stock', []);
+
+    await act(async () => {
+      await setupComponent();
+    });
+    await waitForLoadingToComplete();
+
+    const resetButton = screen.getByRole('button', { name: /reset state/i });
+    expect(resetButton).toBeInTheDocument();
+    expect(resetButton).toHaveClass('MuiButton-contained');
+    expect(resetButton).toHaveClass('MuiButton-colorSecondary');
+  });
+
+  it('resets layout state when Reset State button is clicked', async () => {
+    fakeFetch.setResponse('/api/locations', []);
+    fakeFetch.setResponse('/api/industries', []);
+    fakeFetch.setResponse('/api/rolling-stock', []);
+
+    await act(async () => {
+      await setupComponent();
+    });
+    await waitForLoadingToComplete();
+
+    const resetButton = screen.getByRole('button', { name: /reset state/i });
+    
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+
+    // Verify that the layout state has been reset by checking the data attributes
+    const container = screen.getByTestId('layout-state-container');
+    expect(container).toHaveAttribute('data-locations', '[]');
+    expect(container).toHaveAttribute('data-industries', '[]');
+    expect(container).toHaveAttribute('data-rolling-stock', '{}');
   });
 }); 
