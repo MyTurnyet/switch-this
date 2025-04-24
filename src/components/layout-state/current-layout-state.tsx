@@ -1,7 +1,7 @@
 'use client';
 
-import { LayoutState } from '../../state/layout-state';
-import { Location, Industry, RollingStock } from '../../app/shared/types/models';
+import { LayoutState } from '@state/layout-state';
+import { Location, Industry, RollingStock } from '@shared/types/models';
 import { Box, Typography, Paper, List, ListItem, Divider, Chip } from '@mui/material';
 import { useMemo } from 'react';
 import { FC } from 'react';

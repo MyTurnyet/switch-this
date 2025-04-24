@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Paper, Typography } from '@mui/material';
-import { Location } from '../shared/types/models';
-import { Industry } from '../shared/types/models';
-import { RollingStock } from '../shared/types/models';
+import { Location } from '@shared/types/models';
+import { Industry } from '@shared/types/models';
+import { RollingStock } from '@shared/types/models';
 import CarTypeBadge from './CarTypeBadge';
 
 interface DashboardProps {

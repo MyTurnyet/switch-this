@@ -1,7 +1,7 @@
 import React from 'react';
-import locationsData from '../../data/locations.json';
+import locationsData from '@data/locations.json';
 import { Box, Typography, List, ListItem, Paper } from '@mui/material';
-import { Location } from '../shared/types/models';
+import { Location } from '@shared/types/models';
 
 export default function Locations() {
   const locationsByBlock = locationsData.reduce((acc: Record<string, Location[]>, location: Location) => {
