@@ -32,7 +32,7 @@ export class LayoutState {
       .filter((car): car is RollingStock => car !== undefined);
   }
 
-  placeCarAtIndustry(industryId: string, trackId: string, car: RollingStock): void {
+  placeCarAtIndustry(industryId: string, trackId: string, car: RollingStock, skipDuplicateCheck = false): void {
     const industry = this.industries.get(industryId);
     if (!industry) {
       throw new Error('Industry not found');
@@ -43,13 +43,37 @@ export class LayoutState {
       throw new Error('Track not found');
     }
 
-    if (track.placedCars.length >= track.maxCars) {
+    // Check if the car is already placed at any industry
+    if (!skipDuplicateCheck) {
+      const allIndustries = Array.from(this.industries.values());
+      for (const ind of allIndustries) {
+        for (const t of ind.tracks) {
+          if (t.placedCars.includes(car._id)) {
+            throw new Error('Car is already placed at another location');
+          }
+        }
+      }
+    }
+
+    // Create a new track object with a new placedCars array
+    const updatedTrack = {
+      ...track,
+      placedCars: [...track.placedCars]
+    };
+
+    if (updatedTrack.placedCars.length >= updatedTrack.maxCars) {
       throw new Error('Track is at maximum capacity');
     }
 
     this.addCar(car);
-    track.placedCars.push(car._id);
-    this.industries.set(industryId, { ...industry });
+    updatedTrack.placedCars.push(car._id);
+
+    // Create a new industry object with the updated track
+    const updatedIndustry = {
+      ...industry,
+      tracks: industry.tracks.map(t => t._id === trackId ? updatedTrack : t)
+    };
+    this.industries.set(industryId, updatedIndustry);
   }
 
   removeCarFromIndustry(industryId: string, trackId: string, carId: string): void {
@@ -71,5 +95,23 @@ export class LayoutState {
     track.placedCars.splice(carIndex, 1);
     this.cars.delete(carId);
     this.industries.set(industryId, { ...industry });
+  }
+
+  reset(industries: Industry[]): void {
+    // Clear all existing state
+    this.industries = new Map();
+    this.cars = new Map();
+
+    // Add the new industries with empty placedCars arrays
+    industries.forEach(industry => {
+      const cleanIndustry: Industry = {
+        ...industry,
+        tracks: industry.tracks.map(track => ({
+          ...track,
+          placedCars: [] // Ensure placedCars is initialized as an empty array
+        }))
+      };
+      this.addIndustry(cleanIndustry);
+    });
   }
 } 
