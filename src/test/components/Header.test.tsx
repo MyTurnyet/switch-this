@@ -31,8 +31,8 @@ describe('Header', () => {
     const header = screen.getByRole('banner');
     const nav = screen.getByRole('navigation');
     
-    expect(header).toHaveClass('bg-white', 'shadow-md');
-    expect(nav).toHaveClass('container', 'mx-auto', 'px-4', 'py-4');
+    expect(header).toHaveClass('bg-white', 'border-b', 'border-gray-200', 'sticky', 'top-0', 'z-50');
+    expect(nav).toHaveClass('container', 'mx-auto', 'px-4');
   });
 
   it('has proper semantic HTML structure', () => {
@@ -42,5 +42,12 @@ describe('Header', () => {
     
     expect(header).toBeInTheDocument();
     expect(nav).toBeInTheDocument();
+  });
+
+  it('renders the Get Started button', () => {
+    render(<Header />);
+    const button = screen.getByText(/Get Started/i);
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveClass('bg-primary-600', 'text-white', 'px-4', 'py-2', 'rounded-lg');
   });
 }); 

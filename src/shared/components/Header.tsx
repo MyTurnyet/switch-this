@@ -2,19 +2,31 @@ import Link from 'next/link';
 
 const Header = () => {
   return (
-    <header className="bg-white shadow-md">
-      <nav className="container mx-auto px-4 py-4">
-        <div className="flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-gray-800">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <nav className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <Link 
+            href="/" 
+            className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+          >
             Switch This
           </Link>
-          <div className="space-x-4">
-            <Link href="/" className="text-gray-600 hover:text-gray-800">
+          <div className="flex items-center space-x-6">
+            <Link 
+              href="/" 
+              className="text-gray-600 hover:text-primary-600 font-medium transition-colors"
+            >
               Home
             </Link>
-            <Link href="/about" className="text-gray-600 hover:text-gray-800">
+            <Link 
+              href="/about" 
+              className="text-gray-600 hover:text-primary-600 font-medium transition-colors"
+            >
               About
             </Link>
+            <button className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium">
+              Get Started
+            </button>
           </div>
         </div>
       </nav>
