@@ -1,87 +1,102 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { Dashboard } from '../Dashboard';
-import { useLayoutContext } from '../../shared/contexts/LayoutContext';
+import { Dashboard } from '@/app/components/Dashboard';
+import { useLayout } from '@/app/shared/contexts/LayoutContext';
 
-// Mock the useLayoutContext hook
-jest.mock('../../shared/contexts/LayoutContext');
+jest.mock('@/app/shared/contexts/LayoutContext', () => ({
+  useLayout: jest.fn()
+}));
 
 describe('Dashboard', () => {
-  const mockUseLayoutContext = useLayoutContext as jest.Mock;
-
   beforeEach(() => {
-    mockUseLayoutContext.mockReturnValue({
-      locations: [{ _id: '1', name: 'Location 1' }, { _id: '2', name: 'Location 2' }],
-      industries: [{ _id: '1', name: 'Industry 1' }],
-      trainRoutes: [{ _id: '1', name: 'Route 1' }, { _id: '2', name: 'Route 2' }, { _id: '3', name: 'Route 3' }],
-      isLoadingLocations: false,
-      isLoadingIndustries: false,
-      isLoadingTrainRoutes: false,
-      locationError: null,
-      industryError: null,
-      trainRouteError: null,
-      fetchLocations: jest.fn(),
-      fetchIndustries: jest.fn(),
-      fetchTrainRoutes: jest.fn(),
-    });
-  });
-
-  it('displays the total count of locations', () => {
-    render(<Dashboard />);
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByText('Total Locations')).toBeInTheDocument();
-  });
-
-  it('displays the total count of industries', () => {
-    render(<Dashboard />);
-    expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.getByText('Total Industries')).toBeInTheDocument();
-  });
-
-  it('displays the total count of train routes', () => {
-    render(<Dashboard />);
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('Total Train Routes')).toBeInTheDocument();
-  });
-
-  it('shows loading state when data is being fetched', () => {
-    mockUseLayoutContext.mockReturnValue({
+    jest.clearAllMocks();
+    (useLayout as jest.Mock).mockReturnValue({
       locations: [],
       industries: [],
       trainRoutes: [],
-      isLoadingLocations: true,
-      isLoadingIndustries: true,
-      isLoadingTrainRoutes: true,
-      locationError: null,
-      industryError: null,
-      trainRouteError: null,
+      error: null,
+      isLoading: false,
       fetchLocations: jest.fn(),
       fetchIndustries: jest.fn(),
-      fetchTrainRoutes: jest.fn(),
+      fetchTrainRoutes: jest.fn()
     });
-
-    render(<Dashboard />);
-    expect(screen.getByText('Loading statistics...')).toBeInTheDocument();
   });
 
-  it('shows error state when there is an error', () => {
-    mockUseLayoutContext.mockReturnValue({
+  it('displays loading state', () => {
+    (useLayout as jest.Mock).mockReturnValue({
       locations: [],
       industries: [],
       trainRoutes: [],
-      isLoadingLocations: false,
-      isLoadingIndustries: false,
-      isLoadingTrainRoutes: false,
-      locationError: 'Failed to load locations',
-      industryError: null,
-      trainRouteError: null,
+      error: null,
+      isLoading: true,
       fetchLocations: jest.fn(),
       fetchIndustries: jest.fn(),
-      fetchTrainRoutes: jest.fn(),
+      fetchTrainRoutes: jest.fn()
     });
 
     render(<Dashboard />);
-    expect(screen.getByText('Unable to load dashboard data')).toBeInTheDocument();
-    expect(screen.getByText(/Failed to load locations/)).toBeInTheDocument();
+    const loadingElements = screen.getAllByText('...');
+    expect(loadingElements).toHaveLength(3);
+  });
+
+  it('displays error state', () => {
+    const errorMessage = 'Failed to load data';
+    (useLayout as jest.Mock).mockReturnValue({
+      locations: [],
+      industries: [],
+      trainRoutes: [],
+      error: errorMessage,
+      isLoading: false,
+      fetchLocations: jest.fn(),
+      fetchIndustries: jest.fn(),
+      fetchTrainRoutes: jest.fn()
+    });
+
+    render(<Dashboard />);
+    expect(screen.getByText(errorMessage)).toBeInTheDocument();
+  });
+
+  it('displays statistics when data is loaded', () => {
+    const mockData = {
+      locations: [{ _id: '1' }, { _id: '2' }],
+      industries: [{ _id: '1' }],
+      trainRoutes: [{ _id: '1' }, { _id: '2' }, { _id: '3' }]
+    };
+
+    (useLayout as jest.Mock).mockReturnValue({
+      ...mockData,
+      error: null,
+      isLoading: false,
+      fetchLocations: jest.fn(),
+      fetchIndustries: jest.fn(),
+      fetchTrainRoutes: jest.fn()
+    });
+
+    render(<Dashboard />);
+    expect(screen.getByText('2')).toBeInTheDocument(); // Locations count
+    expect(screen.getByText('1')).toBeInTheDocument(); // Industries count
+    expect(screen.getByText('3')).toBeInTheDocument(); // Train routes count
+  });
+
+  it('fetches data on mount', () => {
+    const mockFetchLocations = jest.fn();
+    const mockFetchIndustries = jest.fn();
+    const mockFetchTrainRoutes = jest.fn();
+
+    (useLayout as jest.Mock).mockReturnValue({
+      locations: [],
+      industries: [],
+      trainRoutes: [],
+      error: null,
+      isLoading: false,
+      fetchLocations: mockFetchLocations,
+      fetchIndustries: mockFetchIndustries,
+      fetchTrainRoutes: mockFetchTrainRoutes
+    });
+
+    render(<Dashboard />);
+    expect(mockFetchLocations).toHaveBeenCalled();
+    expect(mockFetchIndustries).toHaveBeenCalled();
+    expect(mockFetchTrainRoutes).toHaveBeenCalled();
   });
 }); 
