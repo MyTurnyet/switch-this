@@ -1,54 +1,54 @@
 import { Location, Industry, TrainRoute, RollingStock } from '@/shared/types/models';
 
 export class LayoutDataCache {
-  private locations: Location[] | null = null;
-  private industries: Industry[] | null = null;
-  private trainRoutes: TrainRoute[] | null = null;
-  private rollingStock: RollingStock[] | null = null;
+  private locations: Location[] = [];
+  private industries: Industry[] = [];
+  private trainRoutes: TrainRoute[] = [];
+  private rollingStock: RollingStock[] = [];
 
-  getLocations(): Location[] | null {
+  getLocations(): Location[] {
     return this.locations;
   }
 
-  getIndustries(): Industry[] | null {
+  getIndustries(): Industry[] {
     return this.industries;
   }
 
-  getTrainRoutes(): TrainRoute[] | null {
+  getTrainRoutes(): TrainRoute[] {
     return this.trainRoutes;
   }
 
-  getRollingStock(): RollingStock[] | null {
+  getRollingStock(): RollingStock[] {
     return this.rollingStock;
   }
 
-  setLocations(locations: Location[] | null): void {
+  setLocations(locations: Location[]): void {
     this.locations = locations;
   }
 
-  setIndustries(industries: Industry[] | null): void {
+  setIndustries(industries: Industry[]): void {
     this.industries = industries;
   }
 
-  setTrainRoutes(trainRoutes: TrainRoute[] | null): void {
+  setTrainRoutes(trainRoutes: TrainRoute[]): void {
     this.trainRoutes = trainRoutes;
   }
 
-  setRollingStock(rollingStock: RollingStock[] | null): void {
+  setRollingStock(rollingStock: RollingStock[]): void {
     this.rollingStock = rollingStock;
   }
 
   isDataLoaded(): boolean {
-    return this.locations !== null && 
-           this.industries !== null && 
-           this.trainRoutes !== null &&
-           this.rollingStock !== null;
+    return this.locations.length > 0 && 
+           this.industries.length > 0 && 
+           this.trainRoutes.length > 0 &&
+           this.rollingStock.length > 0;
   }
 
   clear(): void {
-    this.locations = null;
-    this.industries = null;
-    this.trainRoutes = null;
-    this.rollingStock = null;
+    this.locations = [];
+    this.industries = [];
+    this.trainRoutes = [];
+    this.rollingStock = [];
   }
 } 

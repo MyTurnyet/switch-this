@@ -17,7 +17,7 @@ describe('Dashboard', () => {
       industries: [],
       trainRoutes: [],
       rollingStock: [],
-      error: null,
+      error: '',
       isLoading: false,
       refreshData: mockRefreshData
     });
@@ -39,7 +39,7 @@ describe('Dashboard', () => {
         industries: [],
         trainRoutes: [],
         rollingStock: [],
-        error: null,
+        error: '',
         isLoading: true,
         refreshData: mockRefreshData
       });
@@ -80,7 +80,7 @@ describe('Dashboard', () => {
         industries: [{ _id: '1' }],
         trainRoutes: [{ _id: '1' }, { _id: '2' }, { _id: '3' }],
         rollingStock: [{ _id: '1' }, { _id: '2' }, { _id: '3' }, { _id: '4' }],
-        error: null,
+        error: '',
         isLoading: false,
         refreshData: mockRefreshData
       };
@@ -113,15 +113,15 @@ describe('Dashboard', () => {
       expect(counts).toHaveLength(4);
     });
 
-    it('displays zero counts when data is null', () => {
+    it('displays zero counts when data is empty', () => {
       (useLayout as jest.Mock).mockReturnValue({
-        locations: null,
-        industries: null,
-        trainRoutes: null,
-        rollingStock: null,
-        error: null,
+        locations: [],
+        industries: [],
+        trainRoutes: [],
+        rollingStock: [],
+        error: '',
         isLoading: false,
-        refreshData: mockRefreshData
+        refreshData: jest.fn()
       });
 
       render(<Dashboard />);

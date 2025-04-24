@@ -18,10 +18,11 @@ describe('LayoutDataCache', () => {
     cache = new LayoutDataCache();
   });
 
-  it('should initialize with null data', () => {
-    expect(cache.getLocations()).toBeNull();
-    expect(cache.getIndustries()).toBeNull();
-    expect(cache.getTrainRoutes()).toBeNull();
+  it('should initialize with empty arrays', () => {
+    expect(cache.getLocations()).toEqual([]);
+    expect(cache.getIndustries()).toEqual([]);
+    expect(cache.getTrainRoutes()).toEqual([]);
+    expect(cache.getRollingStock()).toEqual([]);
   });
 
   it('should store and retrieve locations', () => {
@@ -42,10 +43,10 @@ describe('LayoutDataCache', () => {
   it('should indicate when data is loaded', () => {
     expect(cache.isDataLoaded()).toBe(false);
     
-    cache.setLocations(mockLocations);
-    cache.setIndustries(mockIndustries);
-    cache.setTrainRoutes(mockTrainRoutes);
-    cache.setRollingStock(mockRollingStock);
+    cache.setLocations([mockLocations]);
+    cache.setIndustries([mockIndustries]);
+    cache.setTrainRoutes([mockTrainRoutes]);
+    cache.setRollingStock([mockRollingStock]);
     
     expect(cache.isDataLoaded()).toBe(true);
   });
@@ -57,9 +58,9 @@ describe('LayoutDataCache', () => {
     
     cache.clear();
     
-    expect(cache.getLocations()).toBeNull();
-    expect(cache.getIndustries()).toBeNull();
-    expect(cache.getTrainRoutes()).toBeNull();
+    expect(cache.getLocations()).toEqual([]);
+    expect(cache.getIndustries()).toEqual([]);
+    expect(cache.getTrainRoutes()).toEqual([]);
     expect(cache.isDataLoaded()).toBe(false);
   });
 
@@ -69,24 +70,21 @@ describe('LayoutDataCache', () => {
       expect(cache.getRollingStock()).toEqual([mockRollingStock]);
     });
 
-    it('should handle null rolling stock data', () => {
-      cache.setRollingStock(null);
-      expect(cache.getRollingStock()).toBeNull();
+    it('should handle empty rolling stock data', () => {
+      cache.setRollingStock([]);
+      expect(cache.getRollingStock()).toEqual([]);
     });
 
     it('should clear rolling stock data', () => {
       cache.setRollingStock([mockRollingStock]);
       cache.clear();
-      expect(cache.getRollingStock()).toBeNull();
+      expect(cache.getRollingStock()).toEqual([]);
     });
   });
 
   describe('isDataLoaded', () => {
-    it('should return false when rolling stock is null', () => {
-      cache.setLocations(mockLocations);
-      cache.setIndustries(mockIndustries);
-      cache.setTrainRoutes(mockTrainRoutes);
-      cache.setRollingStock(null);
+    it('should return false when rolling stock is empty', () => {
+      cache.setRollingStock([]);
       expect(cache.isDataLoaded()).toBe(false);
     });
 

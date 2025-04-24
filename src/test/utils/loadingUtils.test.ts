@@ -2,31 +2,43 @@ import { isLoading, hasError } from '@/app/shared/utils/loadingUtils';
 
 describe('loadingUtils', () => {
   describe('isLoading', () => {
-    it('returns true if any loading state is true', () => {
+    it('returns true if any data is loading', () => {
       expect(isLoading({
         isLoadingLocations: true,
         isLoadingIndustries: false,
-        isLoadingTrainRoutes: false
+        isLoadingTrainRoutes: false,
+        locationError: '',
+        industryError: '',
+        trainRouteError: ''
       })).toBe(true);
 
       expect(isLoading({
         isLoadingLocations: false,
         isLoadingIndustries: true,
-        isLoadingTrainRoutes: false
+        isLoadingTrainRoutes: false,
+        locationError: '',
+        industryError: '',
+        trainRouteError: ''
       })).toBe(true);
 
       expect(isLoading({
         isLoadingLocations: false,
         isLoadingIndustries: false,
-        isLoadingTrainRoutes: true
+        isLoadingTrainRoutes: true,
+        locationError: '',
+        industryError: '',
+        trainRouteError: ''
       })).toBe(true);
     });
 
-    it('returns false if all loading states are false', () => {
+    it('returns false if no data is loading', () => {
       expect(isLoading({
         isLoadingLocations: false,
         isLoadingIndustries: false,
-        isLoadingTrainRoutes: false
+        isLoadingTrainRoutes: false,
+        locationError: '',
+        industryError: '',
+        trainRouteError: ''
       })).toBe(false);
     });
   });
@@ -34,29 +46,41 @@ describe('loadingUtils', () => {
   describe('hasError', () => {
     it('returns true if any error exists', () => {
       expect(hasError({
-        locationError: 'Error',
-        industryError: null,
-        trainRouteError: null
+        isLoadingLocations: false,
+        isLoadingIndustries: false,
+        isLoadingTrainRoutes: false,
+        locationError: 'Location error',
+        industryError: '',
+        trainRouteError: ''
       })).toBe(true);
 
       expect(hasError({
-        locationError: null,
-        industryError: 'Error',
-        trainRouteError: null
+        isLoadingLocations: false,
+        isLoadingIndustries: false,
+        isLoadingTrainRoutes: false,
+        locationError: '',
+        industryError: 'Industry error',
+        trainRouteError: ''
       })).toBe(true);
 
       expect(hasError({
-        locationError: null,
-        industryError: null,
-        trainRouteError: 'Error'
+        isLoadingLocations: false,
+        isLoadingIndustries: false,
+        isLoadingTrainRoutes: false,
+        locationError: '',
+        industryError: '',
+        trainRouteError: 'Train route error'
       })).toBe(true);
     });
 
     it('returns false if no errors exist', () => {
       expect(hasError({
-        locationError: null,
-        industryError: null,
-        trainRouteError: null
+        isLoadingLocations: false,
+        isLoadingIndustries: false,
+        isLoadingTrainRoutes: false,
+        locationError: '',
+        industryError: '',
+        trainRouteError: ''
       })).toBe(false);
     });
   });

@@ -9,11 +9,11 @@ import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { LayoutDataCache } from './LayoutDataCache';
 
 interface LayoutContextType {
-  locations: Location[] | null;
-  industries: Industry[] | null;
-  trainRoutes: TrainRoute[] | null;
-  rollingStock: RollingStock[] | null;
-  error: string | null;
+  locations: Location[];
+  industries: Industry[];
+  trainRoutes: TrainRoute[];
+  rollingStock: RollingStock[];
+  error: string;
   isLoading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -28,6 +28,14 @@ interface LayoutProviderProps {
   rollingStockService?: RollingStockService;
 }
 
+interface LayoutData {
+  locations: Location[];
+  industries: Industry[];
+  trainRoutes: TrainRoute[];
+  rollingStock: RollingStock[];
+  error: string;
+}
+
 export const LayoutProvider: React.FC<LayoutProviderProps> = ({ 
   children,
   locationService: injectedLocationService,
@@ -35,7 +43,7 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
   trainRouteService: injectedTrainRouteService,
   rollingStockService: injectedRollingStockService
 }) => {
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const cache = useMemo(() => new LayoutDataCache(), []);
 
@@ -49,7 +57,7 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
 
   const fetchData = useMemo(() => async () => {
     setIsLoading(true);
-    setError(null);
+    setError('');
 
     try {
       const [locationsData, industriesData, trainRoutesData, rollingStockData] = await Promise.all([

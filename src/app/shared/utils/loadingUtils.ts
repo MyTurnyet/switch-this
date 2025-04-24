@@ -2,12 +2,9 @@ interface LoadingState {
   isLoadingLocations: boolean;
   isLoadingIndustries: boolean;
   isLoadingTrainRoutes: boolean;
-}
-
-interface ErrorState {
-  locationError: string | null;
-  industryError: string | null;
-  trainRouteError: string | null;
+  locationError: string;
+  industryError: string;
+  trainRouteError: string;
 }
 
 /**
@@ -24,6 +21,6 @@ export const isLoading = (state: LoadingState): boolean => {
  * @param state - The error state object containing error messages for each data type
  * @returns true if any error exists, false otherwise
  */
-export const hasError = (state: ErrorState): boolean => {
+export const hasError = (state: LoadingState): boolean => {
   return Boolean(state.locationError || state.industryError || state.trainRouteError);
 }; 
