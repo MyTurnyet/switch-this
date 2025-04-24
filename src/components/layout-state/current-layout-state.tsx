@@ -4,7 +4,7 @@ import { Box, Typography } from '@mui/material';
 import { LayoutState } from '@state/layout-state';
 import { Location, Industry, RollingStock } from '@shared/types/models';
 import { FC, useMemo } from 'react';
-import { Block } from './Block';
+import { BlockDisplay } from './BlockDisplay';
 
 interface LayoutStatePageProps {
   layoutState: LayoutState;
@@ -43,7 +43,7 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
       </Typography>
 
       {Object.entries(locationsByBlock).map(([block, blockLocations]) => (
-        <Block
+        <BlockDisplay
           key={block}
           block={block}
           locations={blockLocations}

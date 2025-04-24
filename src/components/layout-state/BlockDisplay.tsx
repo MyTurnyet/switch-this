@@ -1,10 +1,10 @@
 import { Box, Typography, Paper, List, Divider } from '@mui/material';
 import { Location as LocationType, Industry as IndustryType, RollingStock } from '@shared/types/models';
 import { FC } from 'react';
-import { Location } from './Location';
+import { LocationDisplay } from './LocationDisplay';
 import { LayoutState } from '@state/layout-state';
 
-interface BlockProps {
+interface BlockDisplayProps {
   block: string;
   locations: LocationType[];
   industries: IndustryType[];
@@ -12,7 +12,7 @@ interface BlockProps {
   layoutState: LayoutState;
 }
 
-export const Block: FC<BlockProps> = ({ block, locations, industries, rollingStock, layoutState }) => {
+export const BlockDisplay: FC<BlockDisplayProps> = ({ block, locations, industries, rollingStock, layoutState }) => {
   return (
     <Paper 
       sx={{ 
@@ -37,11 +37,11 @@ export const Block: FC<BlockProps> = ({ block, locations, industries, rollingSto
       <List sx={{ p: 0 }}>
         {locations.map((location, index) => (
           <Box key={location._id.$oid}>
-            <Location
+            <LocationDisplay
               location={location}
               industries={industries.filter(i => i.locationId.$oid === location._id.$oid)}
               rollingStock={rollingStock}
-              carsAtLocation={layoutState.getCarsAtLocation(location._id.$oid)}
+              layoutState={layoutState}
             />
             {index < locations.length - 1 && <Divider />}
           </Box>

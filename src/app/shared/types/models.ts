@@ -10,7 +10,7 @@ export interface Track {
   _id: MongoId;
   name: string;
   maxCars: MongoNumber;
-  placedCars: never[];
+  placedCars: MongoId[];
 }
 
 export interface Industry {
