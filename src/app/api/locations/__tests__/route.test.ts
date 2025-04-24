@@ -1,5 +1,5 @@
 import { MongoClient } from 'mongodb';
-import { GET } from './route';
+import { GET } from '../route';
 
 jest.mock('next/server', () => ({
   NextResponse: {

@@ -1,7 +1,7 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import LayoutStateContainer from './container';
-import { Location, Industry, RollingStock } from '../shared/types/models';
+import LayoutStateContainer from '../container';
+import { Location, Industry, RollingStock } from '../../shared/types/models';
 
 // Fake implementations of the fetch API
 class FakeResponse implements Response {
@@ -11,36 +11,18 @@ class FakeResponse implements Response {
   // Required Response interface properties
   headers = new Headers();
   redirected = false;
-  status = this.ok ? 200 : 500;
-  statusText = this.ok ? 'OK' : 'Internal Server Error';
-  type = 'basic' as ResponseType;
-  url = '';
+  status = 200;
+  statusText = "OK";
+  type: ResponseType = "basic";
+  url = "";
+  clone(): Response { return this; }
   body = null;
   bodyUsed = false;
-  trailer = Promise.resolve(new Headers());
-  bytes(): Promise<Uint8Array> {
-    return Promise.resolve(new Uint8Array());
-  }
-
-  clone(): Response {
-    return new FakeResponse(this.data, this.ok);
-  }
-
-  arrayBuffer(): Promise<ArrayBuffer> {
-    throw new Error('Method not implemented.');
-  }
-
-  blob(): Promise<Blob> {
-    throw new Error('Method not implemented.');
-  }
-
-  formData(): Promise<FormData> {
-    throw new Error('Method not implemented.');
-  }
-
-  text(): Promise<string> {
-    throw new Error('Method not implemented.');
-  }
+  bytes(): Promise<Uint8Array> { return Promise.resolve(new Uint8Array()); }
+  arrayBuffer(): Promise<ArrayBuffer> { throw new Error("Not implemented"); }
+  blob(): Promise<Blob> { throw new Error("Not implemented"); }
+  formData(): Promise<FormData> { throw new Error("Not implemented"); }
+  text(): Promise<string> { throw new Error("Not implemented"); }
 }
 
 class FakeFetch {

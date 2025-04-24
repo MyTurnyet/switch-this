@@ -1,4 +1,4 @@
-import { GET } from './route';
+import { GET } from '../route';
 import { MongoClient } from 'mongodb';
 import { NextResponse } from 'next/server';
 

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import LayoutStatePage from './page';
+import LayoutStatePage from '../page';
 
-jest.mock('./container', () => {
+jest.mock('../container', () => {
   return function MockLayoutStateContainer() {
     return <div data-testid="layout-state-container">Layout State Container</div>;
   };

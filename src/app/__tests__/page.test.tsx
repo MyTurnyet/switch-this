@@ -1,10 +1,10 @@
 import React from 'react';
-import { screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Home from './page';
-import { renderWithTheme } from './shared/test-utils/render-with-theme';
+import Home from '../page';
+import { renderWithTheme } from '../shared/test-utils/render-with-theme';
 
-jest.mock('./shared/components/FeatureCard', () => ({
+jest.mock('../shared/components/FeatureCard', () => ({
   FeatureCard: ({ title, description }: { title: string; description: string }) => (
     <div data-testid="feature-card">
       <h3>{title}</h3>
