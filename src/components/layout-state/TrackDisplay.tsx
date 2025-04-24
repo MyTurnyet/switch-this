@@ -1,5 +1,5 @@
 import { Box, Typography, Chip } from '@mui/material';
-import { Track as TrackType, RollingStock } from '@shared/types/models';
+import { Track as TrackType, RollingStock, MongoNumber } from '@shared/types/models';
 import { FC } from 'react';
 
 interface TrackDisplayProps {
@@ -10,7 +10,7 @@ interface TrackDisplayProps {
 
 export const TrackDisplay: FC<TrackDisplayProps> = ({ track, rollingStock, carsAtLocation }) => {
   const placedCars = track.placedCars.map(carId => rollingStock[carId.$oid]).filter(Boolean);
-  const maxCars = track.maxCars?.$numberInt ? parseInt(track.maxCars.$numberInt) : 0;
+  const maxCars = typeof track.maxCars === 'object' ? parseInt((track.maxCars as MongoNumber).$numberInt) : track.maxCars || 0;
   const currentCars = placedCars.length;
   const capacityPercentage = maxCars > 0 ? (currentCars / maxCars) * 100 : 0;
 

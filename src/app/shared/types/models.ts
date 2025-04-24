@@ -7,36 +7,36 @@ export interface MongoNumber {
 }
 
 export interface Track {
-  _id: MongoId;
+  _id: string;
   name: string;
-  maxCars: MongoNumber;
+  maxCars: number | MongoNumber;
   placedCars: MongoId[];
 }
 
 export interface Industry {
-  _id: MongoId;
+  _id: string;
   name: string;
   industryType: 'FREIGHT' | 'YARD' | 'PASSENGER';
   tracks: Track[];
-  locationId: MongoId;
-  ownerId: MongoId;
+  locationId: string;
+  ownerId: string;
 }
 
 export interface Location {
-  _id: MongoId;
+  _id: string;
   stationName: string;
   block: string;
-  ownerId: MongoId;
+  ownerId: string;
 }
 
 export interface RollingStock {
-  _id: MongoId;
+  _id: string;
   roadName: string;
   roadNumber: string;
   aarType: string;
   description: string;
   color: string;
   note: string;
-  homeYard: MongoId;
-  ownerId: MongoId;
+  homeYard: string;
+  ownerId: string;
 } 
