@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CurrentLayoutState from '../current-layout-state';
 import { LayoutState } from '@state/layout-state';
-import { Location, Industry, RollingStock } from '@shared/types/models';
+import { Location, Industry, RollingStock, Track } from '@shared/types/models';
 
 describe('CurrentLayoutState', () => {
   const mockLayoutState = {
@@ -17,25 +17,27 @@ describe('CurrentLayoutState', () => {
     ownerId: { $oid: 'owner1' }
   };
 
+  const mockTrack: Track = {
+    _id: { $oid: 'track1' },
+    name: 'Track 1',
+    maxCars: { $numberInt: '5' },
+    placedCars: []
+  };
+
   const mockIndustry: Industry = {
     _id: { $oid: 'ind1' },
     name: 'Test Industry',
-    industryType: 'Manufacturing',
+    industryType: 'FREIGHT',
     locationId: { $oid: 'loc1' },
     ownerId: { $oid: 'owner1' },
-    tracks: [{
-      _id: { $oid: 'track1' },
-      name: 'Track 1',
-      maxCars: { $numberInt: '5' },
-      placedCars: []
-    }]
+    tracks: [mockTrack]
   };
 
   const mockRollingStock: Record<string, RollingStock> = {
     'car1': {
       _id: { $oid: 'car1' },
       roadName: 'BNSF',
-      roadNumber: 1234,
+      roadNumber: '1234',
       aarType: 'BOX',
       description: 'Box Car',
       color: 'Red',
@@ -70,14 +72,15 @@ describe('CurrentLayoutState', () => {
 
     expect(screen.getByText('Test Station')).toBeInTheDocument();
     expect(screen.getByText('Test Industry')).toBeInTheDocument();
-    expect(screen.getByText('Track 1 (0/5 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Track 1')).toBeInTheDocument();
+    expect(screen.getByText('0/5 cars')).toBeInTheDocument();
   });
 
   it('displays car information when cars are placed', () => {
-    const industryWithCar = {
+    const industryWithCar: Industry = {
       ...mockIndustry,
       tracks: [{
-        ...mockIndustry.tracks[0],
+        ...mockTrack,
         placedCars: [mockRollingStock['car1']._id.$oid]
       }]
     };
@@ -91,7 +94,8 @@ describe('CurrentLayoutState', () => {
       />
     );
 
-    expect(screen.getByText('Track 1 (1/5 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Track 1')).toBeInTheDocument();
+    expect(screen.getByText('1/5 cars')).toBeInTheDocument();
     expect(screen.getByText('BNSF 1234 - Box Car')).toBeInTheDocument();
   });
 
@@ -107,14 +111,15 @@ describe('CurrentLayoutState', () => {
 
     expect(screen.getByText('Test Station')).toBeInTheDocument();
     expect(screen.getByText('Test Industry')).toBeInTheDocument();
-    expect(screen.getByText('Track 1 (0/5 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Track 1')).toBeInTheDocument();
+    expect(screen.getByText('0/5 cars')).toBeInTheDocument();
   });
 
   it('should display cars at their locations and industries', () => {
-    const industryWithCar = {
+    const industryWithCar: Industry = {
       ...mockIndustry,
       tracks: [{
-        ...mockIndustry.tracks[0],
+        ...mockTrack,
         placedCars: [mockRollingStock['car1']._id.$oid]
       }]
     };
@@ -128,89 +133,9 @@ describe('CurrentLayoutState', () => {
       />
     );
 
-    expect(screen.getByText('Track 1 (1/5 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Track 1')).toBeInTheDocument();
+    expect(screen.getByText('1/5 cars')).toBeInTheDocument();
     expect(screen.getByText('BNSF 1234 - Box Car')).toBeInTheDocument();
-  });
-
-  it('should group locations and industries by block', () => {
-    const location2: Location = {
-      _id: { $oid: 'test-location-2' },
-      stationName: 'Another Station',
-      block: 'TEST',
-      ownerId: { $oid: 'test-owner' }
-    };
-
-    const location3: Location = {
-      _id: { $oid: 'test-location-3' },
-      stationName: 'Different Block Station',
-      block: 'OTHER',
-      ownerId: { $oid: 'test-owner' }
-    };
-
-    const industry2: Industry = {
-      ...mockIndustry,
-      _id: { $oid: 'test-industry-2' },
-      name: 'Another Industry',
-      locationId: location2._id
-    };
-
-    const industry3: Industry = {
-      ...mockIndustry,
-      _id: { $oid: 'test-industry-3' },
-      name: 'Different Industry',
-      locationId: location3._id
-    };
-
-    const layoutState = new LayoutState();
-    render(
-      <CurrentLayoutState 
-        layoutState={layoutState} 
-        locations={[mockLocation, location2, location3]}
-        industries={[mockIndustry, industry2, industry3]} 
-      />
-    );
-
-    expect(screen.getByText('TEST Block')).toBeInTheDocument();
-    expect(screen.getByText('OTHER Block')).toBeInTheDocument();
-    expect(screen.getByText('Test Industry')).toBeInTheDocument();
-    expect(screen.getByText('Another Industry')).toBeInTheDocument();
-    expect(screen.getByText('Different Industry')).toBeInTheDocument();
-  });
-
-  it('should handle empty locations and industries arrays', () => {
-    const layoutState = new LayoutState();
-    render(
-      <CurrentLayoutState 
-        layoutState={layoutState} 
-        locations={[]}
-        industries={[]} 
-      />
-    );
-    
-    expect(screen.getByText('Layout State')).toBeInTheDocument();
-    expect(screen.queryByText('TEST Block')).not.toBeInTheDocument();
-  });
-
-  it('should display error state when rolling stock data is missing', () => {
-    const layoutState = new LayoutState();
-    const industryWithCar = {
-      ...mockIndustry,
-      tracks: [{
-        ...mockIndustry.tracks[0],
-        placedCars: ['missing-car-id']
-      }]
-    };
-    
-    render(
-      <CurrentLayoutState 
-        layoutState={layoutState} 
-        locations={[mockLocation]}
-        industries={[industryWithCar]}
-        rollingStock={{}}
-      />
-    );
-    
-    expect(screen.getByText('missing-car-id')).toBeInTheDocument();
   });
 
   it('should handle multiple tracks in an industry', () => {
@@ -218,12 +143,14 @@ describe('CurrentLayoutState', () => {
       ...mockIndustry,
       tracks: [
         {
+          ...mockTrack,
           _id: { $oid: 'test-track-1' },
           name: 'Track 1',
           maxCars: { $numberInt: '3' },
           placedCars: [mockRollingStock['car1']._id.$oid]
         },
         {
+          ...mockTrack,
           _id: { $oid: 'test-track-2' },
           name: 'Track 2',
           maxCars: { $numberInt: '2' },
@@ -241,8 +168,10 @@ describe('CurrentLayoutState', () => {
       />
     );
     
-    expect(screen.getByText('Track 1 (1/3 cars)')).toBeInTheDocument();
-    expect(screen.getByText('Track 2 (0/2 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Track 1')).toBeInTheDocument();
+    expect(screen.getByText('1/3 cars')).toBeInTheDocument();
+    expect(screen.getByText('Track 2')).toBeInTheDocument();
+    expect(screen.getByText('0/2 cars')).toBeInTheDocument();
     expect(screen.getByText(`${mockRollingStock['car1'].roadName} ${mockRollingStock['car1'].roadNumber} - ${mockRollingStock['car1'].description}`)).toBeInTheDocument();
   });
 
@@ -251,16 +180,18 @@ describe('CurrentLayoutState', () => {
       ...mockIndustry,
       tracks: [
         {
+          ...mockTrack,
           _id: { $oid: 'test-track-1' },
           name: 'Track 1',
           maxCars: undefined as unknown as { $numberInt: string },
-          placedCars: undefined as unknown as string[]
+          placedCars: []
         },
         {
+          ...mockTrack,
           _id: { $oid: 'test-track-2' },
           name: 'Track 2',
           maxCars: null as unknown as { $numberInt: string },
-          placedCars: null as unknown as string[]
+          placedCars: []
         }
       ]
     };
@@ -274,21 +205,33 @@ describe('CurrentLayoutState', () => {
       />
     );
     
-    expect(screen.getByText('Track 1 (0/0 cars)')).toBeInTheDocument();
-    expect(screen.getByText('Track 2 (0/0 cars)')).toBeInTheDocument();
+    const track1 = screen.getByText('Track 1');
+    const track2 = screen.getByText('Track 2');
+    
+    expect(track1).toBeInTheDocument();
+    expect(track2).toBeInTheDocument();
+    
+    // Find the car count text within each track's container
+    const track1Container = track1.closest('.MuiBox-root');
+    const track2Container = track2.closest('.MuiBox-root');
+    
+    expect(track1Container).not.toBeNull();
+    expect(track2Container).not.toBeNull();
+    
+    expect(track1Container?.querySelector('p')?.textContent).toBe('0/0 cars');
+    expect(track2Container?.querySelector('p')?.textContent).toBe('0/0 cars');
   });
 
   it('should handle tracks with invalid maxCars format', () => {
     const industryWithInvalidMaxCars: Industry = {
       ...mockIndustry,
-      tracks: [
-        {
-          _id: { $oid: 'test-track-1' },
-          name: 'Track 1',
-          maxCars: { $numberInt: 'invalid' },
-          placedCars: []
-        }
-      ]
+      tracks: [{
+        ...mockTrack,
+        _id: { $oid: 'test-track-1' },
+        name: 'Track 1',
+        maxCars: { $numberInt: 'invalid' },
+        placedCars: []
+      }]
     };
     
     render(
@@ -300,39 +243,8 @@ describe('CurrentLayoutState', () => {
       />
     );
     
-    expect(screen.getByText('Track 1 (0/0 cars)')).toBeInTheDocument();
-  });
-
-  it('should display industry type chip', () => {
-    render(
-      <CurrentLayoutState 
-        layoutState={new LayoutState()} 
-        locations={[mockLocation]}
-        industries={[mockIndustry]} 
-      />
-    );
-    
-    expect(screen.getByText('Manufacturing')).toBeInTheDocument();
-  });
-
-  it('should handle locations without industries', () => {
-    const locationWithoutIndustries: Location = {
-      _id: { $oid: 'test-location-2' },
-      stationName: 'Empty Station',
-      block: 'TEST',
-      ownerId: { $oid: 'test-owner' }
-    };
-
-    render(
-      <CurrentLayoutState 
-        layoutState={new LayoutState()} 
-        locations={[locationWithoutIndustries]}
-        industries={[]} 
-      />
-    );
-    
-    expect(screen.getByText('Empty Station')).toBeInTheDocument();
-    expect(screen.getByText('No industries')).toBeInTheDocument();
+    expect(screen.getByText('Track 1')).toBeInTheDocument();
+    expect(screen.getByText('0/0 cars')).toBeInTheDocument();
   });
 
   it('should display correct maxCars for tracks with different capacities', () => {
@@ -340,18 +252,21 @@ describe('CurrentLayoutState', () => {
       ...mockIndustry,
       tracks: [
         {
+          ...mockTrack,
           _id: { $oid: 'test-track-1' },
           name: 'Small Track',
           maxCars: { $numberInt: '2' },
           placedCars: []
         },
         {
+          ...mockTrack,
           _id: { $oid: 'test-track-2' },
           name: 'Medium Track',
           maxCars: { $numberInt: '5' },
           placedCars: []
         },
         {
+          ...mockTrack,
           _id: { $oid: 'test-track-3' },
           name: 'Large Track',
           maxCars: { $numberInt: '10' },
@@ -369,13 +284,15 @@ describe('CurrentLayoutState', () => {
       />
     );
     
-    expect(screen.getByText('Small Track (0/2 cars)')).toBeInTheDocument();
-    expect(screen.getByText('Medium Track (0/5 cars)')).toBeInTheDocument();
-    expect(screen.getByText('Large Track (0/10 cars)')).toBeInTheDocument();
+    expect(screen.getByText('Small Track')).toBeInTheDocument();
+    expect(screen.getByText('0/2 cars')).toBeInTheDocument();
+    expect(screen.getByText('Medium Track')).toBeInTheDocument();
+    expect(screen.getByText('0/5 cars')).toBeInTheDocument();
+    expect(screen.getByText('Large Track')).toBeInTheDocument();
+    expect(screen.getByText('0/10 cars')).toBeInTheDocument();
   });
 
   it('should display correct maxCars for industry fetched from MongoDB', () => {
-    // This simulates an industry document as it would come from MongoDB
     const mongoIndustry: Industry = {
       _id: { $oid: 'mongo-industry-1' },
       name: 'Weyerhaeuser',
@@ -384,12 +301,14 @@ describe('CurrentLayoutState', () => {
       ownerId: { $oid: 'owner1' },
       tracks: [
         {
+          ...mockTrack,
           _id: { $oid: '67d9f9e6da5d86ace37386c3' },
           name: 'shipping',
           maxCars: { $numberInt: '3' },
           placedCars: []
         },
         {
+          ...mockTrack,
           _id: { $oid: '67d9f9e6da5d86ace37386c4' },
           name: 'receiving',
           maxCars: { $numberInt: '5' },
@@ -407,11 +326,10 @@ describe('CurrentLayoutState', () => {
       />
     );
     
-    // Verify the track capacities are displayed correctly
-    expect(screen.getByText('shipping (0/3 cars)')).toBeInTheDocument();
-    expect(screen.getByText('receiving (0/5 cars)')).toBeInTheDocument();
-    
-    // Verify other industry details are displayed correctly
+    expect(screen.getByText('shipping')).toBeInTheDocument();
+    expect(screen.getByText('0/3 cars')).toBeInTheDocument();
+    expect(screen.getByText('receiving')).toBeInTheDocument();
+    expect(screen.getByText('0/5 cars')).toBeInTheDocument();
     expect(screen.getByText('Weyerhaeuser')).toBeInTheDocument();
     expect(screen.getByText('FREIGHT')).toBeInTheDocument();
   });

@@ -59,11 +59,48 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
     }
     
     const carsAtLocation = layoutState.getCarsAtLocation(locationId);
+    const capacityPercentage = maxCars > 0 ? (carCount / maxCars) * 100 : 0;
     
     return (
-      <Box key={track._id.$oid} sx={{ ml: 2, mb: 1 }}>
-        <Box component="div" sx={{ mb: 0.5 }}>
-          {track.name} ({carCount}/{maxCars} cars)
+      <Box 
+        key={track._id.$oid} 
+        sx={{ 
+          ml: 2, 
+          mb: 2,
+          p: 1.5,
+          bgcolor: 'background.paper',
+          borderRadius: 1,
+          border: '1px solid',
+          borderColor: 'divider'
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
+            {track.name}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              {carCount}/{maxCars} cars
+            </Typography>
+            <Box 
+              sx={{ 
+                width: 60, 
+                height: 6, 
+                bgcolor: 'grey.200',
+                borderRadius: 3,
+                overflow: 'hidden'
+              }}
+            >
+              <Box 
+                sx={{ 
+                  width: `${capacityPercentage}%`, 
+                  height: '100%', 
+                  bgcolor: capacityPercentage > 80 ? 'error.main' : 
+                          capacityPercentage > 50 ? 'warning.main' : 'success.main'
+                }} 
+              />
+            </Box>
+          </Box>
         </Box>
         {track.placedCars?.map(carId => {
           const car = rollingStock[carId];
@@ -71,14 +108,33 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
           return (
             <Box 
               key={carId} 
-              component="div" 
               sx={{ 
                 ml: 2, 
-                color: isAtLocation ? 'text.primary' : 'text.secondary',
-                fontWeight: isAtLocation ? 'bold' : 'normal'
+                p: 1,
+                bgcolor: isAtLocation ? 'action.hover' : 'transparent',
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
               }}
             >
-              {car ? `${car.roadName} ${car.roadNumber} - ${car.description}` : carId}
+              <Box 
+                sx={{ 
+                  width: 8, 
+                  height: 8, 
+                  borderRadius: '50%',
+                  bgcolor: isAtLocation ? 'success.main' : 'grey.400'
+                }} 
+              />
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  color: isAtLocation ? 'text.primary' : 'text.secondary',
+                  fontWeight: isAtLocation ? 'medium' : 'normal'
+                }}
+              >
+                {car ? `${car.roadName} ${car.roadNumber} - ${car.description}` : carId}
+              </Typography>
             </Box>
           );
         })}
@@ -87,18 +143,37 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
   };
 
   const renderIndustry = (industry: Industry) => (
-    <Box key={industry._id.$oid} sx={{ ml: 2, mb: 2 }}>
-      <Box component="div" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-        <Box component="span" sx={{ fontWeight: 'bold' }}>
+    <Box 
+      key={industry._id.$oid} 
+      sx={{ 
+        ml: 2, 
+        mb: 3,
+        p: 2,
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
           {industry.name}
-        </Box>
+        </Typography>
         <Chip 
           label={industry.industryType} 
           size="small" 
-          sx={{ ml: 1, fontSize: '0.75rem' }} 
+          sx={{ 
+            fontSize: '0.75rem',
+            bgcolor: industry.industryType === 'FREIGHT' ? 'primary.light' :
+                    industry.industryType === 'YARD' ? 'secondary.light' :
+                    'info.light',
+            color: 'white',
+            fontWeight: 'medium'
+          }} 
         />
       </Box>
-      {industry.tracks.map(track => renderTrack(track, industry.locationId.$oid))}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {industry.tracks.map(track => renderTrack(track, industry.locationId.$oid))}
+      </Box>
     </Box>
   );
 
@@ -115,27 +190,57 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
       </Typography>
 
       {Object.entries(locationsByBlock).map(([block, blockLocations]) => (
-        <Paper key={block} sx={{ mb: 3, p: 2 }}>
-          <Typography variant="h6" component="h2" gutterBottom>
+        <Paper 
+          key={block} 
+          sx={{ 
+            mb: 4, 
+            p: 3,
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 2
+          }}
+        >
+          <Typography 
+            variant="h5" 
+            component="h2" 
+            sx={{ 
+              mb: 3,
+              color: 'primary.main',
+              fontWeight: 'bold'
+            }}
+          >
             {block} Block
           </Typography>
-          <List>
+          <List sx={{ p: 0 }}>
             {blockLocations.map((location) => (
               <Box key={location._id.$oid}>
-                <ListItem>
-                  <Box sx={{ width: '100%' }}>
-                    <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                      {location.stationName}
-                    </Typography>
-                    <Box sx={{ mt: 1 }}>
-                      {location.industries.length === 0 ? (
-                        <Box sx={{ color: 'text.secondary' }}>
-                          No industries
-                        </Box>
-                      ) : (
-                        location.industries.map(industry => renderIndustry(industry))
-                      )}
-                    </Box>
+                <ListItem sx={{ display: 'block', p: 0, mb: 3 }}>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      mb: 2,
+                      color: 'text.primary',
+                      fontWeight: 'medium'
+                    }}
+                  >
+                    {location.stationName}
+                  </Typography>
+                  <Box sx={{ mt: 1 }}>
+                    {location.industries.length === 0 ? (
+                      <Box 
+                        sx={{ 
+                          color: 'text.secondary',
+                          fontStyle: 'italic',
+                          p: 2,
+                          bgcolor: 'grey.50',
+                          borderRadius: 1
+                        }}
+                      >
+                        No industries
+                      </Box>
+                    ) : (
+                      location.industries.map(industry => renderIndustry(industry))
+                    )}
                   </Box>
                 </ListItem>
                 <Divider />
