@@ -27,7 +27,9 @@
       "@state/*": ["src/state/*"],
       "@app/*": ["src/app/*"],
       "@test/*": ["src/test/*"],
-      "@data/*": ["src/data/*"]
+      "@data/*": ["src/data/*"],
+      "@shared/types/*": ["src/app/shared/types/*"],
+      "@shared/components/*": ["src/app/shared/components/*"]
     },
     "types": [
       "jest",
