@@ -26,15 +26,27 @@ export const Dashboard: React.FC = () => {
     locationError,
     industryError,
     trainRouteError,
+    fetchLocations,
+    fetchIndustries,
+    fetchTrainRoutes,
   } = useLayoutContext();
 
   const isLoading = isLoadingLocations || isLoadingIndustries || isLoadingTrainRoutes;
   const hasError = locationError || industryError || trainRouteError;
 
+  const handleRetry = () => {
+    if (locationError) fetchLocations();
+    if (industryError) fetchIndustries();
+    if (trainRouteError) fetchTrainRoutes();
+  };
+
   if (isLoading) {
     return (
       <div className="text-center p-8">
         <div className="text-xl text-gray-600">Loading statistics...</div>
+        <div className="mt-4">
+          <div role="status" className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
       </div>
     );
   }
@@ -42,7 +54,18 @@ export const Dashboard: React.FC = () => {
   if (hasError) {
     return (
       <div className="text-center p-8">
-        <div className="text-xl text-red-600">Error loading statistics</div>
+        <div className="text-xl text-red-600 mb-4">Unable to load dashboard data</div>
+        <div className="text-gray-600 mb-4">
+          {locationError && <div>• {locationError}</div>}
+          {industryError && <div>• {industryError}</div>}
+          {trainRouteError && <div>• {trainRouteError}</div>}
+        </div>
+        <button
+          onClick={handleRetry}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }
