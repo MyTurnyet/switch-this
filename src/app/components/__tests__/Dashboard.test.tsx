@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Dashboard } from '@/app/components/Dashboard';
 import { useLayout } from '@/app/shared/contexts/LayoutContext';
 
@@ -8,6 +8,8 @@ jest.mock('@/app/shared/contexts/LayoutContext', () => ({
 }));
 
 describe('Dashboard', () => {
+  const mockRefreshData = jest.fn();
+
   beforeEach(() => {
     jest.clearAllMocks();
     (useLayout as jest.Mock).mockReturnValue({
@@ -16,87 +18,109 @@ describe('Dashboard', () => {
       trainRoutes: [],
       error: null,
       isLoading: false,
-      fetchLocations: jest.fn(),
-      fetchIndustries: jest.fn(),
-      fetchTrainRoutes: jest.fn()
+      refreshData: mockRefreshData
     });
   });
 
-  it('displays loading state', () => {
-    (useLayout as jest.Mock).mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      error: null,
-      isLoading: true,
-      fetchLocations: jest.fn(),
-      fetchIndustries: jest.fn(),
-      fetchTrainRoutes: jest.fn()
+  describe('initialization', () => {
+    it('calls refreshData on mount', async () => {
+      render(<Dashboard />);
+      await waitFor(() => {
+        expect(mockRefreshData).toHaveBeenCalledTimes(1);
+      });
     });
-
-    render(<Dashboard />);
-    const loadingElements = screen.getAllByText('...');
-    expect(loadingElements).toHaveLength(3);
   });
 
-  it('displays error state', () => {
-    const errorMessage = 'Failed to load data';
-    (useLayout as jest.Mock).mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      error: errorMessage,
-      isLoading: false,
-      fetchLocations: jest.fn(),
-      fetchIndustries: jest.fn(),
-      fetchTrainRoutes: jest.fn()
-    });
+  describe('loading state', () => {
+    it('displays loading indicators when data is being fetched', () => {
+      (useLayout as jest.Mock).mockReturnValue({
+        locations: [],
+        industries: [],
+        trainRoutes: [],
+        error: null,
+        isLoading: true,
+        refreshData: mockRefreshData
+      });
 
-    render(<Dashboard />);
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      render(<Dashboard />);
+      const loadingElements = screen.getAllByText('...');
+      expect(loadingElements).toHaveLength(3);
+      loadingElements.forEach(element => {
+        expect(element).toHaveClass('animate-pulse');
+      });
+    });
   });
 
-  it('displays statistics when data is loaded', () => {
-    const mockData = {
-      locations: [{ _id: '1' }, { _id: '2' }],
-      industries: [{ _id: '1' }],
-      trainRoutes: [{ _id: '1' }, { _id: '2' }, { _id: '3' }]
-    };
+  describe('error state', () => {
+    it('displays error message with correct styling', () => {
+      const errorMessage = 'Failed to load data';
+      (useLayout as jest.Mock).mockReturnValue({
+        locations: [],
+        industries: [],
+        trainRoutes: [],
+        error: errorMessage,
+        isLoading: false,
+        refreshData: mockRefreshData
+      });
 
-    (useLayout as jest.Mock).mockReturnValue({
-      ...mockData,
-      error: null,
-      isLoading: false,
-      fetchLocations: jest.fn(),
-      fetchIndustries: jest.fn(),
-      fetchTrainRoutes: jest.fn()
+      render(<Dashboard />);
+      const errorElement = screen.getByText(errorMessage);
+      expect(errorElement).toBeInTheDocument();
+      expect(errorElement).toHaveClass('text-red-600');
     });
-
-    render(<Dashboard />);
-    expect(screen.getByText('2')).toBeInTheDocument(); // Locations count
-    expect(screen.getByText('1')).toBeInTheDocument(); // Industries count
-    expect(screen.getByText('3')).toBeInTheDocument(); // Train routes count
   });
 
-  it('fetches data on mount', () => {
-    const mockFetchLocations = jest.fn();
-    const mockFetchIndustries = jest.fn();
-    const mockFetchTrainRoutes = jest.fn();
+  describe('data display', () => {
+    it('displays correct statistics when data is loaded', () => {
+      const mockData = {
+        locations: [{ _id: '1' }, { _id: '2' }],
+        industries: [{ _id: '1' }],
+        trainRoutes: [{ _id: '1' }, { _id: '2' }, { _id: '3' }],
+        error: null,
+        isLoading: false,
+        refreshData: mockRefreshData
+      };
 
-    (useLayout as jest.Mock).mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      error: null,
-      isLoading: false,
-      fetchLocations: mockFetchLocations,
-      fetchIndustries: mockFetchIndustries,
-      fetchTrainRoutes: mockFetchTrainRoutes
+      (useLayout as jest.Mock).mockReturnValue(mockData);
+
+      render(<Dashboard />);
+
+      // Verify grid layout
+      const grid = screen.getByTestId('dashboard-grid');
+      expect(grid).toHaveClass('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-6');
+
+      // Verify counts
+      expect(screen.getByText('2')).toBeInTheDocument(); // Locations count
+      expect(screen.getByText('1')).toBeInTheDocument(); // Industries count
+      expect(screen.getByText('3')).toBeInTheDocument(); // Train routes count
+
+      // Verify labels
+      expect(screen.getByText('Locations')).toBeInTheDocument();
+      expect(screen.getByText('Industries')).toBeInTheDocument();
+      expect(screen.getByText('Train Routes')).toBeInTheDocument();
     });
 
-    render(<Dashboard />);
-    expect(mockFetchLocations).toHaveBeenCalled();
-    expect(mockFetchIndustries).toHaveBeenCalled();
-    expect(mockFetchTrainRoutes).toHaveBeenCalled();
+    it('displays zero counts when arrays are empty', () => {
+      render(<Dashboard />);
+      
+      const counts = screen.getAllByText('0');
+      expect(counts).toHaveLength(3);
+    });
+
+    it('displays zero counts when data is null', () => {
+      (useLayout as jest.Mock).mockReturnValue({
+        locations: null,
+        industries: null,
+        trainRoutes: null,
+        error: null,
+        isLoading: false,
+        refreshData: mockRefreshData
+      });
+
+      render(<Dashboard />);
+      
+      const counts = screen.getAllByText('0');
+      expect(counts).toHaveLength(3);
+    });
   });
 }); 
