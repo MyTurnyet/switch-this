@@ -1,17 +1,17 @@
 export interface Track {
-  _id: { $oid: string };
+  _id: string;
   name: string;
-  maxCars: { $numberInt: string };
-  placedCars: string[];
+  maxCars: number;
+  placedCars: string[]; // You can define a more specific type for placedCars if needed
 }
 
 export interface Industry {
-  _id: { $oid: string };
+  _id: string;
   name: string;
-  industryType: string;
+  industryType: 'FREIGHT' | 'YARD' | 'PASSENGER';
   tracks: Track[];
-  locationId: { $oid: string };
-  ownerId: { $oid: string };
+  locationId: string;
+  ownerId: string;
 }
 
 export interface Location {
