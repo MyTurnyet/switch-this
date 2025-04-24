@@ -20,7 +20,7 @@ describe('groupIndustriesByLocationAndBlock', () => {
       '1': {
         locationName: 'Station A',
         blocks: {
-          'Unassigned': [
+          'Block 1': [
             { _id: '1', name: 'Industry 1', locationId: '1', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' },
             { _id: '2', name: 'Industry 2', locationId: '1', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' }
           ]
@@ -29,7 +29,7 @@ describe('groupIndustriesByLocationAndBlock', () => {
       '2': {
         locationName: 'Station B',
         blocks: {
-          'Unassigned': [
+          'Block 2': [
             { _id: '3', name: 'Industry 3', locationId: '2', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' }
           ]
         }

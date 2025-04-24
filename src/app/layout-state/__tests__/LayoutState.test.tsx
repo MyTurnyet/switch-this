@@ -12,13 +12,34 @@ describe('LayoutState', () => {
 
   const mockData = {
     locations: [
-      { _id: '1', stationName: 'Station A', block: 'Block 1' },
-      { _id: '2', stationName: 'Station B', block: 'Block 2' }
+      { _id: '1', stationName: 'Station A', block: 'Block 1', ownerId: 'owner1' },
+      { _id: '2', stationName: 'Station B', block: 'Block 2', ownerId: 'owner2' }
     ],
     industries: [
-      { _id: '1', name: 'Industry 1', locationId: '1', block: 'Block 1' },
-      { _id: '2', name: 'Industry 2', locationId: '1', block: 'Block 1' },
-      { _id: '3', name: 'Industry 3', locationId: '2', block: 'Block 2' }
+      { 
+        _id: '1', 
+        name: 'Industry 1', 
+        locationId: '1', 
+        industryType: 'FREIGHT',
+        tracks: [],
+        ownerId: 'owner1'
+      },
+      { 
+        _id: '2', 
+        name: 'Industry 2', 
+        locationId: '1', 
+        industryType: 'FREIGHT',
+        tracks: [],
+        ownerId: 'owner1'
+      },
+      { 
+        _id: '3', 
+        name: 'Industry 3', 
+        locationId: '2', 
+        industryType: 'FREIGHT',
+        tracks: [],
+        ownerId: 'owner2'
+      }
     ],
     rollingStock: [],
     error: '',

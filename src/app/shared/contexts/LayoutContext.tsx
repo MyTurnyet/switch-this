@@ -1,11 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
 import { Location, Industry, TrainRoute, RollingStock } from '@/shared/types/models';
-import { LocationService } from '@/app/shared/services/LocationService';
-import { IndustryService } from '@/app/shared/services/IndustryService';
-import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
-import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { LayoutDataCache } from './LayoutDataCache';
 
 interface LayoutContextType {
@@ -30,54 +26,40 @@ const defaultContext: LayoutContextType = {
 
 const LayoutContext = createContext<LayoutContextType>(defaultContext);
 
-interface LayoutProviderProps {
-  children: React.ReactNode;
-  locationService?: LocationService;
-  industryService?: IndustryService;
-  trainRouteService?: TrainRouteService;
-  rollingStockService?: RollingStockService;
-  initialState?: {
-    locations: Location[];
-    industries: Industry[];
-    trainRoutes?: TrainRoute[];
-    rollingStock: RollingStock[];
+interface Services {
+  locationService: {
+    getAllLocations: () => Promise<Location[]>;
   };
+  industryService: {
+    getAllIndustries: () => Promise<Industry[]>;
+  };
+  trainRouteService: {
+    getAllTrainRoutes: () => Promise<TrainRoute[]>;
+  };
+  rollingStockService: {
+    getAllRollingStock: () => Promise<RollingStock[]>;
+  };
+}
+
+interface LayoutProviderProps {
+  children: ReactNode;
+  services: Services;
 }
 
 export const LayoutProvider: React.FC<LayoutProviderProps> = ({ 
   children,
-  locationService: injectedLocationService,
-  industryService: injectedIndustryService,
-  trainRouteService: injectedTrainRouteService,
-  rollingStockService: injectedRollingStockService,
-  initialState
+  services
 }) => {
   const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(!initialState);
+  const [isLoading, setIsLoading] = useState(false);
   const cache = useMemo(() => {
     const cacheInstance = new LayoutDataCache();
-    if (initialState) {
-      cacheInstance.setLocations(initialState.locations);
-      cacheInstance.setIndustries(initialState.industries);
-      if (initialState.trainRoutes) {
-        cacheInstance.setTrainRoutes(initialState.trainRoutes);
-      }
-      cacheInstance.setRollingStock(initialState.rollingStock);
-    }
     return cacheInstance;
-  }, [initialState]);
-
-  // Memoize service instances
-  const services = useMemo(() => ({
-    locationService: injectedLocationService || new LocationService(),
-    industryService: injectedIndustryService || new IndustryService(),
-    trainRouteService: injectedTrainRouteService || new TrainRouteService(),
-    rollingStockService: injectedRollingStockService || new RollingStockService()
-  }), [injectedLocationService, injectedIndustryService, injectedTrainRouteService, injectedRollingStockService]);
+  }, []);
 
   const fetchData = useMemo(() => async (forceRefresh = false) => {
-    if (initialState && !forceRefresh) {
-      return; // Don't fetch if we have initial state and not forcing refresh
+    if (!forceRefresh && cache.isDataLoaded()) {
+      return; // Don't fetch if we have data and not forcing refresh
     }
     setIsLoading(true);
     setError('');
@@ -99,15 +81,15 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [services, cache, initialState]);
+  }, [services, cache]);
 
   useEffect(() => {
-    if (!initialState && !cache.isDataLoaded()) {
+    if (!cache.isDataLoaded()) {
       fetchData(false);
     } else {
       setIsLoading(false);
     }
-  }, [fetchData, cache, initialState]);
+  }, [fetchData, cache]);
 
   const contextValue = useMemo(() => ({
     locations: cache.getLocations(),

@@ -1,16 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { LayoutProvider, useLayout } from '@/app/shared/contexts/LayoutContext';
-import { LocationService } from '@/app/shared/services/LocationService';
-import { IndustryService } from '@/app/shared/services/IndustryService';
-import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
-import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { Location, Industry, TrainRoute, RollingStock } from '@/shared/types/models';
-
-jest.mock('@/app/shared/services/LocationService');
-jest.mock('@/app/shared/services/IndustryService');
-jest.mock('@/app/shared/services/TrainRouteService');
-jest.mock('@/app/shared/services/RollingStockService');
 
 const mockLocations: Location[] = [
   {
@@ -102,31 +93,23 @@ describe('LayoutContext', () => {
   });
 
   it('shows loading state initially', async () => {
-    const mockLocationService = {
-      getAllLocations: jest.fn().mockResolvedValue(mockLocations)
+    const mockServices = {
+      locationService: {
+        getAllLocations: jest.fn().mockResolvedValue(mockLocations)
+      },
+      industryService: {
+        getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
+      },
+      trainRouteService: {
+        getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
+      },
+      rollingStockService: {
+        getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
+      }
     };
-    const mockIndustryService = {
-      getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
-    };
-    const mockTrainRouteService = {
-      getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
-    };
-    const mockRollingStockService = {
-      getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
-    };
-
-    (LocationService as jest.Mock).mockImplementation(() => mockLocationService);
-    (IndustryService as jest.Mock).mockImplementation(() => mockIndustryService);
-    (TrainRouteService as jest.Mock).mockImplementation(() => mockTrainRouteService);
-    (RollingStockService as jest.Mock).mockImplementation(() => mockRollingStockService);
 
     render(
-      <LayoutProvider
-        locationService={mockLocationService}
-        industryService={mockIndustryService}
-        trainRouteService={mockTrainRouteService}
-        rollingStockService={mockRollingStockService}
-      >
+      <LayoutProvider services={mockServices}>
         <TestComponent />
       </LayoutProvider>
     );
@@ -135,31 +118,23 @@ describe('LayoutContext', () => {
   });
 
   it('loads all data successfully', async () => {
-    const mockLocationService = {
-      getAllLocations: jest.fn().mockResolvedValue(mockLocations)
+    const mockServices = {
+      locationService: {
+        getAllLocations: jest.fn().mockResolvedValue(mockLocations)
+      },
+      industryService: {
+        getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
+      },
+      trainRouteService: {
+        getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
+      },
+      rollingStockService: {
+        getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
+      }
     };
-    const mockIndustryService = {
-      getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
-    };
-    const mockTrainRouteService = {
-      getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
-    };
-    const mockRollingStockService = {
-      getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
-    };
-
-    (LocationService as jest.Mock).mockImplementation(() => mockLocationService);
-    (IndustryService as jest.Mock).mockImplementation(() => mockIndustryService);
-    (TrainRouteService as jest.Mock).mockImplementation(() => mockTrainRouteService);
-    (RollingStockService as jest.Mock).mockImplementation(() => mockRollingStockService);
 
     render(
-      <LayoutProvider
-        locationService={mockLocationService}
-        industryService={mockIndustryService}
-        trainRouteService={mockTrainRouteService}
-        rollingStockService={mockRollingStockService}
-      >
+      <LayoutProvider services={mockServices}>
         <TestComponent />
       </LayoutProvider>
     );
@@ -175,31 +150,23 @@ describe('LayoutContext', () => {
   });
 
   it('handles location service error', async () => {
-    const mockLocationService = {
-      getAllLocations: jest.fn().mockRejectedValue(new Error('Failed to load locations'))
+    const mockServices = {
+      locationService: {
+        getAllLocations: jest.fn().mockRejectedValue(new Error('Failed to load locations'))
+      },
+      industryService: {
+        getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
+      },
+      trainRouteService: {
+        getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
+      },
+      rollingStockService: {
+        getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
+      }
     };
-    const mockIndustryService = {
-      getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
-    };
-    const mockTrainRouteService = {
-      getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
-    };
-    const mockRollingStockService = {
-      getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
-    };
-
-    (LocationService as jest.Mock).mockImplementation(() => mockLocationService);
-    (IndustryService as jest.Mock).mockImplementation(() => mockIndustryService);
-    (TrainRouteService as jest.Mock).mockImplementation(() => mockTrainRouteService);
-    (RollingStockService as jest.Mock).mockImplementation(() => mockRollingStockService);
 
     render(
-      <LayoutProvider
-        locationService={mockLocationService}
-        industryService={mockIndustryService}
-        trainRouteService={mockTrainRouteService}
-        rollingStockService={mockRollingStockService}
-      >
+      <LayoutProvider services={mockServices}>
         <TestComponent />
       </LayoutProvider>
     );
@@ -210,31 +177,23 @@ describe('LayoutContext', () => {
   });
 
   it('handles industry service error', async () => {
-    const mockLocationService = {
-      getAllLocations: jest.fn().mockResolvedValue(mockLocations)
+    const mockServices = {
+      locationService: {
+        getAllLocations: jest.fn().mockResolvedValue(mockLocations)
+      },
+      industryService: {
+        getAllIndustries: jest.fn().mockRejectedValue(new Error('Failed to load industries'))
+      },
+      trainRouteService: {
+        getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
+      },
+      rollingStockService: {
+        getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
+      }
     };
-    const mockIndustryService = {
-      getAllIndustries: jest.fn().mockRejectedValue(new Error('Failed to load industries'))
-    };
-    const mockTrainRouteService = {
-      getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
-    };
-    const mockRollingStockService = {
-      getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
-    };
-
-    (LocationService as jest.Mock).mockImplementation(() => mockLocationService);
-    (IndustryService as jest.Mock).mockImplementation(() => mockIndustryService);
-    (TrainRouteService as jest.Mock).mockImplementation(() => mockTrainRouteService);
-    (RollingStockService as jest.Mock).mockImplementation(() => mockRollingStockService);
 
     render(
-      <LayoutProvider
-        locationService={mockLocationService}
-        industryService={mockIndustryService}
-        trainRouteService={mockTrainRouteService}
-        rollingStockService={mockRollingStockService}
-      >
+      <LayoutProvider services={mockServices}>
         <TestComponent />
       </LayoutProvider>
     );
@@ -245,31 +204,23 @@ describe('LayoutContext', () => {
   });
 
   it('handles train route service error', async () => {
-    const mockLocationService = {
-      getAllLocations: jest.fn().mockResolvedValue(mockLocations)
+    const mockServices = {
+      locationService: {
+        getAllLocations: jest.fn().mockResolvedValue(mockLocations)
+      },
+      industryService: {
+        getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
+      },
+      trainRouteService: {
+        getAllTrainRoutes: jest.fn().mockRejectedValue(new Error('Failed to load train routes'))
+      },
+      rollingStockService: {
+        getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
+      }
     };
-    const mockIndustryService = {
-      getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
-    };
-    const mockTrainRouteService = {
-      getAllTrainRoutes: jest.fn().mockRejectedValue(new Error('Failed to load train routes'))
-    };
-    const mockRollingStockService = {
-      getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
-    };
-
-    (LocationService as jest.Mock).mockImplementation(() => mockLocationService);
-    (IndustryService as jest.Mock).mockImplementation(() => mockIndustryService);
-    (TrainRouteService as jest.Mock).mockImplementation(() => mockTrainRouteService);
-    (RollingStockService as jest.Mock).mockImplementation(() => mockRollingStockService);
 
     render(
-      <LayoutProvider
-        locationService={mockLocationService}
-        industryService={mockIndustryService}
-        trainRouteService={mockTrainRouteService}
-        rollingStockService={mockRollingStockService}
-      >
+      <LayoutProvider services={mockServices}>
         <TestComponent />
       </LayoutProvider>
     );
@@ -283,33 +234,25 @@ describe('LayoutContext', () => {
     const initialLocations = [mockLocations[0]];
     const updatedLocations = mockLocations;
 
-    const mockLocationService = {
-      getAllLocations: jest.fn()
-        .mockResolvedValueOnce(initialLocations)
-        .mockResolvedValueOnce(updatedLocations)
+    const mockServices = {
+      locationService: {
+        getAllLocations: jest.fn()
+          .mockResolvedValueOnce(initialLocations)
+          .mockResolvedValueOnce(updatedLocations)
+      },
+      industryService: {
+        getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
+      },
+      trainRouteService: {
+        getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
+      },
+      rollingStockService: {
+        getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
+      }
     };
-    const mockIndustryService = {
-      getAllIndustries: jest.fn().mockResolvedValue(mockIndustries)
-    };
-    const mockTrainRouteService = {
-      getAllTrainRoutes: jest.fn().mockResolvedValue(mockTrainRoutes)
-    };
-    const mockRollingStockService = {
-      getAllRollingStock: jest.fn().mockResolvedValue(mockRollingStock)
-    };
-
-    (LocationService as jest.Mock).mockImplementation(() => mockLocationService);
-    (IndustryService as jest.Mock).mockImplementation(() => mockIndustryService);
-    (TrainRouteService as jest.Mock).mockImplementation(() => mockTrainRouteService);
-    (RollingStockService as jest.Mock).mockImplementation(() => mockRollingStockService);
 
     render(
-      <LayoutProvider
-        locationService={mockLocationService}
-        industryService={mockIndustryService}
-        trainRouteService={mockTrainRouteService}
-        rollingStockService={mockRollingStockService}
-      >
+      <LayoutProvider services={mockServices}>
         <TestComponent />
       </LayoutProvider>
     );
@@ -328,6 +271,6 @@ describe('LayoutContext', () => {
       expect(screen.getByTestId('locations')).toHaveTextContent('2');
     });
 
-    expect(mockLocationService.getAllLocations).toHaveBeenCalledTimes(2);
+    expect(mockServices.locationService.getAllLocations).toHaveBeenCalledTimes(2);
   });
 }); 

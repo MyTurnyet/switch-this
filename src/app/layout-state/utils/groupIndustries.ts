@@ -28,7 +28,7 @@ export function groupIndustriesByLocationAndBlock(
       };
     }
 
-    const block = industry.block || 'Unassigned';
+    const block = location.block;
     if (!grouped[industry.locationId].blocks[block]) {
       grouped[industry.locationId].blocks[block] = [];
     }
