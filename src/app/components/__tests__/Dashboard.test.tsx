@@ -1,8 +1,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Dashboard from './Dashboard';
-import { Location, Industry, RollingStock } from '../shared/types/models';
+import Dashboard from '../Dashboard';
+import CarTypeBadge from '../CarTypeBadge';
+import { Location, Industry, RollingStock } from '../../shared/types/models';
 
 describe('Dashboard', () => {
   const mockLocations: Location[] = [

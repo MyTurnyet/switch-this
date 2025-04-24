@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import CarTypeBadge from './CarTypeBadge';
+import CarTypeBadge from '../CarTypeBadge';
 
 describe('CarTypeBadge', () => {
   it('renders car type and count correctly', () => {

@@ -1,9 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { FeatureCard } from './FeatureCard';
-import { ThemeProvider } from '@mui/material';
-import { createTheme } from '@mui/material/styles';
+import { FeatureCard } from '../FeatureCard';
+import { ThemeProvider, createTheme } from '@mui/material';
 
 const theme = createTheme();
 

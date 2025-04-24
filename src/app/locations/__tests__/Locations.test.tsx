@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import Locations from '../../app/locations/page';
-import locationsData from '../../data/locations.json';
+import Locations from '../page';
+import locationsData from '../../../data/locations.json';
 import { ThemeProvider, createTheme } from '@mui/material';
 import React from 'react';
 

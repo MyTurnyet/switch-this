@@ -1,8 +1,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import ThemeRegistry from './ThemeRegistry';
-import { ThemeProvider } from '@mui/material/styles';
-import { theme } from '../../styles/theme';
+import ThemeRegistry from '../ThemeRegistry';
+import { ThemeProvider, createTheme } from '@mui/material';
+
+const theme = createTheme();
 
 describe('ThemeRegistry', () => {
   it('renders children and navigation', () => {

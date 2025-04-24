@@ -1,8 +1,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import Navigation from './Navigation';
-import { ThemeProvider } from '@mui/material/styles';
-import { theme } from '../../styles/theme';
+import Navigation from '../Navigation';
+import { ThemeProvider, createTheme } from '@mui/material';
+
+const theme = createTheme();
 
 describe('Navigation', () => {
   const renderNavigation = () => {

@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import RollingStockPage from '../../pages/RollingStock';
+import RollingStockPage from '../page';
 
 // Mock the rolling stock data
-jest.mock('../../data/rolling-stock.json', () => [
+jest.mock('../../../data/rolling-stock.json', () => [
   {
     _id: { $oid: '1' },
     roadName: 'CP',
