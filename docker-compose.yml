@@ -17,7 +17,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password
       - MONGO_INITDB_DATABASE=switch-this
-    command: mongod --auth
+    command: mongod --auth --bind_ip_all
 
 volumes:
   mongodb_data: 

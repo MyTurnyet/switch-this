@@ -5,13 +5,11 @@ import { StatCard } from './StatCard';
 import { useLayout } from '../shared/contexts/LayoutContext';
 
 export const Dashboard: React.FC = () => {
-  const { locations, industries, trainRoutes, error, isLoading, fetchLocations, fetchIndustries, fetchTrainRoutes } = useLayout();
+  const { locations, industries, trainRoutes, error, isLoading, refreshData } = useLayout();
 
   useEffect(() => {
-    fetchLocations();
-    fetchIndustries();
-    fetchTrainRoutes();
-  }, [fetchLocations, fetchIndustries, fetchTrainRoutes]);
+    refreshData();
+  }, [refreshData]);
 
   if (error) {
     return (
