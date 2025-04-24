@@ -2,12 +2,19 @@
 
 import React from 'react';
 import { Container, Box, Typography, Paper } from '@mui/material';
-import { Industry, Location } from '@shared/types/models';
+import { Industry, Location, MongoNumber } from '@shared/types/models';
 import industriesData from '@data/industries.json';
 import locationsData from '@data/locations.json';
 
 const isValidIndustryType = (type: string): type is Industry['industryType'] => {
   return ['FREIGHT', 'YARD', 'PASSENGER'].includes(type);
+};
+
+const getMaxCarsValue = (maxCars: number | MongoNumber): number => {
+  if (typeof maxCars === 'number') {
+    return maxCars;
+  }
+  return parseInt(maxCars.$numberInt);
 };
 
 export default function IndustriesPage() {
@@ -142,7 +149,7 @@ export default function IndustriesPage() {
                               variant="body2"
                               sx={{ color: '#4A5568' }}
                             >
-                              {track.name} (Max Cars: {track.maxCars.$numberInt})
+                              {track.name} (Max Cars: {getMaxCarsValue(track.maxCars)})
                             </Typography>
                           ))}
                         </Box>

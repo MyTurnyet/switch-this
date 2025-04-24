@@ -1,30 +1,13 @@
 import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
+import { db } from '@/shared/db';
 
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-let client: MongoClient | null = null;
-
-async function getClient() {
-  if (!client) {
-    client = new MongoClient(uri);
-    await client.connect();
-  }
-  return client;
-}
-
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const client = await getClient();
-    const database = client.db('switch-this');
-    const rollingStock = database.collection('rolling-stock');
-    
-    const result = await rollingStock.find({}).toArray();
-    return NextResponse.json(result);
+    const collection = await db.collection('rollingStock');
+    const rollingStock = await collection.find().toArray();
+    return NextResponse.json(rollingStock);
   } catch (error) {
-    console.error('Error fetching rolling stock:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch rolling stock' },
-      { status: 500 }
-    );
+    console.error('Failed to fetch rolling stock:', error);
+    return NextResponse.json({ error: 'Failed to fetch rolling stock' }, { status: 500 });
   }
 } 

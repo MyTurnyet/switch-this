@@ -8,6 +8,7 @@ import Dashboard from '@app/components/Dashboard';
 import locationsData from '@data/locations.json';
 import industriesData from '@data/industries.json';
 import rollingStockData from '@data/rolling-stock.json';
+import { MongoId, Industry } from '@shared/types/models';
 
 const features: Feature[] = [
   {
@@ -32,6 +33,50 @@ const features: Feature[] = [
     status: 'active' as const
   }
 ];
+
+const isValidIndustryType = (type: string): type is 'FREIGHT' | 'YARD' | 'PASSENGER' => {
+  return ['FREIGHT', 'YARD', 'PASSENGER'].includes(type);
+};
+
+const transformedIndustries = industriesData.map(industry => {
+  if (!isValidIndustryType(industry.industryType)) {
+    console.warn(`Invalid industry type: ${industry.industryType}`);
+    return { 
+      ...industry, 
+      industryType: 'FREIGHT' as 'FREIGHT' | 'YARD' | 'PASSENGER',
+      _id: { $oid: industry._id.$oid } as MongoId,
+      locationId: { $oid: industry.locationId.$oid } as MongoId,
+      ownerId: { $oid: industry.ownerId.$oid } as MongoId,
+      tracks: industry.tracks.map(track => ({
+        ...track,
+        _id: { $oid: track._id.$oid } as MongoId,
+        maxCars: parseInt(track.maxCars.$numberInt),
+        placedCars: []
+      }))
+    } as Industry;
+  }
+  return {
+    ...industry,
+    industryType: industry.industryType as 'FREIGHT' | 'YARD' | 'PASSENGER',
+    _id: { $oid: industry._id.$oid } as MongoId,
+    locationId: { $oid: industry.locationId.$oid } as MongoId,
+    ownerId: { $oid: industry.ownerId.$oid } as MongoId,
+    tracks: industry.tracks.map(track => ({
+      ...track,
+      _id: { $oid: track._id.$oid } as MongoId,
+      maxCars: parseInt(track.maxCars.$numberInt),
+      placedCars: []
+    }))
+  } as Industry;
+});
+
+const transformedRollingStock = rollingStockData.map(car => ({
+  ...car,
+  _id: { $oid: car._id.$oid } as MongoId,
+  roadNumber: car.roadNumber.toString(),
+  homeYard: { $oid: car.homeYard.$oid } as MongoId,
+  ownerId: { $oid: car.ownerId.$oid } as MongoId
+}));
 
 export default function Home() {
   return (
@@ -103,8 +148,8 @@ export default function Home() {
 
         <Dashboard 
           locations={locationsData} 
-          industries={industriesData} 
-          rollingStock={rollingStockData}
+          industries={transformedIndustries}
+          rollingStock={transformedRollingStock}
         />
       </Container>
     </Box>

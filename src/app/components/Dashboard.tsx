@@ -1,6 +1,5 @@
-import React from 'react';
 import { Box, Paper, Typography } from '@mui/material';
-import { Location, Industry, RollingStock } from '@shared/types/models';
+import { Location, Industry, RollingStock, MongoNumber } from '@shared/types/models';
 import CarTypeBadge from './CarTypeBadge';
 
 interface DashboardProps {
@@ -10,29 +9,36 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ locations, industries, rollingStock }: DashboardProps) {
-  // Calculate location statistics
   const totalLocations = locations.length;
+  const totalIndustries = industries.length;
+  const totalRollingStock = rollingStock.length;
+
+  const getMaxCarsValue = (maxCars: number | MongoNumber): number => {
+    if (typeof maxCars === 'number') {
+      return maxCars;
+    }
+    return parseInt(maxCars.$numberInt);
+  };
+
+  const totalTrackCapacity = industries.reduce((total, industry) => {
+    return total + industry.tracks.reduce((trackTotal, track) => {
+      return trackTotal + getMaxCarsValue(track.maxCars);
+    }, 0);
+  }, 0);
+
+  // Calculate location statistics
   const locationsByBlock = locations.reduce((acc: Record<string, number>, location) => {
     acc[location.block] = (acc[location.block] || 0) + 1;
     return acc;
   }, {});
 
   // Calculate industry statistics
-  const totalIndustries = industries.length;
   const industriesByType = industries.reduce((acc: Record<string, number>, industry) => {
     acc[industry.industryType] = (acc[industry.industryType] || 0) + 1;
     return acc;
   }, {});
 
-  // Calculate track capacity statistics
-  const totalTrackCapacity = industries.reduce((total, industry) => {
-    return total + industry.tracks.reduce((trackTotal, track) => {
-      return trackTotal + parseInt(track.maxCars.$numberInt);
-    }, 0);
-  }, 0);
-
   // Calculate rolling stock statistics
-  const totalRollingStock = rollingStock.length;
   const rollingStockByType = rollingStock.reduce((acc: Record<string, { count: number; description: string }>, car) => {
     if (!acc[car.aarType]) {
       acc[car.aarType] = { count: 0, description: car.description };
@@ -42,10 +48,28 @@ export default function Dashboard({ locations, industries, rollingStock }: Dashb
   }, {});
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        System Overview
+    <Box component="main" sx={{ p: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Layout Statistics
       </Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 3 }}>
+        <Box>
+          <Typography variant="h6">Total Locations</Typography>
+          <Typography variant="h3" color="text.secondary">{totalLocations}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="h6">Total Industries</Typography>
+          <Typography variant="h3" color="text.secondary">{totalIndustries}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="h6">Total Track Capacity</Typography>
+          <Typography variant="h3" color="text.secondary">{totalTrackCapacity} cars</Typography>
+        </Box>
+        <Box>
+          <Typography variant="h6">Total Rolling Stock</Typography>
+          <Typography variant="h3" color="text.secondary">{totalRollingStock}</Typography>
+        </Box>
+      </Box>
       <Box sx={{
         display: 'grid',
         gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
@@ -56,7 +80,6 @@ export default function Dashboard({ locations, industries, rollingStock }: Dashb
           <Typography variant="h6" gutterBottom>
             Location Statistics
           </Typography>
-          <Typography>Total Locations: {totalLocations}</Typography>
           <Typography variant="subtitle2" sx={{ mt: 1 }}>
             Locations by Block:
           </Typography>
@@ -72,7 +95,6 @@ export default function Dashboard({ locations, industries, rollingStock }: Dashb
           <Typography variant="h6" gutterBottom>
             Industry Statistics
           </Typography>
-          <Typography>Total Industries: {totalIndustries}</Typography>
           <Typography variant="subtitle2" sx={{ mt: 1 }}>
             Industries by Type:
           </Typography>
@@ -81,14 +103,6 @@ export default function Dashboard({ locations, industries, rollingStock }: Dashb
               {type}: {count}
             </Typography>
           ))}
-        </Paper>
-
-        {/* Track Capacity */}
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Track Capacity
-          </Typography>
-          <Typography>Total Track Capacity: {totalTrackCapacity} cars</Typography>
         </Paper>
 
         {/* Rolling Stock Statistics */}

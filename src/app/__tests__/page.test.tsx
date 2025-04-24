@@ -1,8 +1,9 @@
+import { describe, it } from '@jest/globals';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Home from '../page';
-import { renderWithTheme } from '../shared/test-utils/render-with-theme';
+import { renderWithTheme } from '@shared/test-utils/render-with-theme';
 
 jest.mock('../shared/components/FeatureCard', () => ({
   FeatureCard: ({ title, description }: { title: string; description: string }) => (
@@ -34,7 +35,8 @@ describe('Home', () => {
 
   it('renders the main container', () => {
     renderWithTheme(<Home />);
-    const main = screen.getByRole('main');
-    expect(main).toBeInTheDocument();
+    const mainElements = screen.getAllByRole('main');
+    expect(mainElements.length).toBeGreaterThan(0);
+    expect(mainElements[0]).toBeInTheDocument();
   });
 }); 

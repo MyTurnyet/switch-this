@@ -98,7 +98,7 @@ describe('LayoutStateContainer', () => {
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Error: Failed to fetch locations/i)).toBeInTheDocument();
+      expect(screen.getByText('Failed to fetch data')).toBeInTheDocument();
     });
   });
 
@@ -378,7 +378,7 @@ describe('LayoutStateContainer', () => {
 
     // Verify error state is shown
     await waitFor(() => {
-      expect(screen.getByText(/Error: Failed to fetch locations/i)).toBeInTheDocument();
+      expect(screen.getByText('Failed to fetch data')).toBeInTheDocument();
     });
   });
 

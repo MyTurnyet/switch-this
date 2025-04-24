@@ -1,55 +1,55 @@
 import { GET } from '../route';
-import { MongoClient } from 'mongodb';
-import { NextResponse } from 'next/server';
+import { db } from '@/shared/db';
 
-// Mock data
-const mockIndustries = [
-  {
-    _id: { $oid: 'ind1' },
-    name: 'Test Industry',
-    industryType: 'Manufacturing',
-    locationId: { $oid: 'loc1' },
-    ownerId: { $oid: 'owner1' },
-    tracks: [{
-      _id: { $oid: 'track1' },
-      name: 'Track 1',
-      maxCars: { $numberInt: '5' },
-      placedCars: []
-    }]
-  }
-];
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: jest.fn().mockImplementation((data, options = {}) => ({
+      json: () => Promise.resolve(data),
+      status: options.status || 200,
+    })),
+  },
+}));
 
-// Mock MongoDB
-jest.mock('mongodb', () => {
-  return {
-    MongoClient: jest.fn().mockImplementation(() => ({
-      connect: jest.fn(),
-      db: jest.fn().mockReturnValue({
-        collection: jest.fn().mockReturnValue({
-          find: jest.fn().mockReturnValue({
-            toArray: jest.fn().mockResolvedValue(mockIndustries)
-          })
-        })
-      })
-    }))
-  };
-});
+jest.mock('@/shared/db', () => ({
+  db: {
+    collection: jest.fn().mockReturnValue(Promise.resolve({
+      find: jest.fn().mockReturnValue({
+        toArray: jest.fn(),
+      }),
+    })),
+  },
+}));
 
-// Mock NextResponse
-jest.mock('next/server', () => {
-  return {
-    NextResponse: {
-      json: jest.fn().mockImplementation((data) => ({ json: () => data }))
-    }
-  };
-});
+describe('GET /api/industries', () => {
+  let mockToArray: jest.Mock;
 
-describe('Industries API', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockToArray = jest.fn();
+  });
+
   it('returns industries from the database', async () => {
-    const mockRequest = new Request('http://localhost:3000/api/industries');
-    const response = await GET(mockRequest);
-    const data = await response.json();
+    const mockIndustries = [
+      { _id: '1', name: 'Industry 1' },
+      { _id: '2', name: 'Industry 2' },
+    ];
 
+    const mockCollection = await db.collection('industries');
+    mockCollection.find().toArray = mockToArray.mockResolvedValueOnce(mockIndustries);
+
+    const response = await GET();
+    expect(response.status).toBe(200);
+    const data = await response.json();
     expect(data).toEqual(mockIndustries);
+  });
+
+  it('handles database errors', async () => {
+    const mockCollection = await db.collection('industries');
+    mockCollection.find().toArray = mockToArray.mockRejectedValueOnce(new Error('Connection failed'));
+
+    const response = await GET();
+    expect(response.status).toBe(500);
+    const data = await response.json();
+    expect(data).toEqual({ error: 'Failed to fetch industries' });
   });
 }); 

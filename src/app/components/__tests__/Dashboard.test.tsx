@@ -1,170 +1,142 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Dashboard from '../Dashboard';
-import CarTypeBadge from '../CarTypeBadge';
-import { Location, Industry, RollingStock } from '../../shared/types/models';
+import { Location, Industry, RollingStock } from '@shared/types/models';
 
 describe('Dashboard', () => {
   const mockLocations: Location[] = [
-    {
-      _id: { $oid: '1' },
-      stationName: 'Location 1',
-      block: 'NORTH',
-      ownerId: { $oid: 'owner1' }
+    { 
+      _id: { $oid: '000000000000000000000001' }, 
+      stationName: 'Location 1', 
+      block: 'NORTH', 
+      ownerId: { $oid: '000000000000000000000010' }
     },
-    {
-      _id: { $oid: '2' },
-      stationName: 'Location 2',
-      block: 'SOUTH',
-      ownerId: { $oid: 'owner1' }
+    { 
+      _id: { $oid: '000000000000000000000002' }, 
+      stationName: 'Location 2', 
+      block: 'NORTH', 
+      ownerId: { $oid: '000000000000000000000010' }
     },
-    {
-      _id: { $oid: '3' },
-      stationName: 'Location 3',
-      block: 'NORTH',
-      ownerId: { $oid: 'owner1' }
+    { 
+      _id: { $oid: '000000000000000000000003' }, 
+      stationName: 'Location 3', 
+      block: 'SOUTH', 
+      ownerId: { $oid: '000000000000000000000010' }
     }
   ];
 
   const mockIndustries: Industry[] = [
-    {
-      _id: { $oid: '1' },
-      name: 'Industry 1',
+    { 
+      _id: { $oid: '000000000000000000000004' },
+      name: 'Industry 1', 
       industryType: 'FREIGHT',
+      locationId: { $oid: '000000000000000000000002' },
+      ownerId: { $oid: '000000000000000000000010' },
       tracks: [
-        {
-          _id: { $oid: 'track1' },
-          name: 'Track 1',
-          maxCars: { $numberInt: '5' },
-          placedCars: []
-        }
-      ],
-      locationId: { $oid: '1' },
-      ownerId: { $oid: 'owner1' }
+        { _id: { $oid: '000000000000000000000005' }, maxCars: { $numberInt: '2' }, name: 'Track 1', placedCars: [] },
+        { _id: { $oid: '000000000000000000000006' }, maxCars: { $numberInt: '3' }, name: 'Track 2', placedCars: [] }
+      ]
     },
-    {
-      _id: { $oid: '2' },
-      name: 'Industry 2',
+    { 
+      _id: { $oid: '000000000000000000000007' },
+      name: 'Industry 2', 
       industryType: 'YARD',
+      locationId: { $oid: '000000000000000000000003' },
+      ownerId: { $oid: '000000000000000000000010' },
       tracks: [
-        {
-          _id: { $oid: 'track2' },
-          name: 'Track 2',
-          maxCars: { $numberInt: '10' },
-          placedCars: []
-        }
-      ],
-      locationId: { $oid: '2' },
-      ownerId: { $oid: 'owner1' }
+        { _id: { $oid: '000000000000000000000008' }, maxCars: { $numberInt: '4' }, name: 'Track 1', placedCars: [] }
+      ]
     }
   ];
 
   const mockRollingStock: RollingStock[] = [
-    {
-      _id: { $oid: '1' },
-      roadName: 'GSVR',
-      roadNumber: 459003,
-      aarType: 'FB',
-      description: 'Flatcar BlhHd',
-      color: 'RED',
-      note: '',
-      homeYard: { $oid: 'yard1' },
-      ownerId: { $oid: 'owner1' }
+    { 
+      _id: { $oid: '000000000000000000000009' },
+      roadName: 'UP', 
+      roadNumber: '1234', 
+      aarType: 'BOX', 
+      description: 'Box Car', 
+      color: 'Red', 
+      note: '', 
+      homeYard: { $oid: '000000000000000000000001' },
+      ownerId: { $oid: '000000000000000000000010' }
     },
-    {
-      _id: { $oid: '2' },
-      roadName: 'CP',
-      roadNumber: 317642,
-      aarType: 'FB',
-      description: 'Flatcar BlhHd',
-      color: 'RED',
-      note: '',
-      homeYard: { $oid: 'yard2' },
-      ownerId: { $oid: 'owner1' }
-    },
-    {
-      _id: { $oid: '3' },
-      roadName: 'BNSF',
-      roadNumber: 559519,
-      aarType: 'FBC',
-      description: 'Flatcar',
-      color: 'BROWN',
-      note: 'Center Beam',
-      homeYard: { $oid: 'yard3' },
-      ownerId: { $oid: 'owner1' }
+    { 
+      _id: { $oid: '000000000000000000000011' },
+      roadName: 'BNSF', 
+      roadNumber: '5678', 
+      aarType: 'TANK', 
+      description: 'Tank Car', 
+      color: 'Black', 
+      note: '', 
+      homeYard: { $oid: '000000000000000000000002' },
+      ownerId: { $oid: '000000000000000000000010' }
     }
   ];
 
-  it('renders the dashboard title', () => {
+  it('renders layout statistics correctly', () => {
     render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
-    expect(screen.getByText('System Overview')).toBeInTheDocument();
+    
+    expect(screen.getByText('Layout Statistics')).toBeInTheDocument();
+    
+    const totalLocationsSection = screen.getByText('Total Locations').parentElement;
+    expect(within(totalLocationsSection!).getByText('3')).toBeInTheDocument();
+    
+    const totalIndustriesSection = screen.getByText('Total Industries').parentElement;
+    expect(within(totalIndustriesSection!).getByText('2')).toBeInTheDocument();
+    
+    const totalTrackCapacitySection = screen.getByText('Total Track Capacity').parentElement;
+    expect(within(totalTrackCapacitySection!).getByText('9 cars')).toBeInTheDocument();
   });
 
-  it('displays correct total number of locations', () => {
+  it('displays location statistics correctly', () => {
     render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
-    expect(screen.getByText('Total Locations: 3')).toBeInTheDocument();
-  });
-
-  it('displays correct total number of industries', () => {
-    render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
-    expect(screen.getByText('Total Industries: 2')).toBeInTheDocument();
-  });
-
-  it('displays correct total track capacity', () => {
-    render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
-    expect(screen.getByText('Total Track Capacity: 15 cars')).toBeInTheDocument();
-  });
-
-  it('displays correct locations by block', () => {
-    render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
+    
+    const locationStats = screen.getByText('Location Statistics').parentElement;
+    expect(locationStats).toBeInTheDocument();
     expect(screen.getByText('NORTH: 2')).toBeInTheDocument();
     expect(screen.getByText('SOUTH: 1')).toBeInTheDocument();
   });
 
-  it('displays correct industries by type', () => {
+  it('displays industry statistics correctly', () => {
     render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
+    
+    const industryStats = screen.getByText('Industry Statistics').parentElement;
+    expect(industryStats).toBeInTheDocument();
     expect(screen.getByText('FREIGHT: 1')).toBeInTheDocument();
     expect(screen.getByText('YARD: 1')).toBeInTheDocument();
   });
 
-  it('displays correct total number of rolling stock', () => {
-    render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
-    expect(screen.getByText('Rolling Stock (3 total)')).toBeInTheDocument();
-  });
-
-  it('displays car type badges with correct counts', () => {
+  it('displays rolling stock statistics correctly', () => {
     render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
     
-    // Check for FB badge (2 cars)
-    const fbBadge = screen.getByText('FB');
-    expect(fbBadge).toBeInTheDocument();
-    expect(fbBadge.parentElement).toHaveTextContent('2');
+    expect(screen.getByText('Rolling Stock (2 total)')).toBeInTheDocument();
+    expect(screen.getByText('Car Types')).toBeInTheDocument();
     
-    // Check for FBC badge (1 car)
-    const fbcBadge = screen.getByText('FBC');
-    expect(fbcBadge).toBeInTheDocument();
-    expect(fbcBadge.parentElement).toHaveTextContent('1');
-  });
-
-  it('displays car type badges in a flex container', () => {
-    render(<Dashboard locations={mockLocations} industries={mockIndustries} rollingStock={mockRollingStock} />);
-    const badgesContainer = screen.getByText('Car Types').parentElement?.querySelector('div');
-    expect(badgesContainer).toHaveStyle({ display: 'flex', flexWrap: 'wrap' });
+    const boxBadge = screen.getByText('BOX');
+    expect(boxBadge).toBeInTheDocument();
+    expect(boxBadge.closest('[aria-label="Box Car"]')).toBeInTheDocument();
+    
+    const tankBadge = screen.getByText('TANK');
+    expect(tankBadge).toBeInTheDocument();
+    expect(tankBadge.closest('[aria-label="Tank Car"]')).toBeInTheDocument();
   });
 
   it('handles empty data gracefully', () => {
     render(<Dashboard locations={[]} industries={[]} rollingStock={[]} />);
     
-    // Check for zero counts
-    expect(screen.getByText('Total Locations: 0')).toBeInTheDocument();
-    expect(screen.getByText('Total Industries: 0')).toBeInTheDocument();
-    expect(screen.getByText('Total Track Capacity: 0 cars')).toBeInTheDocument();
-    expect(screen.getByText('Rolling Stock (0 total)')).toBeInTheDocument();
+    const totalLocationsSection = screen.getByText('Total Locations').parentElement;
+    expect(within(totalLocationsSection!).getByText('0')).toBeInTheDocument();
     
-    // Check that no car type badges are displayed
-    const carTypesSection = screen.getByText('Car Types').parentElement;
-    expect(carTypesSection).not.toContainElement(screen.queryByText('FB'));
-    expect(carTypesSection).not.toContainElement(screen.queryByText('FBC'));
+    const totalTrackCapacitySection = screen.getByText('Total Track Capacity').parentElement;
+    expect(within(totalTrackCapacitySection!).getByText('0 cars')).toBeInTheDocument();
+    
+    const rollingStockSection = screen.getByText('Rolling Stock (0 total)');
+    expect(rollingStockSection).toBeInTheDocument();
+    
+    const carTypesSection = screen.getByText('Car Types');
+    expect(carTypesSection).toBeInTheDocument();
+    expect(carTypesSection.parentElement?.querySelector('.MuiBox-root')?.children.length).toBe(0);
   });
 }); 

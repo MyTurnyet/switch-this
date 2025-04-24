@@ -1,53 +1,57 @@
 import { GET } from '../route';
-import { MongoClient } from 'mongodb';
-import { NextResponse } from 'next/server';
+import { db } from '@/shared/db';
 
-// Mock data
-const mockRollingStock = [
-  {
-    _id: { $oid: 'car1' },
-    roadName: 'BNSF',
-    roadNumber: 1234,
-    aarType: 'BOX',
-    description: 'Box Car',
-    color: 'Red',
-    note: '',
-    homeYard: { $oid: 'yard1' },
-    ownerId: { $oid: 'owner1' }
-  }
-];
+jest.mock('@/shared/db', () => ({
+  db: {
+    collection: jest.fn().mockReturnValue(Promise.resolve({
+      find: jest.fn().mockReturnValue({
+        toArray: jest.fn(),
+      }),
+    })),
+  },
+}));
 
-// Mock MongoDB
-jest.mock('mongodb', () => {
-  return {
-    MongoClient: jest.fn().mockImplementation(() => ({
-      connect: jest.fn(),
-      db: jest.fn().mockReturnValue({
-        collection: jest.fn().mockReturnValue({
-          find: jest.fn().mockReturnValue({
-            toArray: jest.fn().mockResolvedValue(mockRollingStock)
-          })
-        })
-      })
-    }))
-  };
-});
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: jest.fn().mockImplementation((data, init) => ({
+      ...new Response(),
+      ...init,
+      data,
+      json: () => Promise.resolve(data),
+    })),
+  },
+}));
 
-// Mock NextResponse
-jest.mock('next/server', () => {
-  return {
-    NextResponse: {
-      json: jest.fn().mockImplementation((data) => ({ json: () => data }))
-    }
-  };
-});
+describe('GET /api/rolling-stock', () => {
+  let mockToArray: jest.Mock;
 
-describe('Rolling Stock API', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockToArray = jest.fn();
+  });
+
   it('returns rolling stock from the database', async () => {
-    const mockRequest = new Request('http://localhost:3000/api/rolling-stock');
-    const response = await GET(mockRequest);
-    const data = await response.json();
+    const mockRollingStock = [
+      { _id: '1', name: 'Car 1' },
+      { _id: '2', name: 'Car 2' },
+    ];
 
+    const mockCollection = await db.collection('rollingStock');
+    mockCollection.find().toArray = mockToArray.mockResolvedValueOnce(mockRollingStock);
+
+    const response = await GET();
+    expect(response.status).toBe(200);
+    const data = await response.json();
     expect(data).toEqual(mockRollingStock);
+  });
+
+  it('handles database errors', async () => {
+    const mockCollection = await db.collection('rollingStock');
+    mockCollection.find().toArray = mockToArray.mockRejectedValueOnce(new Error('Connection failed'));
+
+    const response = await GET();
+    expect(response.status).toBe(500);
+    const data = await response.json();
+    expect(data).toEqual({ error: 'Failed to fetch rolling stock' });
   });
 }); 

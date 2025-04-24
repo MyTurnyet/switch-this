@@ -1,30 +1,13 @@
 import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
+import { db } from '@/shared/db';
 
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-let client: MongoClient | null = null;
-
-async function getClient() {
-  if (!client) {
-    client = new MongoClient(uri);
-    await client.connect();
-  }
-  return client;
-}
-
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const client = await getClient();
-    const database = client.db('switch-this');
-    const industries = database.collection('industries');
-    
-    const result = await industries.find({}).toArray();
-    return NextResponse.json(result);
+    const collection = await db.collection('industries');
+    const industries = await collection.find().toArray();
+    return NextResponse.json(industries);
   } catch (error) {
-    console.error('Error fetching industries:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch industries' },
-      { status: 500 }
-    );
+    console.error('Failed to fetch industries:', error);
+    return NextResponse.json({ error: 'Failed to fetch industries' }, { status: 500 });
   }
 } 

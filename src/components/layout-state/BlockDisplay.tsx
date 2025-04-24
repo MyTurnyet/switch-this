@@ -1,13 +1,16 @@
 import { Box, Typography, List } from '@mui/material';
 import { Location, Industry, RollingStock } from '@shared/types/models';
+import { LayoutState } from '@state/layout-state';
 import { FC } from 'react';
 import { LocationDisplay } from './LocationDisplay';
 
 interface BlockDisplayProps {
+  key: string;
   block: string;
   locations: Location[];
   industries: Industry[];
   rollingStock: Record<string, RollingStock>;
+  layoutState: LayoutState;
 }
 
 export const BlockDisplay: FC<BlockDisplayProps> = ({ block, locations, industries, rollingStock }) => {

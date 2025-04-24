@@ -29,7 +29,9 @@
       "@test/*": ["src/test/*"],
       "@data/*": ["src/data/*"],
       "@shared/types/*": ["src/app/shared/types/*"],
-      "@shared/components/*": ["src/app/shared/components/*"]
+      "@shared/components/*": ["src/app/shared/components/*"],
+      "@shared/test-utils/*": ["src/app/shared/test-utils/*"],
+      "@shared/test-utils": ["src/app/shared/test-utils"]
     },
     "types": [
       "jest",
