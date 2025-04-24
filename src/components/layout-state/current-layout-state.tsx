@@ -46,7 +46,18 @@ const CurrentLayoutState: FC<LayoutStatePageProps> = ({
 
   const renderTrack = (track: Industry['tracks'][0], locationId: string) => {
     const carCount = track.placedCars?.length || 0;
-    const maxCars = track.maxCars?.$numberInt ? parseInt(track.maxCars.$numberInt) || 0 : 0;
+    
+    // Handle MongoDB number format
+    let maxCars = 0;
+    if (track.maxCars) {
+      if (typeof track.maxCars === 'object' && '$numberInt' in track.maxCars) {
+        const parsed = parseInt(track.maxCars.$numberInt);
+        maxCars = isNaN(parsed) ? 0 : parsed;
+      } else {
+        maxCars = typeof track.maxCars === 'number' ? track.maxCars : 0;
+      }
+    }
+    
     const carsAtLocation = layoutState.getCarsAtLocation(locationId);
     
     return (
