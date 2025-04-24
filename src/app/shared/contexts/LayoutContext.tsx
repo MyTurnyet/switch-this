@@ -18,7 +18,17 @@ interface LayoutContextType {
   refreshData: () => Promise<void>;
 }
 
-const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
+const defaultContext: LayoutContextType = {
+  locations: [],
+  industries: [],
+  trainRoutes: [],
+  rollingStock: [],
+  error: '',
+  isLoading: false,
+  refreshData: async () => {}
+};
+
+const LayoutContext = createContext<LayoutContextType>(defaultContext);
 
 interface LayoutProviderProps {
   children: React.ReactNode;
@@ -26,14 +36,6 @@ interface LayoutProviderProps {
   industryService?: IndustryService;
   trainRouteService?: TrainRouteService;
   rollingStockService?: RollingStockService;
-}
-
-interface LayoutData {
-  locations: Location[];
-  industries: Industry[];
-  trainRoutes: TrainRoute[];
-  rollingStock: RollingStock[];
-  error: string;
 }
 
 export const LayoutProvider: React.FC<LayoutProviderProps> = ({ 
@@ -105,7 +107,7 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
 
 export const useLayout = () => {
   const context = useContext(LayoutContext);
-  if (context === undefined) {
+  if (!context.refreshData) {
     throw new Error('useLayout must be used within a LayoutProvider');
   }
   return context;
