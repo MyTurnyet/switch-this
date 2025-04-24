@@ -2,9 +2,6 @@
 
 import React from 'react';
 import { Box, Container, Typography } from '@mui/material';
-import industriesData from '@data/industries.json';
-import rollingStockData from '@data/rolling-stock.json';
-import { MongoId, Industry } from '@shared/types/models';
 
 
 
