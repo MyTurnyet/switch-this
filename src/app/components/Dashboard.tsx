@@ -3,26 +3,7 @@
 import React, { useEffect } from 'react';
 import { useLayoutContext } from '../shared/contexts/LayoutContext';
 import { StatCard } from './StatCard';
-
-interface LoadingState {
-  isLoadingLocations: boolean;
-  isLoadingIndustries: boolean;
-  isLoadingTrainRoutes: boolean;
-}
-
-interface ErrorState {
-  locationError: string | null;
-  industryError: string | null;
-  trainRouteError: string | null;
-}
-
-const isLoading = (state: LoadingState): boolean => {
-  return state.isLoadingLocations || state.isLoadingIndustries || state.isLoadingTrainRoutes;
-};
-
-const hasError = (state: ErrorState): boolean => {
-  return Boolean(state.locationError || state.industryError || state.trainRouteError);
-};
+import { isLoading, hasError } from '../shared/utils/loadingUtils';
 
 const LoadingView: React.FC = () => (
   <div className="text-center p-8">
@@ -33,7 +14,14 @@ const LoadingView: React.FC = () => (
   </div>
 );
 
-const ErrorView: React.FC<ErrorState & { onRetry: () => void }> = ({ locationError, industryError, trainRouteError, onRetry }) => (
+interface ErrorViewProps {
+  locationError: string | null;
+  industryError: string | null;
+  trainRouteError: string | null;
+  onRetry: () => void;
+}
+
+const ErrorView: React.FC<ErrorViewProps> = ({ locationError, industryError, trainRouteError, onRetry }) => (
   <div className="text-center p-8">
     <div className="text-xl text-red-600 mb-4">Unable to load dashboard data</div>
     <div className="text-gray-600 mb-4">
@@ -70,7 +58,7 @@ export const Dashboard: React.FC = () => {
     fetchLocations();
     fetchIndustries();
     fetchTrainRoutes();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   const loadingState = { isLoadingLocations, isLoadingIndustries, isLoadingTrainRoutes };
   const errorState = { locationError, industryError, trainRouteError };
