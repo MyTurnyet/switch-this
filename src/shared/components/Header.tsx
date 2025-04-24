@@ -24,6 +24,12 @@ const Header = () => {
             >
               About
             </Link>
+            <Link 
+              href="/layout-state" 
+              className="text-gray-600 hover:text-primary-600 font-medium transition-colors"
+            >
+              Layout State
+            </Link>
           </div>
         </div>
       </nav>
