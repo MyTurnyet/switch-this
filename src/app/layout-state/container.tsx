@@ -14,39 +14,56 @@ export default function LayoutStateContainer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  async function fetchLocations(): Promise<Location[]> {
+    const response = await fetch('/api/locations');
+    if (!response.ok) throw new Error('Failed to fetch locations');
+    return response.json();
+  }
+
+  async function fetchIndustries(): Promise<Industry[]> {
+    const response = await fetch('/api/industries');
+    if (!response.ok) throw new Error('Failed to fetch industries');
+    return response.json();
+  }
+
+  async function fetchRollingStock(): Promise<RollingStock[]> {
+    const response = await fetch('/api/rolling-stock');
+    if (!response.ok) throw new Error('Failed to fetch rolling stock');
+    return response.json();
+  }
+
+  function convertRollingStockArrayToMap(rollingStockArray: RollingStock[]): Record<string, RollingStock> {
+    return rollingStockArray.reduce((acc: Record<string, RollingStock>, car: RollingStock) => {
+      acc[car._id.$oid] = car;
+      return acc;
+    }, {});
+  }
+
+  function placeRollingStockAtHomeYards(rollingStockMap: Record<string, RollingStock>): LayoutState {
+    const newLayoutState = new LayoutState();
+    Object.entries(rollingStockMap).forEach(([carId, car]) => {
+      if (car.homeYard?.$oid) {
+        newLayoutState.setCarPosition(carId, car.homeYard.$oid);
+      }
+    });
+    return newLayoutState;
+  }
+
   async function fetchData() {
     try {
-      // Fetch locations
-      const locationsResponse = await fetch('/api/locations');
-      if (!locationsResponse.ok) throw new Error('Failed to fetch locations');
-      const locationsData = await locationsResponse.json();
-      setLocations(locationsData);
+      const [locationsData, industriesData, rollingStockData] = await Promise.all([
+        fetchLocations(),
+        fetchIndustries(),
+        fetchRollingStock()
+      ]);
 
-      // Fetch industries
-      const industriesResponse = await fetch('/api/industries');
-      if (!industriesResponse.ok) throw new Error('Failed to fetch industries');
-      const industriesData = await industriesResponse.json();
+      setLocations(locationsData);
       setIndustries(industriesData);
 
-      // Fetch rolling stock
-      const rollingStockResponse = await fetch('/api/rolling-stock');
-      if (!rollingStockResponse.ok) throw new Error('Failed to fetch rolling stock');
-      const rollingStockData = await rollingStockResponse.json();
-      
-      // Convert rolling stock array to a map for easier lookup
-      const rollingStockMap = rollingStockData.reduce((acc: Record<string, RollingStock>, car: RollingStock) => {
-        acc[car._id.$oid] = car;
-        return acc;
-      }, {});
+      const rollingStockMap = convertRollingStockArrayToMap(rollingStockData);
       setRollingStock(rollingStockMap);
 
-      // Place cars at their home yards
-      const newLayoutState = new LayoutState();
-      (Object.entries(rollingStockMap) as [string, RollingStock][]).forEach(([carId, car]) => {
-        if (car.homeYard?.$oid) {
-          newLayoutState.setCarPosition(carId, car.homeYard.$oid);
-        }
-      });
+      const newLayoutState = placeRollingStockAtHomeYards(rollingStockMap);
       setLayoutState(newLayoutState);
 
       setLoading(false);
@@ -56,16 +73,17 @@ export default function LayoutStateContainer() {
     }
   }
 
-  const handleResetState = () => {
-    // Clear current state
+  function resetState() {
     setLayoutState(new LayoutState());
     setLocations([]);
     setIndustries([]);
     setRollingStock({});
     setLoading(true);
     setError(null);
-    
-    // Refetch the data
+  }
+
+  const handleResetState = () => {
+    resetState();
     fetchData();
   };
 
