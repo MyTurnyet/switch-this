@@ -238,4 +238,46 @@ describe('LayoutContext', () => {
 
     expect(getAllLocationsMock).toHaveBeenCalledTimes(2);
   });
+
+  it('uses cached data on subsequent renders', async () => {
+    const getAllLocationsMock = jest.fn().mockResolvedValue(mockLocations);
+    const getAllIndustriesMock = jest.fn().mockResolvedValue(mockIndustries);
+    const getAllTrainRoutesMock = jest.fn().mockResolvedValue(mockTrainRoutes);
+
+    (LocationService as jest.Mock).mockImplementation(() => ({
+      getAllLocations: getAllLocationsMock
+    }));
+    (IndustryService as jest.Mock).mockImplementation(() => ({
+      getAllIndustries: getAllIndustriesMock
+    }));
+    (TrainRouteService as jest.Mock).mockImplementation(() => ({
+      getAllTrainRoutes: getAllTrainRoutesMock
+    }));
+
+    // First render
+    const { rerender } = render(
+      <LayoutProvider>
+        <TestComponent />
+      </LayoutProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('loading')).toHaveTextContent('false');
+    });
+
+    // Second render
+    rerender(
+      <LayoutProvider>
+        <TestComponent />
+      </LayoutProvider>
+    );
+
+    // Verify data is still present without new API calls
+    expect(screen.getByTestId('locations')).toHaveTextContent('2');
+    expect(screen.getByTestId('industries')).toHaveTextContent('2');
+    expect(screen.getByTestId('trainRoutes')).toHaveTextContent('2');
+    expect(getAllLocationsMock).toHaveBeenCalledTimes(1);
+    expect(getAllIndustriesMock).toHaveBeenCalledTimes(1);
+    expect(getAllTrainRoutesMock).toHaveBeenCalledTimes(1);
+  });
 }); 

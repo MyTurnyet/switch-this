@@ -1,10 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { Location, Industry, TrainRoute } from '@/shared/types/models';
 import { LocationService } from '@/app/shared/services/LocationService';
 import { IndustryService } from '@/app/shared/services/IndustryService';
 import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
+import { LayoutDataCache } from './LayoutDataCache';
 
 interface LayoutContextType {
   locations: Location[] | null;
@@ -18,56 +19,57 @@ interface LayoutContextType {
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
 export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [locations, setLocations] = useState<Location[] | null>(null);
-  const [industries, setIndustries] = useState<Industry[] | null>(null);
-  const [trainRoutes, setTrainRoutes] = useState<TrainRoute[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const cache = useMemo(() => new LayoutDataCache(), []);
 
-  const locationService = new LocationService();
-  const industryService = new IndustryService();
-  const trainRouteService = new TrainRouteService();
+  // Memoize service instances
+  const services = useMemo(() => ({
+    locationService: new LocationService(),
+    industryService: new IndustryService(),
+    trainRouteService: new TrainRouteService()
+  }), []);
 
-  const fetchData = async () => {
+  const fetchData = useMemo(() => async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       const [locationsData, industriesData, trainRoutesData] = await Promise.all([
-        locationService.getAllLocations(),
-        industryService.getAllIndustries(),
-        trainRouteService.getAllTrainRoutes()
+        services.locationService.getAllLocations(),
+        services.industryService.getAllIndustries(),
+        services.trainRouteService.getAllTrainRoutes()
       ]);
 
-      setLocations(locationsData);
-      setIndustries(industriesData);
-      setTrainRoutes(trainRoutesData);
+      cache.setLocations(locationsData);
+      cache.setIndustries(industriesData);
+      cache.setTrainRoutes(trainRoutesData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const refreshData = async () => {
-    await fetchData();
-  };
+  }, [services, cache]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!cache.isDataLoaded()) {
+      fetchData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [fetchData, cache]);
+
+  const contextValue = useMemo(() => ({
+    locations: cache.getLocations(),
+    industries: cache.getIndustries(),
+    trainRoutes: cache.getTrainRoutes(),
+    error,
+    isLoading,
+    refreshData: fetchData
+  }), [cache, error, isLoading, fetchData]);
 
   return (
-    <LayoutContext.Provider
-      value={{
-        locations,
-        industries,
-        trainRoutes,
-        error,
-        isLoading,
-        refreshData
-      }}
-    >
+    <LayoutContext.Provider value={contextValue}>
       {children}
     </LayoutContext.Provider>
   );
