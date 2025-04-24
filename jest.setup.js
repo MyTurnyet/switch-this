@@ -54,4 +54,6 @@ beforeEach(() => {
 // Clean up after each test
 afterEach(() => {
   jest.clearAllMocks();
-}); 
+});
+
+// Learn more: https://github.com/testing-library/jest-dom 

@@ -27,7 +27,11 @@ describe('Dashboard', () => {
     });
 
     render(<Dashboard />);
-    expect(screen.getAllByText('...')).toHaveLength(3);
+    const loadingElements = screen.getAllByText('...');
+    expect(loadingElements).toHaveLength(3);
+    loadingElements.forEach(element => {
+      expect(element).toHaveClass('animate-pulse');
+    });
   });
 
   it('shows data when loaded successfully', () => {
@@ -43,12 +47,23 @@ describe('Dashboard', () => {
     });
 
     render(<Dashboard />);
+    
+    // Verify the grid layout
+    const gridContainer = screen.getByTestId('dashboard-grid');
+    expect(gridContainer).toHaveClass('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-6');
+    
+    // Verify the stats are displayed
     expect(screen.getByText('2')).toBeInTheDocument(); // Locations count
     expect(screen.getByText('1')).toBeInTheDocument(); // Industries count
     expect(screen.getByText('3')).toBeInTheDocument(); // Train Routes count
+    
+    // Verify the labels
+    expect(screen.getByText('Locations')).toBeInTheDocument();
+    expect(screen.getByText('Industries')).toBeInTheDocument();
+    expect(screen.getByText('Train Routes')).toBeInTheDocument();
   });
 
-  it('shows error message when data loading fails', () => {
+  it('shows error message with correct styling when data loading fails', () => {
     mockUseLayout.mockReturnValue({
       locations: null,
       industries: null,
@@ -60,8 +75,17 @@ describe('Dashboard', () => {
       fetchTrainRoutes: jest.fn()
     });
 
-    render(<Dashboard />);
-    expect(screen.getByText('Failed to load data')).toBeInTheDocument();
+    const { container } = render(<Dashboard />);
+    const errorContainer = container.firstChild as HTMLElement;
+    expect(errorContainer).toHaveClass(
+      'bg-red-50',
+      'border',
+      'border-red-200',
+      'rounded-lg',
+      'p-4',
+      'text-red-600'
+    );
+    expect(errorContainer).toHaveTextContent('Failed to load data');
   });
 
   it('fetches data on mount', () => {
