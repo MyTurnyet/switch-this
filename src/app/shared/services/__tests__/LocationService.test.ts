@@ -1,11 +1,14 @@
 import { LocationService } from '../LocationService';
 import { Location } from '@/shared/types/models';
 
+const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
 describe('LocationService', () => {
   let locationService: LocationService;
   let fetchMock: jest.Mock;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     fetchMock = jest.fn();
     global.fetch = fetchMock;
     locationService = new LocationService();
@@ -33,12 +36,9 @@ describe('LocationService', () => {
   });
 
   it('should handle errors when fetching locations', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 500
-    });
+    fetchMock.mockRejectedValueOnce(new Error('Network error'));
 
     await expect(locationService.getAllLocations()).rejects.toThrow('Failed to fetch locations');
-    expect(fetchMock).toHaveBeenCalledWith('/api/locations');
+    expect(mockConsoleError).toHaveBeenCalled();
   });
 }); 

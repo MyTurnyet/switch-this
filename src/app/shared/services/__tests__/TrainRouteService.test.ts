@@ -1,11 +1,14 @@
 import { TrainRouteService } from '../TrainRouteService';
 import { TrainRoute } from '@/shared/types/models';
 
+const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
 describe('TrainRouteService', () => {
   let trainRouteService: TrainRouteService;
   let fetchMock: jest.Mock;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     fetchMock = jest.fn();
     global.fetch = fetchMock;
     trainRouteService = new TrainRouteService();
@@ -41,12 +44,10 @@ describe('TrainRouteService', () => {
   });
 
   it('should handle errors when fetching train routes', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 500
-    });
+    fetchMock.mockRejectedValueOnce(new Error('Network error'));
 
     await expect(trainRouteService.getAllTrainRoutes()).rejects.toThrow('Failed to fetch train routes');
     expect(fetchMock).toHaveBeenCalledWith('/api/train-routes');
+    expect(mockConsoleError).toHaveBeenCalled();
   });
 }); 
