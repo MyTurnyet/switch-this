@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { Container, Box, Typography, Paper } from '@mui/material';
+import { Industry, Location } from '@shared/types/models';
 import industriesData from '@data/industries.json';
 import locationsData from '@data/locations.json';
-import { Industry, Location } from '@shared/types/models';
 
 export default function IndustriesPage() {
   const industriesByBlock = React.useMemo(() => {

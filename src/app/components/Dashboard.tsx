@@ -1,8 +1,6 @@
 import React from 'react';
 import { Box, Paper, Typography } from '@mui/material';
-import { Location } from '@shared/types/models';
-import { Industry } from '@shared/types/models';
-import { RollingStock } from '@shared/types/models';
+import { Location, Industry, RollingStock } from '@shared/types/models';
 import CarTypeBadge from './CarTypeBadge';
 
 interface DashboardProps {
@@ -29,7 +27,7 @@ export default function Dashboard({ locations, industries, rollingStock }: Dashb
   // Calculate track capacity statistics
   const totalTrackCapacity = industries.reduce((total, industry) => {
     return total + industry.tracks.reduce((trackTotal, track) => {
-      return trackTotal + (track.maxCars?.$numberInt ? parseInt(track.maxCars.$numberInt) : 0);
+      return trackTotal + parseInt(track.maxCars.$numberInt);
     }, 0);
   }, 0);
 

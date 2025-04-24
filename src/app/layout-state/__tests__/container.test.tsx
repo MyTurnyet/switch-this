@@ -1,7 +1,7 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import LayoutStateContainer from '../container';
 import { Location, Industry, RollingStock } from '../../shared/types/models';
+import LayoutStateContainer from '../container';
 
 // Fake implementations of the fetch API
 class FakeResponse implements Response {
@@ -80,7 +80,7 @@ describe('LayoutStateContainer', () => {
       { 
         _id: { $oid: 'ind1' }, 
         name: 'Industry 1', 
-        industryType: 'Manufacturing',
+        industryType: 'FREIGHT',
         locationId: { $oid: 'loc1' },
         ownerId: { $oid: 'owner1' },
         tracks: []
@@ -91,7 +91,7 @@ describe('LayoutStateContainer', () => {
       { 
         _id: { $oid: 'car1' }, 
         roadName: 'BNSF', 
-        roadNumber: 1234, 
+        roadNumber: '1234', 
         aarType: 'BOX',
         description: 'Box Car',
         color: 'Red',
@@ -123,7 +123,7 @@ describe('LayoutStateContainer', () => {
       { 
         _id: { $oid: 'ind1' }, 
         name: 'Industry 1', 
-        industryType: 'Manufacturing',
+        industryType: 'FREIGHT',
         locationId: { $oid: 'loc1' },
         ownerId: { $oid: 'owner1' },
         tracks: []
@@ -134,7 +134,7 @@ describe('LayoutStateContainer', () => {
       { 
         _id: { $oid: 'car1' }, 
         roadName: 'BNSF', 
-        roadNumber: 1234, 
+        roadNumber: '1234', 
         aarType: 'BOX',
         description: 'Box Car',
         color: 'Red',

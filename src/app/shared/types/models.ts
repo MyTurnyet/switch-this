@@ -1,40 +1,42 @@
+export interface MongoId {
+  $oid: string;
+}
+
+export interface MongoNumber {
+  $numberInt: string;
+}
+
 export interface Track {
-  _id: string;
+  _id: MongoId;
   name: string;
-  maxCars: number;
-  placedCars: string[]; // You can define a more specific type for placedCars if needed
+  maxCars: MongoNumber;
+  placedCars: never[];
 }
 
 export interface Industry {
-  _id: string;
+  _id: MongoId;
   name: string;
   industryType: 'FREIGHT' | 'YARD' | 'PASSENGER';
   tracks: Track[];
-  locationId: string;
-  ownerId: string;
+  locationId: MongoId;
+  ownerId: MongoId;
 }
 
 export interface Location {
-  _id: { $oid: string };
+  _id: MongoId;
   stationName: string;
   block: string;
-  ownerId: { $oid: string };
+  ownerId: MongoId;
 }
 
 export interface RollingStock {
-  _id: {
-    $oid: string;
-  };
+  _id: MongoId;
   roadName: string;
-  roadNumber: number;
+  roadNumber: string;
   aarType: string;
   description: string;
   color: string;
   note: string;
-  homeYard: {
-    $oid: string;
-  };
-  ownerId: {
-    $oid: string;
-  };
+  homeYard: MongoId;
+  ownerId: MongoId;
 } 
