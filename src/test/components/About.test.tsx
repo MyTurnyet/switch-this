@@ -1,51 +1,60 @@
 import { render, screen } from '@testing-library/react';
-import About from '@/shared/components/About';
+import About from '../../shared/components/About';
 
 describe('About', () => {
-  it('renders the about page title', () => {
+  it('displays the main heading', () => {
     render(<About />);
-    const titleElement = screen.getByRole('heading', { name: /about switch this/i });
-    expect(titleElement).toBeInTheDocument();
+    const heading = screen.getByRole('heading', { name: /a modern solution for a timeless hobby/i });
+    expect(heading).toBeInTheDocument();
   });
 
-  it('displays project overview section', () => {
+  it('displays the project overview section', () => {
     render(<About />);
-    const overviewHeading = screen.getByRole('heading', { name: /overview/i });
-    const overviewText = screen.getByText(/switchlist generator is a web-based tool/i);
+    const overviewText = screen.getByText(/switch this is a web-based application/i);
     
-    expect(overviewHeading).toBeInTheDocument();
     expect(overviewText).toBeInTheDocument();
   });
 
-  it('displays key features section', () => {
+  it('displays the motivation section', () => {
     render(<About />);
-    const featuresHeading = screen.getByRole('heading', { name: /key features/i });
-    const featuresList = screen.getByRole('list', { name: /key features list/i });
+    const motivationHeading = screen.getByRole('heading', { name: /why switch this\?/i });
+    const motivationText = screen.getByText(/creating and managing switchlists/i);
     
-    expect(featuresHeading).toBeInTheDocument();
-    expect(featuresList).toBeInTheDocument();
-    expect(screen.getByText(/modern ui/i)).toBeInTheDocument();
-    expect(screen.getByText(/industry management/i)).toBeInTheDocument();
-    expect(screen.getByText(/location tracking/i)).toBeInTheDocument();
+    expect(motivationHeading).toBeInTheDocument();
+    expect(motivationText).toBeInTheDocument();
   });
 
-  it('displays tech stack section with working links', () => {
+  it('displays the creator section', () => {
     render(<About />);
-    const techStackHeading = screen.getByRole('heading', { name: /tech stack/i });
-    const techList = screen.getAllByRole('listitem');
+    const creatorHeading = screen.getByRole('heading', { name: /meet the creator: paige watson/i });
+    const creatorText = screen.getByText(/hi, i'm paige watson/i);
     
-    expect(techStackHeading).toBeInTheDocument();
-    expect(techList.length).toBeGreaterThan(0);
+    expect(creatorHeading).toBeInTheDocument();
+    expect(creatorText).toBeInTheDocument();
+  });
+
+  it('displays the core principles section', () => {
+    render(<About />);
+    const principlesHeading = screen.getByRole('heading', { name: /core principles/i });
+    const softwareCraftHeading = screen.getByRole('heading', { name: /software as craft/i });
+    const userDesignHeading = screen.getByRole('heading', { name: /user-centered design/i });
     
-    const nextjsLink = screen.getByRole('link', { name: /next\.js/i });
-    const typescriptLink = screen.getByRole('link', { name: /typescript/i });
-    const muiLink = screen.getByRole('link', { name: /material-ui/i });
+    expect(principlesHeading).toBeInTheDocument();
+    expect(softwareCraftHeading).toBeInTheDocument();
+    expect(userDesignHeading).toBeInTheDocument();
+  });
+
+  it('displays the key features section', () => {
+    render(<About />);
+    const featuresHeading = screen.getByRole('heading', { name: /key features/i });
     
-    expect(nextjsLink).toHaveAttribute('href', 'https://nextjs.org');
-    expect(typescriptLink).toHaveAttribute('href', 'https://www.typescriptlang.org');
-    expect(muiLink).toHaveAttribute('href', 'https://mui.com');
-    expect(nextjsLink).toHaveAttribute('target', '_blank');
-    expect(typescriptLink).toHaveAttribute('target', '_blank');
-    expect(muiLink).toHaveAttribute('target', '_blank');
+    expect(featuresHeading).toBeInTheDocument();
+  });
+
+  it('displays the community commitment section', () => {
+    render(<About />);
+    const communityHeading = screen.getByRole('heading', { name: /committed to the community/i });
+    
+    expect(communityHeading).toBeInTheDocument();
   });
 }); 
