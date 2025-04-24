@@ -211,6 +211,104 @@ describe('LayoutStateContainer', () => {
   });
 
   it('resets layout state when Reset State button is clicked', async () => {
+    // Set up initial mock data
+    const mockLocations: Location[] = [
+      { _id: 'loc1', stationName: 'Station 1', block: 'A', ownerId: 'owner1' }
+    ];
+
+    const mockIndustries: Industry[] = [
+      { 
+        _id: 'ind1', 
+        name: 'Industry 1', 
+        industryType: 'FREIGHT',
+        locationId: 'loc1',
+        ownerId: 'owner1',
+        tracks: []
+      }
+    ];
+
+    const mockRollingStock: RollingStock[] = [
+      { 
+        _id: { $oid: 'car1' }, 
+        roadName: 'BNSF', 
+        roadNumber: '1234', 
+        aarType: 'BOX',
+        description: 'Box Car',
+        color: 'Red',
+        note: '',
+        homeYard: 'yard1',
+        ownerId: 'owner1'
+      }
+    ];
+
+    // Set up mock responses
+    fakeFetch.setResponse('/api/locations', mockLocations);
+    fakeFetch.setResponse('/api/industries', mockIndustries);
+    fakeFetch.setResponse('/api/rolling-stock', mockRollingStock);
+
+    await act(async () => {
+      await setupComponent();
+    });
+    await waitForLoadingToComplete();
+
+    // Verify initial state
+    const container = screen.getByTestId('layout-state-container');
+    expect(container).toHaveAttribute('data-locations', JSON.stringify(mockLocations));
+    expect(container).toHaveAttribute('data-industries', JSON.stringify(mockIndustries));
+    expect(container).toHaveAttribute('data-rolling-stock', JSON.stringify({ 'car1': mockRollingStock[0] }));
+
+    // Set up new mock responses for after reset
+    const newMockLocations: Location[] = [
+      { _id: 'loc2', stationName: 'Station 2', block: 'B', ownerId: 'owner1' }
+    ];
+
+    const newMockIndustries: Industry[] = [
+      { 
+        _id: 'ind2', 
+        name: 'Industry 2', 
+        industryType: 'YARD',
+        locationId: 'loc2',
+        ownerId: 'owner1',
+        tracks: []
+      }
+    ];
+
+    const newMockRollingStock: RollingStock[] = [
+      { 
+        _id: { $oid: 'car2' }, 
+        roadName: 'UP', 
+        roadNumber: '5678', 
+        aarType: 'TANK',
+        description: 'Tank Car',
+        color: 'Blue',
+        note: '',
+        homeYard: 'yard2',
+        ownerId: 'owner1'
+      }
+    ];
+
+    // Update mock responses for the reset fetch
+    fakeFetch.setResponse('/api/locations', newMockLocations);
+    fakeFetch.setResponse('/api/industries', newMockIndustries);
+    fakeFetch.setResponse('/api/rolling-stock', newMockRollingStock);
+
+    // Click reset button
+    const resetButton = screen.getByRole('button', { name: /reset state/i });
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+
+    // Wait for the new state to be reflected in the UI
+    await waitFor(() => {
+      const updatedContainer = screen.getByTestId('layout-state-container');
+      expect(updatedContainer).toHaveAttribute('data-locations', JSON.stringify(newMockLocations));
+      expect(updatedContainer).toHaveAttribute('data-industries', JSON.stringify(newMockIndustries));
+      expect(updatedContainer).toHaveAttribute('data-rolling-stock', JSON.stringify({ 'car2': newMockRollingStock[0] }));
+    });
+  });
+
+  it('handles errors during reset data fetch', async () => {
+    // Set up initial mock data
     fakeFetch.setResponse('/api/locations', []);
     fakeFetch.setResponse('/api/industries', []);
     fakeFetch.setResponse('/api/rolling-stock', []);
@@ -220,13 +318,54 @@ describe('LayoutStateContainer', () => {
     });
     await waitForLoadingToComplete();
 
+    // Set up error responses for reset
+    fakeFetch.setResponse('/api/locations', [], false);
+    fakeFetch.setResponse('/api/industries', [], false);
+    fakeFetch.setResponse('/api/rolling-stock', [], false);
+
+    // Click reset button
     const resetButton = screen.getByRole('button', { name: /reset state/i });
-    
     await act(async () => {
       fireEvent.click(resetButton);
     });
 
-    // Verify that the layout state has been reset by checking the data attributes
+    // Verify error state is shown
+    await waitFor(() => {
+      expect(screen.getByText(/Error: Failed to fetch locations/i)).toBeInTheDocument();
+    });
+  });
+
+  it('resets layout state even when API calls are delayed', async () => {
+    // Set up initial mock data with delay
+    fakeFetch.setDelay(100);
+    fakeFetch.setResponse('/api/locations', []);
+    fakeFetch.setResponse('/api/industries', []);
+    fakeFetch.setResponse('/api/rolling-stock', []);
+
+    await act(async () => {
+      await setupComponent();
+    });
+    await waitForLoadingToComplete();
+
+    // Set up new mock responses with delay
+    fakeFetch.setDelay(100);
+    fakeFetch.setResponse('/api/locations', []);
+    fakeFetch.setResponse('/api/industries', []);
+    fakeFetch.setResponse('/api/rolling-stock', []);
+
+    // Click reset button
+    const resetButton = screen.getByRole('button', { name: /reset state/i });
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+
+    // Verify loading state is shown
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+    // Wait for loading to complete
+    await waitForLoadingToComplete();
+
+    // Verify state is reset
     const container = screen.getByTestId('layout-state-container');
     expect(container).toHaveAttribute('data-locations', '[]');
     expect(container).toHaveAttribute('data-industries', '[]');
