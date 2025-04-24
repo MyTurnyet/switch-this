@@ -1,53 +1,47 @@
 import { TrainRouteService } from '../TrainRouteService';
-import { TrainRoute } from '@/shared/types/models';
-
-const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
 
 describe('TrainRouteService', () => {
-  let trainRouteService: TrainRouteService;
-  let fetchMock: jest.Mock;
+  let service: TrainRouteService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    fetchMock = jest.fn();
-    global.fetch = fetchMock;
-    trainRouteService = new TrainRouteService();
+    service = new TrainRouteService();
+    global.fetch = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
   it('should fetch all train routes', async () => {
-    const mockTrainRoutes: TrainRoute[] = [
-      {
-        _id: '1',
-        name: 'Test Route',
-        routeNumber: 'R1',
-        routeType: 'MIXED',
-        originatingYardId: 'yard1',
-        terminatingYardId: 'yard2',
-        stations: [{
-          _id: 'station1',
-          stationName: 'Test Station',
-          block: 'A1',
-          ownerId: 'owner1'
-        }]
-      }
-    ];
+    const mockTrainRoutes = [{
+      _id: '1',
+      name: 'Test Route',
+      description: 'Test Description',
+      industries: ['ind1', 'ind2'],
+      ownerId: 'owner1'
+    }];
 
-    fetchMock.mockResolvedValueOnce({
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockTrainRoutes)
+      json: async () => mockTrainRoutes
     });
 
-    const result = await trainRouteService.getAllTrainRoutes();
-
-    expect(fetchMock).toHaveBeenCalledWith('/api/train-routes');
+    const result = await service.getAllTrainRoutes();
     expect(result).toEqual(mockTrainRoutes);
+    expect(global.fetch).toHaveBeenCalledWith('/api/train-routes');
   });
 
-  it('should handle errors when fetching train routes', async () => {
-    fetchMock.mockRejectedValueOnce(new Error('Network error'));
+  it('should handle fetch error', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false
+    });
 
-    await expect(trainRouteService.getAllTrainRoutes()).rejects.toThrow('Failed to fetch train routes');
-    expect(fetchMock).toHaveBeenCalledWith('/api/train-routes');
-    expect(mockConsoleError).toHaveBeenCalled();
+    await expect(service.getAllTrainRoutes()).rejects.toThrow('Failed to fetch train routes');
+  });
+
+  it('should handle network error', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(service.getAllTrainRoutes()).rejects.toThrow('Failed to fetch train routes');
   });
 }); 

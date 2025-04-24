@@ -1,44 +1,40 @@
 import { LocationService } from '../LocationService';
-import { Location } from '@/shared/types/models';
-
-const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
 
 describe('LocationService', () => {
-  let locationService: LocationService;
-  let fetchMock: jest.Mock;
+  let service: LocationService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    fetchMock = jest.fn();
-    global.fetch = fetchMock;
-    locationService = new LocationService();
+    service = new LocationService();
+    global.fetch = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
   it('should fetch all locations', async () => {
-    const mockLocations: Location[] = [
-      {
-        _id: '1',
-        stationName: 'Test Station',
-        block: 'A1',
-        ownerId: 'owner1'
-      }
-    ];
-
-    fetchMock.mockResolvedValueOnce({
+    const mockLocations = [{ _id: '1', stationName: 'Test Station', block: 'A', ownerId: 'owner1' }];
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve(mockLocations)
+      json: async () => mockLocations
     });
 
-    const result = await locationService.getAllLocations();
-
-    expect(fetchMock).toHaveBeenCalledWith('/api/locations');
+    const result = await service.getAllLocations();
     expect(result).toEqual(mockLocations);
+    expect(global.fetch).toHaveBeenCalledWith('/api/locations');
   });
 
-  it('should handle errors when fetching locations', async () => {
-    fetchMock.mockRejectedValueOnce(new Error('Network error'));
+  it('should handle fetch error', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false
+    });
 
-    await expect(locationService.getAllLocations()).rejects.toThrow('Failed to fetch locations');
-    expect(mockConsoleError).toHaveBeenCalled();
+    await expect(service.getAllLocations()).rejects.toThrow('Failed to fetch locations');
+  });
+
+  it('should handle network error', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(service.getAllLocations()).rejects.toThrow('Failed to fetch locations');
   });
 }); 

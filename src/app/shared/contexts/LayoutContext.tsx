@@ -36,6 +36,12 @@ interface LayoutProviderProps {
   industryService?: IndustryService;
   trainRouteService?: TrainRouteService;
   rollingStockService?: RollingStockService;
+  initialState?: {
+    locations: Location[];
+    industries: Industry[];
+    trainRoutes?: TrainRoute[];
+    rollingStock: RollingStock[];
+  };
 }
 
 export const LayoutProvider: React.FC<LayoutProviderProps> = ({ 
@@ -43,11 +49,23 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
   locationService: injectedLocationService,
   industryService: injectedIndustryService,
   trainRouteService: injectedTrainRouteService,
-  rollingStockService: injectedRollingStockService
+  rollingStockService: injectedRollingStockService,
+  initialState
 }) => {
   const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const cache = useMemo(() => new LayoutDataCache(), []);
+  const [isLoading, setIsLoading] = useState(!initialState);
+  const cache = useMemo(() => {
+    const cacheInstance = new LayoutDataCache();
+    if (initialState) {
+      cacheInstance.setLocations(initialState.locations);
+      cacheInstance.setIndustries(initialState.industries);
+      if (initialState.trainRoutes) {
+        cacheInstance.setTrainRoutes(initialState.trainRoutes);
+      }
+      cacheInstance.setRollingStock(initialState.rollingStock);
+    }
+    return cacheInstance;
+  }, [initialState]);
 
   // Memoize service instances
   const services = useMemo(() => ({
@@ -58,6 +76,9 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
   }), [injectedLocationService, injectedIndustryService, injectedTrainRouteService, injectedRollingStockService]);
 
   const fetchData = useMemo(() => async () => {
+    if (initialState) {
+      return; // Don't fetch if we have initial state
+    }
     setIsLoading(true);
     setError('');
 
@@ -78,15 +99,15 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [services, cache]);
+  }, [services, cache, initialState]);
 
   useEffect(() => {
-    if (!cache.isDataLoaded()) {
+    if (!initialState && !cache.isDataLoaded()) {
       fetchData();
     } else {
       setIsLoading(false);
     }
-  }, [fetchData, cache]);
+  }, [fetchData, cache, initialState]);
 
   const contextValue = useMemo(() => ({
     locations: cache.getLocations(),
