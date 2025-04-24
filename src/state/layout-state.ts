@@ -10,43 +10,47 @@ export class LayoutState {
     return this.carPositions[carId];
   }
 
-  setCarPosition(carId: string, locationId: string): void {
-    const previousLocation = this.carPositions[carId];
-    
-    // Remove car from previous location if it exists
-    if (previousLocation) {
-      this.locationCars[previousLocation] = this.locationCars[previousLocation]
+  private removeCarFromLocation(carId: string, locationId: string): void {
+    if (this.locationCars[locationId]) {
+      this.locationCars[locationId] = this.locationCars[locationId]
         .filter(id => id !== carId);
     }
+  }
 
-    // Update car's position
-    this.carPositions[carId] = locationId;
-
-    // Add car to new location
+  private addCarToLocation(carId: string, locationId: string): void {
     if (!this.locationCars[locationId]) {
       this.locationCars[locationId] = [];
     }
     this.locationCars[locationId].push(carId);
   }
 
-  setCarPositions(carPositions: Record<string, string>): void {
-    // First, remove all cars from their current positions
-    Object.entries(carPositions).forEach(([carId]) => {
+  setCarPosition(carId: string, locationId: string): void {
+    const previousLocation = this.carPositions[carId];
+    
+    if (previousLocation) {
+      this.removeCarFromLocation(carId, previousLocation);
+    }
+
+    this.carPositions[carId] = locationId;
+    this.addCarToLocation(carId, locationId);
+  }
+
+  private clearCarPositions(carIds: string[]): void {
+    carIds.forEach(carId => {
       const currentLocation = this.carPositions[carId];
       if (currentLocation) {
-        this.locationCars[currentLocation] = this.locationCars[currentLocation]
-          .filter(id => id !== carId);
+        this.removeCarFromLocation(carId, currentLocation);
       }
     });
+  }
 
-    // Then update all positions
+  setCarPositions(carPositions: Record<string, string>): void {
+    const carIds = Object.keys(carPositions);
+    this.clearCarPositions(carIds);
+
     Object.entries(carPositions).forEach(([carId, locationId]) => {
       this.carPositions[carId] = locationId;
-      
-      if (!this.locationCars[locationId]) {
-        this.locationCars[locationId] = [];
-      }
-      this.locationCars[locationId].push(carId);
+      this.addCarToLocation(carId, locationId);
     });
   }
 
