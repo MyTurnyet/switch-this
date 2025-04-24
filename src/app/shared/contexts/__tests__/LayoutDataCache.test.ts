@@ -12,7 +12,9 @@ describe('LayoutDataCache', () => {
   const mockTrainRoutes: TrainRoute[] = [
     { _id: '1', name: 'Route 1', routeNumber: 'R1', routeType: 'MIXED', originatingYardId: 'Yard 1', terminatingYardId: 'Yard 2', stations: [] }
   ];
-  const mockRollingStock: RollingStock = { _id: '1', roadName: 'BNSF', roadNumber: '1234', aarType: 'XM', description: 'Boxcar', color: 'RED', note: '', homeYard: '1', ownerId: 'owner1' };
+  const mockRollingStock: RollingStock[] = [
+    { _id: '1', roadName: 'BNSF', roadNumber: '1234', aarType: 'XM', description: 'Boxcar', color: 'RED', note: '', homeYard: '1', ownerId: 'owner1' }
+  ];
 
   beforeEach(() => {
     cache = new LayoutDataCache();
@@ -43,10 +45,10 @@ describe('LayoutDataCache', () => {
   it('should indicate when data is loaded', () => {
     expect(cache.isDataLoaded()).toBe(false);
     
-    cache.setLocations([mockLocations]);
-    cache.setIndustries([mockIndustries]);
-    cache.setTrainRoutes([mockTrainRoutes]);
-    cache.setRollingStock([mockRollingStock]);
+    cache.setLocations(mockLocations);
+    cache.setIndustries(mockIndustries);
+    cache.setTrainRoutes(mockTrainRoutes);
+    cache.setRollingStock(mockRollingStock);
     
     expect(cache.isDataLoaded()).toBe(true);
   });
@@ -66,8 +68,8 @@ describe('LayoutDataCache', () => {
 
   describe('rolling stock operations', () => {
     it('should store and retrieve rolling stock data', () => {
-      cache.setRollingStock([mockRollingStock]);
-      expect(cache.getRollingStock()).toEqual([mockRollingStock]);
+      cache.setRollingStock(mockRollingStock);
+      expect(cache.getRollingStock()).toEqual(mockRollingStock);
     });
 
     it('should handle empty rolling stock data', () => {
@@ -76,7 +78,7 @@ describe('LayoutDataCache', () => {
     });
 
     it('should clear rolling stock data', () => {
-      cache.setRollingStock([mockRollingStock]);
+      cache.setRollingStock(mockRollingStock);
       cache.clear();
       expect(cache.getRollingStock()).toEqual([]);
     });
@@ -92,7 +94,7 @@ describe('LayoutDataCache', () => {
       cache.setLocations(mockLocations);
       cache.setIndustries(mockIndustries);
       cache.setTrainRoutes(mockTrainRoutes);
-      cache.setRollingStock([mockRollingStock]);
+      cache.setRollingStock(mockRollingStock);
       expect(cache.isDataLoaded()).toBe(true);
     });
   });
