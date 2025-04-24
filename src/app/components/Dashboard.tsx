@@ -2,18 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useLayoutContext } from '../shared/contexts/LayoutContext';
-
-interface StatCardProps {
-  count: number;
-  label: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ count, label }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md">
-    <div className="text-4xl font-bold text-blue-600">{count}</div>
-    <div className="text-gray-600 mt-2">{label}</div>
-  </div>
-);
+import { StatCard } from './StatCard';
 
 interface LoadingState {
   isLoadingLocations: boolean;
