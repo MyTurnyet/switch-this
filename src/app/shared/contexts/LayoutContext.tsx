@@ -58,6 +58,12 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
   }, []);
 
   const fetchData = useMemo(() => async (forceRefresh = false) => {
+    if (!services) {
+      setError('Unable to connect to the server. Please check if the Docker instance is running.');
+      setIsLoading(false);
+      return;
+    }
+
     if (!forceRefresh && cache.isDataLoaded()) {
       return; // Don't fetch if we have data and not forcing refresh
     }

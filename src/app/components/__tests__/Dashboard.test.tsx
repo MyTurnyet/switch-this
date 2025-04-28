@@ -67,9 +67,9 @@ describe('Dashboard', () => {
       });
 
       render(<Dashboard />);
-      const errorElement = screen.getByText(errorMessage);
-      expect(errorElement).toBeInTheDocument();
-      expect(errorElement).toHaveClass('text-red-600');
+      const errorContainer = screen.getByText('Connection Error').closest('div');
+      expect(errorContainer).toHaveClass('bg-yellow-50', 'border-yellow-200', 'text-yellow-800');
+      expect(screen.getByText(errorMessage)).toBeInTheDocument();
     });
   });
 
