@@ -46,4 +46,8 @@ export interface RollingStock {
   note: string;
   homeYard: string;
   ownerId: string;
+  currentLocation?: {
+    industryId: string;
+    trackId: string;
+  };
 } 

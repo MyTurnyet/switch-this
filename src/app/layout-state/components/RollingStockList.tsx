@@ -95,6 +95,13 @@ export default function RollingStockList({ rollingStock, industries }: RollingSt
                     {car.color}
                   </span>
                 </div>
+                <div className="mt-2 text-sm text-gray-600">
+                  <p>
+                    {currentLocation 
+                      ? `${currentLocation.industryName} - ${currentLocation.trackName}`
+                      : 'Not placed on any track'}
+                  </p>
+                </div>
               </div>
             </div>
             
@@ -114,15 +121,6 @@ export default function RollingStockList({ rollingStock, industries }: RollingSt
               <div className="text-sm text-gray-600">
                 <p className="font-medium text-gray-700 mb-1">Home Yard</p>
                 <p>{getYardName(car.homeYard, industries)}</p>
-              </div>
-
-              <div className="text-sm text-gray-600">
-                <p className="font-medium text-gray-700 mb-1">Current Location</p>
-                <p>
-                  {currentLocation 
-                    ? `${currentLocation.industryName} - ${currentLocation.trackName}`
-                    : 'Not placed on any track'}
-                </p>
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { groupIndustriesByLocationAndBlock } from './utils/groupIndustries';
-import type { Location, Industry, RollingStock } from '@/app/shared/types/models';
+import type { Location, Industry, RollingStock, Track } from '@/app/shared/types/models';
 import type { ClientServices } from '../shared/services/clientServices';
 import RollingStockList from './components/RollingStockList';
 
@@ -11,10 +11,8 @@ interface LayoutStateProps {
   services: ClientServices;
 }
 
-const getCarsAtIndustry = (industry: Industry, rollingStock: RollingStock[]): RollingStock[] => {
-  return rollingStock.filter(car => 
-    industry.tracks.some(track => track.placedCars.includes(car._id))
-  );
+const getCarsOnTrack = (track: Track, rollingStock: RollingStock[]): RollingStock[] => {
+  return rollingStock.filter(car => track.placedCars.includes(car._id));
 };
 
 export default function LayoutState({ services }: LayoutStateProps) {
@@ -103,32 +101,46 @@ export default function LayoutState({ services }: LayoutStateProps) {
                           {blockName}
                         </h4>
                         <div className="ml-4 space-y-4">
-                          {blockIndustries.map(industry => {
-                            const carsAtIndustry = getCarsAtIndustry(industry, rollingStock);
-                            return (
-                              <div key={industry._id} className="space-y-2">
-                                <div className="text-gray-600 font-medium">
-                                  {industry.name}
-                                </div>
-                                {carsAtIndustry.length > 0 && (
-                                  <div className="ml-4 space-y-2">
-                                    {carsAtIndustry.map(car => (
-                                      <div key={car._id} className="bg-gray-50 p-2 rounded">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-medium">
-                                            {car.roadName} {car.roadNumber}
-                                          </span>
-                                          <span className="text-sm text-gray-500">
-                                            {car.aarType} - {car.description}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                          {blockIndustries.map(industry => (
+                            <div key={industry._id} className="space-y-2">
+                              <div className="text-gray-600 font-medium">
+                                {industry.name}
                               </div>
-                            );
-                          })}
+                              <div className="ml-4 space-y-4">
+                                {industry.tracks.map(track => {
+                                  const carsOnTrack = getCarsOnTrack(track, rollingStock);
+                                  return (
+                                    <div key={track._id} className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-700">
+                                          {track.name}
+                                        </span>
+                                        <span className="text-sm text-gray-500">
+                                          ({carsOnTrack.length}/{track.maxCars} cars)
+                                        </span>
+                                      </div>
+                                      {carsOnTrack.length > 0 && (
+                                        <div className="ml-4 space-y-2">
+                                          {carsOnTrack.map(car => (
+                                            <div key={car._id} className="bg-gray-50 p-2 rounded">
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-medium">
+                                                  {car.roadName} {car.roadNumber}
+                                                </span>
+                                                <span className="text-sm text-gray-500">
+                                                  {car.aarType} - {car.description}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))}
