@@ -11,6 +11,11 @@ interface ColorStyle {
   text: string;
 }
 
+interface CurrentLocation {
+  industryName: string;
+  trackName: string;
+}
+
 const getAarTypeColor = (aarType: string): ColorStyle => {
   const typeColors: Record<string, ColorStyle> = {
     XM: { bg: 'bg-blue-100', text: 'text-blue-800' },
@@ -51,51 +56,78 @@ const getYardName = (yardId: string, industries: Industry[]): string => {
   return yard ? yard.name : 'Unknown Yard';
 };
 
+const getCurrentLocation = (carId: string, industries: Industry[]): CurrentLocation | null => {
+  for (const industry of industries) {
+    for (const track of industry.tracks) {
+      if (track.placedCars.includes(carId)) {
+        return {
+          industryName: industry.name,
+          trackName: track.name
+        };
+      }
+    }
+  }
+  return null;
+};
+
 export default function RollingStockList({ rollingStock, industries }: RollingStockListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {rollingStock.map((car) => (
-        <div
-          key={car._id}
-          className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          role="article"
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                {car.roadName} {car.roadNumber}
-              </h3>
-              <div className="mt-1 flex gap-2">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAarTypeColor(car.aarType).bg} ${getAarTypeColor(car.aarType).text}`}>
-                  {car.aarType}
-                </span>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getColorStyle(car.color).bg} ${getColorStyle(car.color).text}`}>
-                  {car.color}
-                </span>
+      {rollingStock.map((car) => {
+        const currentLocation = getCurrentLocation(car._id, industries);
+        
+        return (
+          <div
+            key={car._id}
+            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
+            role="article"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {car.roadName} {car.roadNumber}
+                </h3>
+                <div className="mt-1 flex gap-2">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAarTypeColor(car.aarType).bg} ${getAarTypeColor(car.aarType).text}`}>
+                    {car.aarType}
+                  </span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getColorStyle(car.color).bg} ${getColorStyle(car.color).text}`}>
+                    {car.color}
+                  </span>
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="text-sm text-gray-600">
-              <p className="font-medium text-gray-700 mb-1">Description</p>
-              <p>{car.description}</p>
             </div>
             
-            {car.note && (
+            <div className="space-y-3">
               <div className="text-sm text-gray-600">
-                <p className="font-medium text-gray-700 mb-1">Note</p>
-                <p>{car.note}</p>
+                <p className="font-medium text-gray-700 mb-1">Description</p>
+                <p>{car.description}</p>
               </div>
-            )}
+              
+              {car.note && (
+                <div className="text-sm text-gray-600">
+                  <p className="font-medium text-gray-700 mb-1">Note</p>
+                  <p>{car.note}</p>
+                </div>
+              )}
 
-            <div className="text-sm text-gray-600">
-              <p className="font-medium text-gray-700 mb-1">Home Yard</p>
-              <p>{getYardName(car.homeYard, industries)}</p>
+              <div className="text-sm text-gray-600">
+                <p className="font-medium text-gray-700 mb-1">Home Yard</p>
+                <p>{getYardName(car.homeYard, industries)}</p>
+              </div>
+
+              <div className="text-sm text-gray-600">
+                <p className="font-medium text-gray-700 mb-1">Current Location</p>
+                <p>
+                  {currentLocation 
+                    ? `${currentLocation.industryName} - ${currentLocation.trackName}`
+                    : 'Not placed on any track'}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {rollingStock.length === 0 && (
         <div className="col-span-full text-center text-gray-500 py-8">
           No rolling stock available

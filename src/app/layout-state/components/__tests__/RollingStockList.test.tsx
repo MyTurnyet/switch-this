@@ -36,7 +36,16 @@ describe('RollingStockList', () => {
       blockName: 'Yard',
       description: 'Main yard',
       industryType: 'YARD',
-      tracks: [],
+      tracks: [
+        {
+          _id: 'track1',
+          name: 'Track 1',
+          length: 100,
+          capacity: 4,
+          maxCars: 4,
+          placedCars: ['1']
+        }
+      ],
       ownerId: 'owner1'
     },
     {
@@ -46,7 +55,16 @@ describe('RollingStockList', () => {
       blockName: 'Yard',
       description: 'Secondary yard',
       industryType: 'YARD',
-      tracks: [],
+      tracks: [
+        {
+          _id: 'track2',
+          name: 'Track 2',
+          length: 100,
+          capacity: 4,
+          maxCars: 4,
+          placedCars: []
+        }
+      ],
       ownerId: 'owner1'
     },
     {
@@ -56,7 +74,16 @@ describe('RollingStockList', () => {
       blockName: 'Industrial',
       description: 'Manufacturing plant',
       industryType: 'FREIGHT',
-      tracks: [],
+      tracks: [
+        {
+          _id: 'track3',
+          name: 'Loading Dock',
+          length: 50,
+          capacity: 2,
+          maxCars: 2,
+          placedCars: ['2']
+        }
+      ],
       ownerId: 'owner1'
     }
   ];
@@ -86,6 +113,10 @@ describe('RollingStockList', () => {
     // Check for home yards
     expect(screen.getByText('BNSF Yard')).toBeInTheDocument();
     expect(screen.getByText('UP Yard')).toBeInTheDocument();
+
+    // Check for current locations
+    expect(screen.getByText('BNSF Yard - Track 1')).toBeInTheDocument();
+    expect(screen.getByText('Factory - Loading Dock')).toBeInTheDocument();
   });
 
   it('renders empty state when no rolling stock is provided', () => {
@@ -111,20 +142,20 @@ describe('RollingStockList', () => {
     expect(screen.getByText('Unknown Yard')).toBeInTheDocument();
   });
 
-  it('shows unknown yard when industry exists but is not a yard', () => {
-    const rollingStockWithNonYard: RollingStock[] = [{
-      _id: '1',
-      roadName: 'BNSF',
-      roadNumber: '1234',
+  it('shows not placed message when car is not on any track', () => {
+    const unplacedRollingStock: RollingStock[] = [{
+      _id: '3',
+      roadName: 'CSX',
+      roadNumber: '9012',
       aarType: 'XM',
-      description: '40ft Standard Boxcar',
-      color: 'RED',
+      description: '40ft Boxcar',
+      color: 'BLUE',
       note: '',
-      homeYard: 'industry1',
+      homeYard: 'yard1',
       ownerId: 'owner1'
     }];
     
-    render(<RollingStockList rollingStock={rollingStockWithNonYard} industries={mockIndustries} />);
-    expect(screen.getByText('Unknown Yard')).toBeInTheDocument();
+    render(<RollingStockList rollingStock={unplacedRollingStock} industries={mockIndustries} />);
+    expect(screen.getByText('Not placed on any track')).toBeInTheDocument();
   });
 }); 
