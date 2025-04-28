@@ -4,7 +4,7 @@ export class RollingStockService {
   async getAllRollingStock(): Promise<RollingStock[]> {
     const response = await fetch('/api/rolling-stock');
     if (!response.ok) {
-      throw new Error('Failed to load rolling stock');
+      throw new Error('Failed to fetch rolling stock');
     }
     return response.json();
   }

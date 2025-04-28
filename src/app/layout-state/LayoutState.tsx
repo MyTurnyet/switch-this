@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { groupIndustriesByLocationAndBlock } from './utils/groupIndustries';
-import { Location, Industry, RollingStock } from '../shared/types/models';
+import { Location, Industry, RollingStock } from '@/app/shared/types/models';
 import { ClientServices } from '../shared/services/clientServices';
 
 interface LayoutStateProps {
@@ -56,38 +56,55 @@ export default function LayoutState({ services }: LayoutStateProps) {
           Reset State
         </button>
       </div>
+      {error && (
+        <div className="text-red-500 mb-4" role="alert">
+          {error}
+        </div>
+      )}
       <ScrollArea className="h-[calc(100vh-8rem)]">
         <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Industries by Location</h2>
-            {Object.entries(groupedIndustries).map(([locationId, locationGroup]) => (
-              <div key={locationId} className="mb-6">
-                <h3 className="text-lg font-semibold text-primary-600 mb-2">
-                  {locationGroup.locationName}
-                </h3>
-                {Object.entries(locationGroup.blocks).map(([blockName, blockIndustries]) => (
-                  <div key={blockName} className="ml-4 mb-4">
-                    <h4 className="text-md font-medium text-gray-700 mb-2">
-                      {blockName}
-                    </h4>
-                    <div className="ml-4 space-y-1">
-                      {blockIndustries.map(industry => (
-                        <div key={industry._id} className="text-gray-600">
-                          {industry.name}
+          {isLoading ? (
+            <div data-testid="loading-pulse" className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Industries by Location</h2>
+                {Object.entries(groupedIndustries).map(([locationId, locationGroup]) => (
+                  <div key={locationId} className="mb-6">
+                    <h3 className="text-lg font-semibold text-primary-600 mb-2">
+                      {locationGroup.locationName}
+                    </h3>
+                    {Object.entries(locationGroup.blocks).map(([blockName, blockIndustries]) => (
+                      <div key={blockName} className="ml-4 mb-4">
+                        <h4 className="text-md font-medium text-gray-700 mb-2">
+                          {blockName}
+                        </h4>
+                        <div className="ml-4 space-y-1">
+                          {blockIndustries.map(industry => (
+                            <div key={industry._id} className="text-gray-600">
+                              {industry.name}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
-            ))}
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Rolling Stock</h2>
-            <pre className="bg-gray-100 p-4 rounded overflow-auto">
-              {JSON.stringify(rollingStock, null, 2)}
-            </pre>
-          </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Rolling Stock</h2>
+                <pre className="bg-gray-100 p-4 rounded overflow-auto">
+                  {JSON.stringify(rollingStock, null, 2)}
+                </pre>
+              </div>
+            </>
+          )}
         </div>
       </ScrollArea>
     </div>

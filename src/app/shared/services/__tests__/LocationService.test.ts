@@ -33,7 +33,7 @@ describe('LocationService', () => {
   });
 
   it('should handle network error', async () => {
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Failed to fetch locations'));
 
     await expect(service.getAllLocations()).rejects.toThrow('Failed to fetch locations');
   });

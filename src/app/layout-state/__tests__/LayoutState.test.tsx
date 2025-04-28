@@ -1,63 +1,102 @@
-import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { act } from 'react-dom/test-utils';
 import LayoutState from '../LayoutState';
-import { ClientServices } from '../../shared/services/clientServices';
+import type { Location, Industry, TrainRoute, RollingStock } from '@/app/shared/types/models';
+import type { ClientServices } from '../../shared/services/clientServices';
 
 const mockServices: ClientServices = {
   locationService: {
-    getAllLocations: jest.fn().mockResolvedValue([])
+    getAllLocations: jest.fn().mockImplementation(() => new Promise(() => {})),
   },
   industryService: {
-    getAllIndustries: jest.fn().mockResolvedValue([])
+    getAllIndustries: jest.fn().mockImplementation(() => new Promise(() => {})),
   },
   trainRouteService: {
-    getAllTrainRoutes: jest.fn().mockResolvedValue([])
+    getAllTrainRoutes: jest.fn().mockImplementation(() => new Promise(() => {})),
   },
   rollingStockService: {
-    getAllRollingStock: jest.fn().mockResolvedValue([])
-  }
+    getAllRollingStock: jest.fn().mockImplementation(() => new Promise(() => {})),
+  },
 };
 
 describe('LayoutState', () => {
-  it('renders loading state correctly', () => {
-    render(<LayoutState services={mockServices} />);
-    expect(screen.getByText('Layout State')).toBeInTheDocument();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('renders data correctly', async () => {
+  it('shows loading state initially', async () => {
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('loading-pulse')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error state when service fails', async () => {
+    (mockServices.locationService.getAllLocations as jest.Mock).mockRejectedValue(new Error('Failed to fetch locations'));
+    
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Failed to fetch locations')).toBeInTheDocument();
+    });
+  });
+
+  it('renders data when loaded', async () => {
     const mockData = {
-      locations: [
-        { _id: '1', stationName: 'Station 1', block: 'A', ownerId: '1' }
-      ],
-      industries: [
-        { _id: '1', name: 'Industry 1', locationId: '1', blockName: 'A', industryType: 'FREIGHT' as const, tracks: [], ownerId: '1' }
-      ],
-      rollingStock: [
-        { _id: '1', name: 'Stock 1', type: 'Engine', currentLocationId: '1' }
-      ]
+      locations: [{ 
+        _id: '1', 
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: '1'
+      }] as Location[],
+      industries: [{ 
+        _id: '1',
+        name: 'Industry 1',
+        locationId: '1',
+        blockName: 'A',
+        industryType: 'FREIGHT',
+        tracks: [],
+        ownerId: '1'
+      }] as Industry[],
+      trainRoutes: [{ 
+        _id: '1',
+        name: 'Route 1',
+        description: 'Test route',
+        ownerId: '1'
+      }] as unknown as TrainRoute[],
+      rollingStock: [{ 
+        _id: '1',
+        name: 'Stock 1',
+        roadName: 'BNSF',
+        roadNumber: '1234',
+        aarType: 'XM',
+        type: 'BOXCAR',
+        description: 'Test stock',
+        currentLocationId: '1',
+        length: 40,
+        weight: 1000,
+        color: 'blue',
+        ownerId: '1'
+      }] as unknown as RollingStock[],
     };
 
-    const dataServices = {
-      ...mockServices,
-      locationService: {
-        getAllLocations: jest.fn().mockResolvedValue(mockData.locations)
-      },
-      industryService: {
-        getAllIndustries: jest.fn().mockResolvedValue(mockData.industries)
-      },
-      rollingStockService: {
-        getAllRollingStock: jest.fn().mockResolvedValue(mockData.rollingStock)
-      }
-    };
+    (mockServices.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockData.locations);
+    (mockServices.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockData.industries);
+    (mockServices.trainRouteService.getAllTrainRoutes as jest.Mock).mockResolvedValue(mockData.trainRoutes);
+    (mockServices.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue(mockData.rollingStock);
 
-    render(<LayoutState services={dataServices} />);
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
 
     await waitFor(() => {
-      expect(screen.getByText('Station 1')).toBeInTheDocument();
+      expect(screen.getByText('Location 1')).toBeInTheDocument();
       expect(screen.getByText('Industry 1')).toBeInTheDocument();
-      expect(screen.getByText(/Stock 1/)).toBeInTheDocument();
-      expect(screen.getByText('Industries by Location')).toBeInTheDocument();
-      expect(screen.getByText('Rolling Stock')).toBeInTheDocument();
+      expect(screen.getByText(/"name": "Stock 1"/)).toBeInTheDocument();
     });
   });
 }); 

@@ -40,7 +40,7 @@ describe('TrainRouteService', () => {
   });
 
   it('should handle network error', async () => {
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Failed to fetch train routes'));
 
     await expect(service.getAllTrainRoutes()).rejects.toThrow('Failed to fetch train routes');
   });

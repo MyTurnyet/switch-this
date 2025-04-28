@@ -19,7 +19,7 @@ export const StatCard: React.FC<StatCardProps> = ({ count, label, isLoading }) =
   >
     <div className="text-5xl font-bold text-indigo-600 mb-2">
       {isLoading ? (
-        <div className="animate-pulse">...</div>
+        <div className="animate-pulse" data-testid="loading-pulse">...</div>
       ) : (
         <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
           {count}

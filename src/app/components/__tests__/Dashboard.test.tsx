@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { Dashboard } from '../Dashboard';
 import { ClientServices } from '../../shared/services/clientServices';
 import { act } from 'react-dom/test-utils';
+import { Location, Industry, TrainRoute, RollingStock } from '@/shared/types/models';
 
 const mockServices: ClientServices = {
   locationService: {
@@ -19,60 +20,100 @@ const mockServices: ClientServices = {
   }
 };
 
+jest.mock('../../shared/services/clientServices', () => ({
+  services: mockServices
+}));
+
 describe('Dashboard', () => {
-  it('renders loading state correctly', () => {
-    render(<Dashboard services={mockServices} />);
-    
-    const loadingElements = screen.getAllByText('...');
-    expect(loadingElements).toHaveLength(4);
-    loadingElements.forEach(element => {
-      expect(element).toHaveClass('animate-pulse');
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('renders error state correctly', async () => {
-    const errorServices = {
-      ...mockServices,
-      locationService: {
-        getAllLocations: jest.fn().mockRejectedValue(new Error('Failed to load locations'))
-      }
-    };
+  it('shows loading state initially', async () => {
+    const mockPromises = [
+      new Promise<Location[]>(() => {}),
+      new Promise<Industry[]>(() => {}),
+      new Promise<TrainRoute[]>(() => {}),
+      new Promise<RollingStock[]>(() => {})
+    ];
 
-    render(<Dashboard services={errorServices} />);
-    
+    mockServices.locationService.getAllLocations.mockImplementation(() => mockPromises[0]);
+    mockServices.industryService.getAllIndustries.mockImplementation(() => mockPromises[1]);
+    mockServices.trainRouteService.getAllTrainRoutes.mockImplementation(() => mockPromises[2]);
+    mockServices.rollingStockService.getAllRollingStock.mockImplementation(() => mockPromises[3]);
+
+    await act(async () => {
+      render(<Dashboard services={mockServices} />);
+    });
+
+    expect(screen.getAllByText('...')).toHaveLength(4);
+    expect(screen.getAllByTestId('loading-pulse')).toHaveLength(4);
+  });
+
+  it('shows error state when service fails', async () => {
+    mockServices.locationService.getAllLocations.mockRejectedValue(new Error('Failed to fetch locations'));
+
+    await act(async () => {
+      render(<Dashboard services={mockServices} />);
+    });
+
     await waitFor(() => {
-      expect(screen.getByText('Failed to load locations')).toBeInTheDocument();
+      expect(screen.getByText('Failed to fetch locations')).toBeInTheDocument();
     });
-    
-    const zeroCounts = screen.getAllByText('0');
-    expect(zeroCounts).toHaveLength(4);
   });
 
-  it('renders data correctly', async () => {
+  it('renders data when loaded', async () => {
     const mockData = {
-      locations: [{ _id: '1', stationName: 'Station 1', block: 'A', ownerId: '1' }],
-      industries: [{ _id: '1', name: 'Industry 1', locationId: '1', blockName: 'A', industryType: 'FREIGHT', tracks: [], ownerId: '1' }],
-      trainRoutes: [{ _id: '1', name: 'Route 1', startLocationId: '1', endLocationId: '2' }],
-      rollingStock: [{ _id: '1', name: 'Stock 1', type: 'Engine', currentLocationId: '1' }]
+      locations: [{ 
+        _id: '1', 
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: '1'
+      }],
+      industries: [{ 
+        _id: '1',
+        name: 'Industry 1',
+        locationId: '1',
+        blockName: 'A',
+        industryType: 'FREIGHT',
+        tracks: [],
+        ownerId: '1'
+      }],
+      trainRoutes: [{ 
+        _id: '1',
+        name: 'Route 1',
+        routeNumber: '101',
+        routeType: 'LOCAL',
+        originatingYardId: '1',
+        terminatingYardId: '2',
+        stations: [],
+        startLocationId: '1',
+        endLocationId: '2'
+      }],
+      rollingStock: [{ 
+        _id: '1',
+        name: 'Stock 1',
+        roadName: 'BNSF',
+        roadNumber: '1234',
+        aarType: 'XM',
+        type: 'BOXCAR',
+        description: 'Test stock',
+        currentLocationId: '1',
+        length: 40,
+        weight: 1000,
+        color: 'blue',
+        ownerId: '1'
+      }]
     };
 
-    const dataServices = {
-      ...mockServices,
-      locationService: {
-        getAllLocations: jest.fn().mockResolvedValue(mockData.locations)
-      },
-      industryService: {
-        getAllIndustries: jest.fn().mockResolvedValue(mockData.industries)
-      },
-      trainRouteService: {
-        getAllTrainRoutes: jest.fn().mockResolvedValue(mockData.trainRoutes)
-      },
-      rollingStockService: {
-        getAllRollingStock: jest.fn().mockResolvedValue(mockData.rollingStock)
-      }
-    };
+    mockServices.locationService.getAllLocations.mockResolvedValue(mockData.locations);
+    mockServices.industryService.getAllIndustries.mockResolvedValue(mockData.industries);
+    mockServices.trainRouteService.getAllTrainRoutes.mockResolvedValue(mockData.trainRoutes);
+    mockServices.rollingStockService.getAllRollingStock.mockResolvedValue(mockData.rollingStock);
 
-    render(<Dashboard services={dataServices} />);
+    await act(async () => {
+      render(<Dashboard services={mockServices} />);
+    });
 
     await waitFor(() => {
       expect(screen.getAllByText('1')).toHaveLength(4);
