@@ -203,4 +203,91 @@ describe('LayoutState', () => {
       expect(carElement.closest('.ml-4')).toBeTruthy(); // Verify it's indented under the industry
     });
   });
+
+  it('displays tracks and their cars under industries', async () => {
+    const mockData = {
+      locations: [{ 
+        _id: '1', 
+        stationName: 'Location 1',
+        block: 'A',
+        ownerId: '1'
+      }] as Location[],
+      industries: [{ 
+        _id: '1',
+        name: 'Industry 1',
+        locationId: '1',
+        blockName: 'A',
+        industryType: 'FREIGHT',
+        tracks: [
+          {
+            _id: 'track1',
+            name: 'Track 1',
+            length: 100,
+            capacity: 10,
+            maxCars: 5,
+            placedCars: ['1']
+          },
+          {
+            _id: 'track2',
+            name: 'Track 2',
+            length: 100,
+            capacity: 10,
+            maxCars: 5,
+            placedCars: ['2']
+          }
+        ],
+        ownerId: '1'
+      }] as Industry[],
+      rollingStock: [
+        { 
+          _id: '1',
+          roadName: 'BNSF',
+          roadNumber: '1234',
+          aarType: 'XM',
+          description: '40ft Standard Boxcar',
+          color: 'RED',
+          note: 'Test note',
+          homeYard: 'Yard 1',
+          ownerId: '1'
+        },
+        {
+          _id: '2',
+          roadName: 'UP',
+          roadNumber: '5678',
+          aarType: 'HT',
+          description: 'Hopper',
+          color: 'BLACK',
+          note: '',
+          homeYard: 'Yard 1',
+          ownerId: '1'
+        }
+      ] as RollingStock[],
+    };
+
+    (mockServices.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockData.locations);
+    (mockServices.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockData.industries);
+    (mockServices.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue(mockData.rollingStock);
+
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+
+    await waitFor(() => {
+      // Verify industry is displayed
+      expect(screen.getByText('Industry 1')).toBeInTheDocument();
+
+      // Verify tracks are displayed
+      expect(screen.getByText('Track 1')).toBeInTheDocument();
+      expect(screen.getByText('Track 2')).toBeInTheDocument();
+
+      // Verify cars are displayed under their respective tracks
+      const track1Section = screen.getByText('Track 1').closest('.space-y-2');
+      const track2Section = screen.getByText('Track 2').closest('.space-y-2');
+
+      expect(track1Section).toHaveTextContent('BNSF 1234');
+      expect(track1Section).toHaveTextContent('40ft Standard Boxcar');
+      expect(track2Section).toHaveTextContent('UP 5678');
+      expect(track2Section).toHaveTextContent('Hopper');
+    });
+  });
 }); 

@@ -29,14 +29,35 @@ jest.mock('mongodb', () => {
 });
 
 // Mock NextResponse
-jest.mock('next/server', () => ({
-  NextResponse: {
-    json: jest.fn().mockImplementation((data, options) => ({
-      json: () => Promise.resolve(data),
-      status: options?.status || 200
-    }))
+jest.mock('next/server', () => {
+  interface ResponseData {
+    message?: string;
+    error?: string;
+    [key: string]: unknown;
   }
-}));
+
+  interface ResponseOptions {
+    status?: number;
+  }
+
+  class MockNextResponse {
+    private data: ResponseData;
+    public status: number;
+
+    constructor(data: ResponseData, options: ResponseOptions = {}) {
+      this.data = data;
+      this.status = options.status || 200;
+    }
+    json() {
+      return Promise.resolve(this.data);
+    }
+  }
+  return {
+    NextResponse: {
+      json: (data: ResponseData, options?: ResponseOptions) => new MockNextResponse(data, options)
+    }
+  };
+});
 
 describe('POST /api/rolling-stock/reset', () => {
   const mockRollingStock = [
@@ -85,8 +106,16 @@ describe('POST /api/rolling-stock/reset', () => {
     const mockDb = client.db();
     expect(mockDb.collection).toHaveBeenCalledWith('rollingStock');
     expect(mockDb.collection).toHaveBeenCalledWith('industries');
-    expect(mockDb.collection().updateOne).toHaveBeenCalledTimes(3);
+    expect(mockDb.collection().updateOne).toHaveBeenCalledTimes(8);
     expect(client.close).toHaveBeenCalled();
+  });
+
+  it('should place cars on tracks and return success', async () => {
+    const response = await POST();
+    expect(response).toBeDefined();
+    expect(typeof response.json).toBe('function');
+    const data = await response.json();
+    expect(data).toEqual({ success: true });
   });
 
   it('should handle errors gracefully', async () => {
@@ -94,9 +123,10 @@ describe('POST /api/rolling-stock/reset', () => {
     MongoClient.connect.mockRejectedValueOnce(new Error('Database connection failed'));
 
     const response = await POST();
-    const responseData = await response.json();
-
-    expect(responseData).toEqual({ error: 'Failed to reset rolling stock' });
+    expect(response).toBeDefined();
+    expect(typeof response.json).toBe('function');
+    const data = await response.json();
+    expect(data).toEqual({ error: 'Failed to reset rolling stock' });
     expect(response.status).toBe(500);
   });
 }); 
