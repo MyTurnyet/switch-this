@@ -1,11 +1,48 @@
 'use client';
 
-import { useLayout } from '@/app/shared/contexts/LayoutContext';
+import React, { useEffect, useState } from 'react';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { groupIndustriesByLocationAndBlock } from './utils/groupIndustries';
+import { Location, Industry, RollingStock } from '../shared/types/models';
+import { ClientServices } from '../shared/services/clientServices';
 
-export default function LayoutState() {
-  const { locations, industries, rollingStock, refreshData } = useLayout();
+interface LayoutStateProps {
+  services: ClientServices;
+}
+
+export default function LayoutState({ services }: LayoutStateProps) {
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [industries, setIndustries] = useState<Industry[]>([]);
+  const [rollingStock, setRollingStock] = useState<RollingStock[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refreshData = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [locationsData, industriesData, rollingStockData] = await Promise.all([
+        services.locationService.getAllLocations(),
+        services.industryService.getAllIndustries(),
+        services.rollingStockService.getAllRollingStock()
+      ]);
+
+      setLocations(locationsData);
+      setIndustries(industriesData);
+      setRollingStock(rollingStockData);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unable to connect to the database';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshData();
+  }, [services]);
+
   const groupedIndustries = groupIndustriesByLocationAndBlock(industries, locations);
 
   return (

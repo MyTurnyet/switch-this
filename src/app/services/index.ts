@@ -1,11 +1,47 @@
-import { LocationService } from './LocationService';
-import { IndustryService } from './IndustryService';
-import { TrainRouteService } from './TrainRouteService';
-import { RollingStockService } from './RollingStockService';
+import { Location, Industry, TrainRoute, RollingStock } from '@/shared/types/models';
 
-export const services = {
-  locationService: new LocationService(),
-  industryService: new IndustryService(),
-  trainRouteService: new TrainRouteService(),
-  rollingStockService: new RollingStockService()
+interface ServiceMethods {
+  locationService: {
+    getAllLocations: () => Promise<Location[]>;
+  };
+  industryService: {
+    getAllIndustries: () => Promise<Industry[]>;
+  };
+  trainRouteService: {
+    getAllTrainRoutes: () => Promise<TrainRoute[]>;
+  };
+  rollingStockService: {
+    getAllRollingStock: () => Promise<RollingStock[]>;
+  };
+}
+
+export const services: ServiceMethods = {
+  locationService: {
+    getAllLocations: async () => {
+      const response = await fetch('/api/locations');
+      if (!response.ok) throw new Error('Failed to fetch locations');
+      return response.json();
+    }
+  },
+  industryService: {
+    getAllIndustries: async () => {
+      const response = await fetch('/api/industries');
+      if (!response.ok) throw new Error('Failed to fetch industries');
+      return response.json();
+    }
+  },
+  trainRouteService: {
+    getAllTrainRoutes: async () => {
+      const response = await fetch('/api/train-routes');
+      if (!response.ok) throw new Error('Failed to fetch train routes');
+      return response.json();
+    }
+  },
+  rollingStockService: {
+    getAllRollingStock: async () => {
+      const response = await fetch('/api/rolling-stock');
+      if (!response.ok) throw new Error('Failed to fetch rolling stock');
+      return response.json();
+    }
+  }
 }; 

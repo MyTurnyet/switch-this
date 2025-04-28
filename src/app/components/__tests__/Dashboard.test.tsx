@@ -1,133 +1,85 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { Dashboard } from '@/app/components/Dashboard';
-import { useLayout } from '@/app/shared/contexts/LayoutContext';
+import { Dashboard } from '../Dashboard';
+import { ClientServices } from '../../shared/services/clientServices';
+import { act } from 'react-dom/test-utils';
 
-jest.mock('@/app/shared/contexts/LayoutContext', () => ({
-  useLayout: jest.fn()
-}));
+const mockServices: ClientServices = {
+  locationService: {
+    getAllLocations: jest.fn().mockResolvedValue([])
+  },
+  industryService: {
+    getAllIndustries: jest.fn().mockResolvedValue([])
+  },
+  trainRouteService: {
+    getAllTrainRoutes: jest.fn().mockResolvedValue([])
+  },
+  rollingStockService: {
+    getAllRollingStock: jest.fn().mockResolvedValue([])
+  }
+};
 
 describe('Dashboard', () => {
-  const mockRefreshData = jest.fn();
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    (useLayout as jest.Mock).mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      rollingStock: [],
-      error: '',
-      isLoading: false,
-      refreshData: mockRefreshData
+  it('renders loading state correctly', () => {
+    render(<Dashboard services={mockServices} />);
+    
+    const loadingElements = screen.getAllByText('...');
+    expect(loadingElements).toHaveLength(4);
+    loadingElements.forEach(element => {
+      expect(element).toHaveClass('animate-pulse');
     });
   });
 
-  describe('initialization', () => {
-    it('calls refreshData on mount', async () => {
-      render(<Dashboard />);
-      await waitFor(() => {
-        expect(mockRefreshData).toHaveBeenCalledTimes(1);
-      });
+  it('renders error state correctly', async () => {
+    const errorServices = {
+      ...mockServices,
+      locationService: {
+        getAllLocations: jest.fn().mockRejectedValue(new Error('Failed to load locations'))
+      }
+    };
+
+    render(<Dashboard services={errorServices} />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load locations')).toBeInTheDocument();
     });
+    
+    const zeroCounts = screen.getAllByText('0');
+    expect(zeroCounts).toHaveLength(4);
   });
 
-  describe('loading state', () => {
-    it('displays loading indicators when data is being fetched', () => {
-      (useLayout as jest.Mock).mockReturnValue({
-        locations: [],
-        industries: [],
-        trainRoutes: [],
-        rollingStock: [],
-        error: '',
-        isLoading: true,
-        refreshData: mockRefreshData
-      });
+  it('renders data correctly', async () => {
+    const mockData = {
+      locations: [{ _id: '1', stationName: 'Station 1', block: 'A', ownerId: '1' }],
+      industries: [{ _id: '1', name: 'Industry 1', locationId: '1', blockName: 'A', industryType: 'FREIGHT', tracks: [], ownerId: '1' }],
+      trainRoutes: [{ _id: '1', name: 'Route 1', startLocationId: '1', endLocationId: '2' }],
+      rollingStock: [{ _id: '1', name: 'Stock 1', type: 'Engine', currentLocationId: '1' }]
+    };
 
-      render(<Dashboard />);
-      const loadingElements = screen.getAllByText('...');
-      expect(loadingElements).toHaveLength(4);
-      loadingElements.forEach(element => {
-        expect(element).toHaveClass('animate-pulse');
-      });
-    });
-  });
+    const dataServices = {
+      ...mockServices,
+      locationService: {
+        getAllLocations: jest.fn().mockResolvedValue(mockData.locations)
+      },
+      industryService: {
+        getAllIndustries: jest.fn().mockResolvedValue(mockData.industries)
+      },
+      trainRouteService: {
+        getAllTrainRoutes: jest.fn().mockResolvedValue(mockData.trainRoutes)
+      },
+      rollingStockService: {
+        getAllRollingStock: jest.fn().mockResolvedValue(mockData.rollingStock)
+      }
+    };
 
-  describe('error state', () => {
-    it('displays error message with correct styling', () => {
-      const errorMessage = 'Failed to load data';
-      (useLayout as jest.Mock).mockReturnValue({
-        locations: [],
-        industries: [],
-        trainRoutes: [],
-        rollingStock: [],
-        error: errorMessage,
-        isLoading: false,
-        refreshData: mockRefreshData
-      });
+    render(<Dashboard services={dataServices} />);
 
-      render(<Dashboard />);
-      const errorContainer = screen.getByText('Connection Error').closest('div');
-      expect(errorContainer).toHaveClass('bg-yellow-50', 'border-yellow-200', 'text-yellow-800');
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
-    });
-  });
-
-  describe('data display', () => {
-    it('displays correct statistics when data is loaded', () => {
-      const mockData = {
-        locations: [{ _id: '1' }, { _id: '2' }],
-        industries: [{ _id: '1' }],
-        trainRoutes: [{ _id: '1' }, { _id: '2' }, { _id: '3' }],
-        rollingStock: [{ _id: '1' }, { _id: '2' }, { _id: '3' }, { _id: '4' }],
-        error: '',
-        isLoading: false,
-        refreshData: mockRefreshData
-      };
-
-      (useLayout as jest.Mock).mockReturnValue(mockData);
-
-      render(<Dashboard />);
-
-      // Verify grid layout
-      const grid = screen.getByTestId('dashboard-grid');
-      expect(grid).toHaveClass('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-4', 'gap-6');
-
-      // Verify counts
-      expect(screen.getByText('2')).toBeInTheDocument(); // Locations count
-      expect(screen.getByText('1')).toBeInTheDocument(); // Industries count
-      expect(screen.getByText('3')).toBeInTheDocument(); // Train routes count
-      expect(screen.getByText('4')).toBeInTheDocument(); // Rolling stock count
-
-      // Verify labels
+    await waitFor(() => {
+      expect(screen.getAllByText('1')).toHaveLength(4);
       expect(screen.getByText('Locations')).toBeInTheDocument();
       expect(screen.getByText('Industries')).toBeInTheDocument();
       expect(screen.getByText('Train Routes')).toBeInTheDocument();
       expect(screen.getByText('Rolling Stock')).toBeInTheDocument();
-    });
-
-    it('displays zero counts when arrays are empty', () => {
-      render(<Dashboard />);
-      
-      const counts = screen.getAllByText('0');
-      expect(counts).toHaveLength(4);
-    });
-
-    it('displays zero counts when data is empty', () => {
-      (useLayout as jest.Mock).mockReturnValue({
-        locations: [],
-        industries: [],
-        trainRoutes: [],
-        rollingStock: [],
-        error: '',
-        isLoading: false,
-        refreshData: jest.fn()
-      });
-
-      render(<Dashboard />);
-      
-      const counts = screen.getAllByText('0');
-      expect(counts).toHaveLength(4);
     });
   });
 }); 

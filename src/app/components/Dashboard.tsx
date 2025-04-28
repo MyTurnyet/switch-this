@@ -1,15 +1,49 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatCard } from './StatCard';
-import { useLayout } from '../shared/contexts/LayoutContext';
+import { Location, Industry, TrainRoute, RollingStock } from '../shared/types/models';
+import { ClientServices } from '../shared/services/clientServices';
 
-export const Dashboard: React.FC = () => {
-  const { locations, industries, trainRoutes, rollingStock, error, isLoading, refreshData } = useLayout();
+interface DashboardProps {
+  services: ClientServices;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ services }) => {
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [industries, setIndustries] = useState<Industry[]>([]);
+  const [trainRoutes, setTrainRoutes] = useState<TrainRoute[]>([]);
+  const [rollingStock, setRollingStock] = useState<RollingStock[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refreshData = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [locationsData, industriesData, trainRoutesData, rollingStockData] = await Promise.all([
+        services.locationService.getAllLocations(),
+        services.industryService.getAllIndustries(),
+        services.trainRouteService.getAllTrainRoutes(),
+        services.rollingStockService.getAllRollingStock()
+      ]);
+
+      setLocations(locationsData);
+      setIndustries(industriesData);
+      setTrainRoutes(trainRoutesData);
+      setRollingStock(rollingStockData);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unable to connect to the database';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     refreshData();
-  }, [refreshData]);
+  }, [services]);
 
   if (error) {
     return (
