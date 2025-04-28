@@ -3,13 +3,19 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { groupIndustriesByLocationAndBlock } from './utils/groupIndustries';
-import { Location, Industry, RollingStock } from '@/app/shared/types/models';
-import { ClientServices } from '../shared/services/clientServices';
+import type { Location, Industry, RollingStock } from '@/app/shared/types/models';
+import type { ClientServices } from '../shared/services/clientServices';
 import RollingStockList from './components/RollingStockList';
 
 interface LayoutStateProps {
   services: ClientServices;
 }
+
+const getCarsAtIndustry = (industry: Industry, rollingStock: RollingStock[]): RollingStock[] => {
+  return rollingStock.filter(car => 
+    industry.tracks.some(track => track.placedCars.includes(car._id))
+  );
+};
 
 export default function LayoutState({ services }: LayoutStateProps) {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -40,6 +46,16 @@ export default function LayoutState({ services }: LayoutStateProps) {
     }
   };
 
+  const handleReset = async () => {
+    try {
+      await services.rollingStockService.resetToHomeYards();
+      await refreshData();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reset rolling stock';
+      setError(errorMessage);
+    }
+  };
+
   useEffect(() => {
     refreshData();
   }, [services]);
@@ -51,7 +67,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Layout State</h1>
         <button 
-          onClick={refreshData}
+          onClick={handleReset}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
           Reset State
@@ -86,12 +102,33 @@ export default function LayoutState({ services }: LayoutStateProps) {
                         <h4 className="text-md font-medium text-gray-700 mb-2">
                           {blockName}
                         </h4>
-                        <div className="ml-4 space-y-1">
-                          {blockIndustries.map(industry => (
-                            <div key={industry._id} className="text-gray-600">
-                              {industry.name}
-                            </div>
-                          ))}
+                        <div className="ml-4 space-y-4">
+                          {blockIndustries.map(industry => {
+                            const carsAtIndustry = getCarsAtIndustry(industry, rollingStock);
+                            return (
+                              <div key={industry._id} className="space-y-2">
+                                <div className="text-gray-600 font-medium">
+                                  {industry.name}
+                                </div>
+                                {carsAtIndustry.length > 0 && (
+                                  <div className="ml-4 space-y-2">
+                                    {carsAtIndustry.map(car => (
+                                      <div key={car._id} className="bg-gray-50 p-2 rounded">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium">
+                                            {car.roadName} {car.roadNumber}
+                                          </span>
+                                          <span className="text-sm text-gray-500">
+                                            {car.aarType} - {car.description}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
@@ -99,7 +136,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
                 ))}
               </div>
               <div>
-                <h2 className="text-xl font-semibold mb-4">Rolling Stock</h2>
+                <h2 className="text-xl font-semibold mb-4">All Rolling Stock</h2>
                 <RollingStockList rollingStock={rollingStock} industries={industries} />
               </div>
             </>

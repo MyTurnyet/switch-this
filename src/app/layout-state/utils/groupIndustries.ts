@@ -1,4 +1,4 @@
-import { Location, Industry } from '@/shared/types/models';
+import { Location, Industry } from '@/app/shared/types/models';
 
 interface IndustryGroup {
   locationName: string;
