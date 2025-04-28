@@ -38,8 +38,12 @@ export interface TrainRoute {
 
 export interface RollingStock {
   _id: string;
-  name: string;
-  description?: string;
-  type: string;
-  currentLocationId?: string;
+  roadName: string;
+  roadNumber: string;
+  aarType: string;
+  description: string;
+  color: string;
+  note: string;
+  homeYard: string;
+  ownerId: string;
 } 

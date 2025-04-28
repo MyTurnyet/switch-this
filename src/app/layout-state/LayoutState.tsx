@@ -100,7 +100,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
               </div>
               <div>
                 <h2 className="text-xl font-semibold mb-4">Rolling Stock</h2>
-                <RollingStockList rollingStock={rollingStock} />
+                <RollingStockList rollingStock={rollingStock} industries={industries} />
               </div>
             </>
           )}

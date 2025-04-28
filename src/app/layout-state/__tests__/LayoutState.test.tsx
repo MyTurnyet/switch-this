@@ -70,11 +70,15 @@ describe('LayoutState', () => {
       }] as unknown as TrainRoute[],
       rollingStock: [{ 
         _id: '1',
-        name: 'Stock 1',
-        type: 'BOXCAR',
-        description: 'Test stock',
-        currentLocationId: '1'
-      }] as unknown as RollingStock[],
+        roadName: 'BNSF',
+        roadNumber: '1234',
+        aarType: 'XM',
+        description: '40ft Standard Boxcar',
+        color: 'RED',
+        note: 'Test note',
+        homeYard: 'Yard 1',
+        ownerId: '1'
+      }] as RollingStock[],
     };
 
     (mockServices.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockData.locations);
@@ -89,9 +93,12 @@ describe('LayoutState', () => {
     await waitFor(() => {
       expect(screen.getByText('Location 1')).toBeInTheDocument();
       expect(screen.getByText('Industry 1')).toBeInTheDocument();
-      expect(screen.getByText('Stock 1')).toBeInTheDocument();
-      expect(screen.getByText('BOXCAR')).toBeInTheDocument();
-      expect(screen.getByText('Test stock')).toBeInTheDocument();
+      expect(screen.getByText('BNSF 1234')).toBeInTheDocument();
+      expect(screen.getByText('XM')).toBeInTheDocument();
+      expect(screen.getByText('40ft Standard Boxcar')).toBeInTheDocument();
+      expect(screen.getByText('RED')).toBeInTheDocument();
+      expect(screen.getByText('Test note')).toBeInTheDocument();
+      expect(screen.getByText('Unknown Yard')).toBeInTheDocument();
     });
   });
 }); 
