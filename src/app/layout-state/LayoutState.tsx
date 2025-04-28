@@ -5,6 +5,7 @@ import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { groupIndustriesByLocationAndBlock } from './utils/groupIndustries';
 import { Location, Industry, RollingStock } from '@/app/shared/types/models';
 import { ClientServices } from '../shared/services/clientServices';
+import RollingStockList from './components/RollingStockList';
 
 interface LayoutStateProps {
   services: ClientServices;
@@ -98,10 +99,8 @@ export default function LayoutState({ services }: LayoutStateProps) {
                 ))}
               </div>
               <div>
-                <h2 className="text-xl font-semibold mb-2">Rolling Stock</h2>
-                <pre className="bg-gray-100 p-4 rounded overflow-auto">
-                  {JSON.stringify(rollingStock, null, 2)}
-                </pre>
+                <h2 className="text-xl font-semibold mb-4">Rolling Stock</h2>
+                <RollingStockList rollingStock={rollingStock} />
               </div>
             </>
           )}

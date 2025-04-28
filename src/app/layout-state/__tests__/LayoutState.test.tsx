@@ -71,16 +71,9 @@ describe('LayoutState', () => {
       rollingStock: [{ 
         _id: '1',
         name: 'Stock 1',
-        roadName: 'BNSF',
-        roadNumber: '1234',
-        aarType: 'XM',
         type: 'BOXCAR',
         description: 'Test stock',
-        currentLocationId: '1',
-        length: 40,
-        weight: 1000,
-        color: 'blue',
-        ownerId: '1'
+        currentLocationId: '1'
       }] as unknown as RollingStock[],
     };
 
@@ -96,7 +89,9 @@ describe('LayoutState', () => {
     await waitFor(() => {
       expect(screen.getByText('Location 1')).toBeInTheDocument();
       expect(screen.getByText('Industry 1')).toBeInTheDocument();
-      expect(screen.getByText(/"name": "Stock 1"/)).toBeInTheDocument();
+      expect(screen.getByText('Stock 1')).toBeInTheDocument();
+      expect(screen.getByText('BOXCAR')).toBeInTheDocument();
+      expect(screen.getByText('Test stock')).toBeInTheDocument();
     });
   });
 }); 
