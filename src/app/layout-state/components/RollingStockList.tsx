@@ -81,19 +81,20 @@ const getCurrentLocation = (car: RollingStock, industries: Industry[]): CurrentL
   };
 };
 
-export default function RollingStockList({ rollingStock, industries }: RollingStockListProps) {
-  // Sort cars by road name, and number
-  const sortedRollingStock = [...rollingStock].sort((a, b) => {
-    // First sort by road name
+const sortRollingStockByRoadNameAndNumber = (rollingStock: RollingStock[]): RollingStock[] => {
+  return [...rollingStock].sort((a, b) => {
     if (a.roadName !== b.roadName) {
       return a.roadName < b.roadName ? -1 : 1;
     }
     
-    // Then sort by road number - using string comparison
     const aNum = String(a.roadNumber || '');
     const bNum = String(b.roadNumber || '');
     return aNum < bNum ? -1 : aNum > bNum ? 1 : 0;
   });
+};
+
+export default function RollingStockList({ rollingStock, industries }: RollingStockListProps) {
+  const sortedRollingStock = sortRollingStockByRoadNameAndNumber(rollingStock);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
