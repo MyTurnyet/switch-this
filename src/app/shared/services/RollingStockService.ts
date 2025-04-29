@@ -1,4 +1,4 @@
-import { RollingStock } from '@/shared/types/models';
+import { RollingStock } from '@/app/shared/types/models';
 
 export class RollingStockService {
   async getAllRollingStock(): Promise<RollingStock[]> {
