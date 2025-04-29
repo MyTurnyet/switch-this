@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { groupIndustriesByLocationAndBlock } from './utils/groupIndustries';
+import { initializeLayoutState, syncRollingStockLocations } from './utils/layoutStateManager';
 import type { Location, Industry, RollingStock, Track } from '@/app/shared/types/models';
 import type { ClientServices } from '../shared/services/clientServices';
 import RollingStockList from './components/RollingStockList';
@@ -11,31 +12,31 @@ interface LayoutStateProps {
   services: ClientServices;
 }
 
-const getIndustryTypeStyle = (type: string) => {
+// Helper function to determine industry style based on type
+const getIndustryTypeStyle = (type: string): string => {
   switch (type) {
-    case 'FREIGHT':
-      return 'border-blue-200 bg-blue-50';
-    case 'PASSENGER':
-      return 'border-green-200 bg-green-50';
     case 'YARD':
-      return 'border-gray-200 bg-gray-50';
+      return 'bg-blue-50 border-blue-200';
+    case 'FREIGHT':
+      return 'bg-green-50 border-green-200';
+    case 'PASSENGER':
+      return 'bg-purple-50 border-purple-200';
     default:
-      return 'border-gray-200 bg-white';
+      return 'bg-gray-50 border-gray-200';
   }
 };
 
-const getTrackCapacityStyle = (current: number, max: number) => {
-  if (current === 0) return 'text-gray-500';
-  if (current === max) return 'text-red-600';
-  if (current > max * 0.8) return 'text-yellow-600';
+// Helper function to determine track capacity style
+const getTrackCapacityStyle = (current: number, max: number): string => {
+  const ratio = current / max;
+  if (ratio >= 1) return 'text-red-600';
+  if (ratio >= 0.75) return 'text-amber-600';
+  if (ratio >= 0.5) return 'text-yellow-600';
   return 'text-green-600';
 };
 
 const getCarsOnTrack = (track: Track, rollingStock: RollingStock[]) => {
-  console.log(`Track ${track.name} has placedCars: ${JSON.stringify(track.placedCars)}`);
-  const cars = rollingStock.filter(car => track.placedCars.includes(car._id));
-  console.log(`Found ${cars.length} cars on track ${track.name}`);
-  return cars;
+  return rollingStock.filter(car => track.placedCars.includes(car._id));
 };
 
 export default function LayoutState({ services }: LayoutStateProps) {
@@ -57,8 +58,19 @@ export default function LayoutState({ services }: LayoutStateProps) {
       ]);
 
       setLocations(locationsData);
-      setIndustries(industriesData);
-      setRollingStock(rollingStockData);
+      
+      // If this is the first load (industries is empty), initialize the layout state
+      if (industries.length === 0) {
+        const initializedIndustries = initializeLayoutState(industriesData, rollingStockData);
+        setIndustries(initializedIndustries);
+        
+        // Update rolling stock with current locations
+        const updatedRollingStock = syncRollingStockLocations(initializedIndustries, rollingStockData);
+        setRollingStock(updatedRollingStock);
+      } else {
+        setIndustries(industriesData);
+        setRollingStock(rollingStockData);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unable to connect to the database';
       setError(errorMessage);
@@ -110,7 +122,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
                 className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"
               />
             </div>
-          ) : (
+          ) :
             <>
               <div className="space-y-8">
                 {Object.entries(groupedIndustries).map(([locationId, locationGroup]) => (
@@ -151,20 +163,10 @@ export default function LayoutState({ services }: LayoutStateProps) {
                                         </span>
                                       </div>
                                       {carsOnTrack.length > 0 && (
-                                        <div className="ml-2 space-y-2">
+                                        <div className="pl-4 border-l-2 border-gray-200 space-y-1">
                                           {carsOnTrack.map(car => (
-                                            <div
-                                              key={car._id}
-                                              className="bg-white p-2 rounded border border-gray-200"
-                                            >
-                                              <div className="flex items-center gap-2">
-                                                <span className="font-medium">
-                                                  {car.roadName} {car.roadNumber}
-                                                </span>
-                                                <span className="text-sm text-gray-500">
-                                                  {car.aarType} - {car.description}
-                                                </span>
-                                              </div>
+                                            <div key={car._id} className="text-sm">
+                                              {car.roadName} {car.roadNumber} ({car.aarType})
                                             </div>
                                           ))}
                                         </div>
@@ -181,12 +183,18 @@ export default function LayoutState({ services }: LayoutStateProps) {
                   </div>
                 ))}
               </div>
-              <div className="mt-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">All Rolling Stock</h2>
-                <RollingStockList rollingStock={rollingStock} industries={industries} />
+              
+              <div className="mt-10">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Rolling Stock
+                </h2>
+                <RollingStockList 
+                  rollingStock={rollingStock} 
+                  industries={industries} 
+                />
               </div>
             </>
-          )}
+          }
         </div>
       </ScrollArea>
     </div>
