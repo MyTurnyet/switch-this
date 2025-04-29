@@ -3,20 +3,25 @@
 import { Location, Industry, TrainRoute, RollingStock } from '../types/models';
 import { BaseService } from './BaseService';
 
-// Service interfaces
-export interface LocationService {
+// Generic interface for all services
+export interface EntityService<T> {
+  getAll(): Promise<T[]>;
+}
+
+// Service interfaces with specific additional methods
+export interface LocationService extends EntityService<Location> {
   getAllLocations(): Promise<Location[]>;
 }
 
-export interface IndustryService {
+export interface IndustryService extends EntityService<Industry> {
   getAllIndustries(): Promise<Industry[]>;
 }
 
-export interface TrainRouteService {
+export interface TrainRouteService extends EntityService<TrainRoute> {
   getAllTrainRoutes(): Promise<TrainRoute[]>;
 }
 
-export interface RollingStockService {
+export interface RollingStockService extends EntityService<RollingStock> {
   getAllRollingStock(): Promise<RollingStock[]>;
   updateRollingStock(id: string, rollingStock: RollingStock): Promise<void>;
   resetToHomeYards(): Promise<void>;
@@ -29,7 +34,11 @@ export interface ClientServices {
   rollingStockService: RollingStockService;
 }
 
-class LocationServiceImpl extends BaseService<Location> implements LocationService {
+abstract class EntityServiceImpl<T> extends BaseService<T> implements EntityService<T> {
+  // The BaseService already has getAll implementation
+}
+
+class LocationServiceImpl extends EntityServiceImpl<Location> implements LocationService {
   constructor() {
     super('/api/locations');
   }
@@ -39,7 +48,7 @@ class LocationServiceImpl extends BaseService<Location> implements LocationServi
   }
 }
 
-class IndustryServiceImpl extends BaseService<Industry> implements IndustryService {
+class IndustryServiceImpl extends EntityServiceImpl<Industry> implements IndustryService {
   constructor() {
     super('/api/industries');
   }
@@ -49,7 +58,7 @@ class IndustryServiceImpl extends BaseService<Industry> implements IndustryServi
   }
 }
 
-class TrainRouteServiceImpl extends BaseService<TrainRoute> implements TrainRouteService {
+class TrainRouteServiceImpl extends EntityServiceImpl<TrainRoute> implements TrainRouteService {
   constructor() {
     super('/api/train-routes');
   }
@@ -59,7 +68,7 @@ class TrainRouteServiceImpl extends BaseService<TrainRoute> implements TrainRout
   }
 }
 
-class RollingStockServiceImpl extends BaseService<RollingStock> implements RollingStockService {
+class RollingStockServiceImpl extends EntityServiceImpl<RollingStock> implements RollingStockService {
   constructor() {
     super('/api/rolling-stock');
   }

@@ -1,7 +1,17 @@
-export type IndustryType = 'FREIGHT' | 'YARD' | 'PASSENGER';
-
-export interface Track {
+// Base entity type with common properties
+export interface BaseEntity {
   _id: string;
+  ownerId: string;
+}
+
+// Enum for industry types to ensure type safety
+export enum IndustryType {
+  FREIGHT = 'FREIGHT',
+  YARD = 'YARD',
+  PASSENGER = 'PASSENGER'
+}
+
+export interface Track extends BaseEntity {
   name: string;
   length: number;
   capacity: number;
@@ -9,35 +19,34 @@ export interface Track {
   placedCars: string[];
 }
 
-export interface Location {
-  _id: string;
+export interface Location extends BaseEntity {
   stationName: string;
   block: string;
   description?: string;
-  ownerId: string;
 }
 
-export interface Industry {
-  _id: string;
+export interface Industry extends BaseEntity {
   name: string;
   locationId: string;
   blockName: string;
   description?: string;
   industryType: IndustryType;
   tracks: Track[];
-  ownerId: string;
 }
 
-export interface TrainRoute {
-  _id: string;
+export interface TrainRoute extends BaseEntity {
   name: string;
   description?: string;
   startLocationId: string;
   endLocationId: string;
 }
 
-export interface RollingStock {
-  _id: string;
+export interface RollingStockLocation {
+  industryId: string;
+  trackId: string;
+}
+
+export interface RollingStock extends BaseEntity {
   roadName: string;
   roadNumber: string;
   aarType: string;
@@ -45,9 +54,5 @@ export interface RollingStock {
   color: string;
   note: string;
   homeYard: string;
-  ownerId: string;
-  currentLocation?: {
-    industryId: string;
-    trackId: string;
-  };
+  currentLocation?: RollingStockLocation;
 } 

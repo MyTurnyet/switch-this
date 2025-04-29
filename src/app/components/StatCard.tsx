@@ -12,7 +12,7 @@ export interface StatCardProps {
  * @param label - The label text for the statistic
  * @param isLoading - Indicates whether the component is in a loading state
  */
-export const StatCard: React.FC<StatCardProps> = ({ count, label, isLoading }) => (
+export const StatCard: React.FC<StatCardProps> = ({ count, label, isLoading = false }) => (
   <div 
     role="article" 
     className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"

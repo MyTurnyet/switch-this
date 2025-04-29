@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { groupIndustriesByLocationAndBlock } from './utils/groupIndustries';
 import { initializeLayoutState, syncRollingStockLocations } from './utils/layoutStateManager';
 import type { Location, Industry, RollingStock, Track } from '@/app/shared/types/models';
 import type { ClientServices } from '../shared/services/clientServices';
 import RollingStockList from './components/RollingStockList';
+import { LayoutStateService, LayoutStateData } from './services/LayoutStateService';
 
 interface LayoutStateProps {
   services: ClientServices;
@@ -45,12 +46,38 @@ export default function LayoutState({ services }: LayoutStateProps) {
   const [rollingStock, setRollingStock] = useState<RollingStock[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [layoutStateId, setLayoutStateId] = useState<string | undefined>(undefined);
+  
+  // Create instance of LayoutStateService
+  const layoutStateService = new LayoutStateService();
 
-  const refreshData = async () => {
+  const saveLayoutState = useCallback(async (updatedIndustries: Industry[], updatedRollingStock: RollingStock[]) => {
+    try {
+      // Save current layout state to database
+      const stateToSave: LayoutStateData = {
+        _id: layoutStateId,
+        industries: updatedIndustries,
+        rollingStock: updatedRollingStock
+      };
+      
+      const savedState = await layoutStateService.saveLayoutState(stateToSave);
+      
+      // Update the state ID if this is the first save
+      if (!layoutStateId && savedState._id) {
+        setLayoutStateId(savedState._id);
+      }
+    } catch (err) {
+      console.error('Failed to save layout state:', err);
+      // Don't set error state here, as it's a background operation
+    }
+  }, [layoutStateId]);
+
+  const loadInitialState = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
+      // First, load all base data
       const [locationsData, industriesData, rollingStockData] = await Promise.all([
         services.locationService.getAllLocations(),
         services.industryService.getAllIndustries(),
@@ -59,17 +86,26 @@ export default function LayoutState({ services }: LayoutStateProps) {
 
       setLocations(locationsData);
       
-      // If this is the first load (industries is empty), initialize the layout state
-      if (industries.length === 0) {
-        const initializedIndustries = initializeLayoutState(industriesData, rollingStockData);
-        setIndustries(initializedIndustries);
-        
-        // Update rolling stock with current locations
-        const updatedRollingStock = syncRollingStockLocations(initializedIndustries, rollingStockData);
-        setRollingStock(updatedRollingStock);
+      // Try to load saved layout state from database
+      const savedState = await layoutStateService.getLayoutState();
+      
+      if (savedState) {
+        // Use saved state
+        console.log('Loading saved layout state from database');
+        setIndustries(savedState.industries);
+        setRollingStock(savedState.rollingStock);
+        setLayoutStateId(savedState._id);
       } else {
-        setIndustries(industriesData);
-        setRollingStock(rollingStockData);
+        // Initialize with default layout
+        console.log('No saved state found - initializing default state');
+        const initializedIndustries = initializeLayoutState(industriesData, rollingStockData);
+        const updatedRollingStock = syncRollingStockLocations(initializedIndustries, rollingStockData);
+        
+        setIndustries(initializedIndustries);
+        setRollingStock(updatedRollingStock);
+        
+        // Save this initial state to the database
+        await saveLayoutState(initializedIndustries, updatedRollingStock);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unable to connect to the database';
@@ -77,21 +113,39 @@ export default function LayoutState({ services }: LayoutStateProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [services, saveLayoutState]);
 
   const handleReset = async () => {
     try {
+      setIsLoading(true);
+      // Call the API to reset rolling stock to home yards
       await services.rollingStockService.resetToHomeYards();
-      await refreshData();
+      
+      // Fetch fresh data after reset
+      const [locationsData, industriesData, rollingStockData] = await Promise.all([
+        services.locationService.getAllLocations(),
+        services.industryService.getAllIndustries(),
+        services.rollingStockService.getAllRollingStock()
+      ]);
+      
+      setLocations(locationsData);
+      setIndustries(industriesData);
+      setRollingStock(rollingStockData);
+      
+      // Explicitly save the updated state to MongoDB
+      await saveLayoutState(industriesData, rollingStockData);
+      
+      setIsLoading(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to reset rolling stock';
       setError(errorMessage);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    refreshData();
-  }, [services]);
+    loadInitialState();
+  }, [loadInitialState]);
 
   const groupedIndustries = groupIndustriesByLocationAndBlock(industries, locations);
 
