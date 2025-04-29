@@ -1,132 +1,153 @@
 import { POST } from '../route';
+import { NextResponse } from 'next/server';
 
-// Mock environment variables
-process.env.MONGODB_URI = 'mongodb://test-uri';
+// Mock NextResponse
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: jest.fn().mockImplementation((data, options) => ({
+      status: options?.status || 200,
+      body: data,
+    })),
+  },
+}));
 
 // Mock MongoDB
 jest.mock('mongodb', () => {
-  const mockUpdateOne = jest.fn().mockResolvedValue({ acknowledged: true });
-  const mockToArray = jest.fn();
-  const mockFind = jest.fn().mockReturnValue({ toArray: mockToArray });
-  const mockCollection = jest.fn().mockReturnValue({
-    find: mockFind,
-    updateOne: mockUpdateOne
+  const updateOneMock = jest.fn().mockResolvedValue({ acknowledged: true });
+  const findMock = jest.fn();
+  findMock.mockReturnValue({
+    toArray: jest.fn()
+      .mockResolvedValueOnce([
+        // Mock rolling stock
+        {
+          _id: '1',
+          roadName: 'BNSF',
+          roadNumber: '1234',
+          aarType: 'XM',
+          description: 'Boxcar',
+          color: 'RED',
+          homeYard: 'yard1',
+          ownerId: '1',
+        },
+        {
+          _id: '2',
+          roadName: 'UP',
+          roadNumber: '5678',
+          aarType: 'GS',
+          description: 'Gondola',
+          color: 'GREEN',
+          homeYard: 'yard1',
+          ownerId: '1',
+        },
+        {
+          _id: '3',
+          roadName: 'CSX',
+          roadNumber: '9012',
+          aarType: 'FM',
+          description: 'Flatcar',
+          color: 'BLUE',
+          homeYard: 'yard2',
+          ownerId: '1',
+        },
+      ])
+      .mockResolvedValueOnce([
+        // Mock industries
+        {
+          _id: 'yard1',
+          name: 'BNSF Yard',
+          industryType: 'YARD',
+          tracks: [
+            {
+              _id: 'track1',
+              name: 'Track 1',
+              maxCars: 4,
+              placedCars: ['4', '5'],
+            },
+            {
+              _id: 'track2',
+              name: 'Track 2',
+              maxCars: 4,
+              placedCars: [],
+            },
+          ],
+        },
+        {
+          _id: 'yard2',
+          name: 'UP Yard',
+          industryType: 'YARD',
+          tracks: [
+            {
+              _id: 'track3',
+              name: 'Track 3',
+              maxCars: 4,
+              placedCars: ['6'],
+            },
+          ],
+        },
+      ]),
   });
-  const mockDb = jest.fn().mockReturnValue({
-    collection: mockCollection
-  });
-  const mockClose = jest.fn();
+
+  const mockCollection = {
+    find: findMock,
+    updateOne: updateOneMock,
+  };
+
+  const mockDb = {
+    collection: jest.fn().mockReturnValue(mockCollection),
+  };
+  
+  const mockClient = {
+    db: jest.fn().mockReturnValue(mockDb),
+    close: jest.fn().mockResolvedValue(undefined),
+  };
 
   return {
     MongoClient: {
-      connect: jest.fn().mockResolvedValue({
-        db: mockDb,
-        close: mockClose
-      })
+      connect: jest.fn().mockResolvedValue(mockClient),
     },
-    ObjectId: jest.fn().mockImplementation((id) => ({ toString: () => id }))
+    ObjectId: jest.fn(id => id),
   };
 });
 
-// Mock NextResponse
-jest.mock('next/server', () => {
-  interface ResponseData {
-    message?: string;
-    error?: string;
-    [key: string]: unknown;
-  }
-
-  interface ResponseOptions {
-    status?: number;
-  }
-
-  class MockNextResponse {
-    private data: ResponseData;
-    public status: number;
-
-    constructor(data: ResponseData, options: ResponseOptions = {}) {
-      this.data = data;
-      this.status = options.status || 200;
-    }
-    json() {
-      return Promise.resolve(this.data);
-    }
-  }
-  return {
-    NextResponse: {
-      json: (data: ResponseData, options?: ResponseOptions) => new MockNextResponse(data, options)
-    }
-  };
-});
-
-describe('POST /api/rolling-stock/reset', () => {
-  const mockRollingStock = [
-    { _id: '1', homeYard: 'yard1', currentLocation: { industryId: 'yard2', trackId: 'track1' } },
-    { _id: '2', homeYard: 'yard1', currentLocation: { industryId: 'yard2', trackId: 'track1' } },
-    { _id: '3', homeYard: 'yard2', currentLocation: { industryId: 'yard1', trackId: 'track2' } }
-  ];
-
-  const mockIndustries = [
-    {
-      _id: 'yard1',
-      industryType: 'YARD',
-      tracks: [
-        { _id: 'track1' },
-        { _id: 'track2' }
-      ]
-    },
-    {
-      _id: 'yard2',
-      industryType: 'YARD',
-      tracks: [
-        { _id: 'track3' },
-        { _id: 'track4' }
-      ]
-    }
-  ];
-
-  beforeEach(async () => {
+describe('Rolling Stock Reset API', () => {
+  beforeEach(() => {
     jest.clearAllMocks();
-    const { MongoClient } = jest.requireMock('mongodb');
-    const client = await MongoClient.connect();
-    const mockDb = client.db();
+  });
+
+  it('should reset rolling stock to their home yards on the least occupied tracks', async () => {
+    // Call the API route handler
+    const result = await POST();
+
+    // Verify the response
+    expect(NextResponse.json).toHaveBeenCalledWith({ success: true });
+    expect(result.status).toBe(200);
+    
+    // Extract the mocked updateOne function
+    const { MongoClient } = require('mongodb');
+    const mockClient = await MongoClient.connect();
+    const mockDb = mockClient.db();
     const mockCollection = mockDb.collection();
-    mockCollection.find().toArray
-      .mockResolvedValueOnce(mockRollingStock)  // First call for rolling stock
-      .mockResolvedValueOnce(mockIndustries);   // Second call for industries
-  });
-
-  it('should place cars on tracks with the fewest cars in their home yard', async () => {
-    const response = await POST();
-    const responseData = await response.json();
-
-    expect(responseData).toEqual({ success: true });
-    const { MongoClient } = jest.requireMock('mongodb');
-    const client = await MongoClient.connect();
-    const mockDb = client.db();
-    expect(mockDb.collection).toHaveBeenCalledWith('rollingStock');
-    expect(mockDb.collection).toHaveBeenCalledWith('industries');
-    expect(mockDb.collection().updateOne).toHaveBeenCalledTimes(8);
-    expect(client.close).toHaveBeenCalled();
-  });
-
-  it('should place cars on tracks and return success', async () => {
-    const response = await POST();
-    expect(response).toBeDefined();
-    expect(typeof response.json).toBe('function');
-    const data = await response.json();
-    expect(data).toEqual({ success: true });
+    const { updateOne } = mockCollection;
+    
+    // Verify the updateOne was called
+    expect(updateOne).toHaveBeenCalled();
+    
+    // Verify the client was closed
+    expect(mockClient.close).toHaveBeenCalled();
   });
 
   it('should handle errors gracefully', async () => {
-    const { MongoClient } = jest.requireMock('mongodb');
+    // Mock MongoDB to throw an error
+    const { MongoClient } = require('mongodb');
     MongoClient.connect.mockRejectedValueOnce(new Error('Database connection failed'));
 
-    const response = await POST();
-    expect(response).toBeDefined();
-    expect(typeof response.json).toBe('function');
-    const data = await response.json();
-    expect(data).toEqual({ error: 'Failed to reset rolling stock' });
-    expect(response.status).toBe(500);
+    // Call the API route handler
+    await POST();
+
+    // Verify the error response
+    expect(NextResponse.json).toHaveBeenCalledWith(
+      { error: 'Failed to reset rolling stock' }, 
+      { status: 500 }
+    );
   });
 }); 

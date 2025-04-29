@@ -8,11 +8,15 @@ interface RollingStockWithLocation extends RollingStock {
   };
 }
 
+// Mock fetch
+global.fetch = jest.fn();
+
 describe('RollingStockService', () => {
   let service: RollingStockService;
   let mockRollingStock: RollingStockWithLocation[];
 
   beforeEach(() => {
+    jest.clearAllMocks();
     service = new RollingStockService();
     mockRollingStock = [
       {
@@ -46,37 +50,30 @@ describe('RollingStockService', () => {
         }
       }
     ];
+
+    // Default mocks for fetch
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => mockRollingStock
+    });
   });
 
   it('should reset all rolling stock to their home yards', async () => {
-    // Mock the getAllRollingStock response
-    jest.spyOn(service, 'getAllRollingStock').mockResolvedValue(mockRollingStock);
-    
-    // Mock the updateRollingStock method
-    const updateSpy = jest.spyOn(service, 'updateRollingStock').mockResolvedValue(undefined);
+    // Mock the fetch response for the reset endpoint
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true })
+    });
 
     // Call the reset method
     await service.resetToHomeYards();
 
-    // Verify that updateRollingStock was called for each car
-    expect(updateSpy).toHaveBeenCalledTimes(2);
-    
-    // Verify the first car was reset
-    expect(updateSpy).toHaveBeenCalledWith('1', {
-      ...mockRollingStock[0],
-      currentLocation: {
-        industryId: 'yard1',
-        trackId: 'yard1'
-      }
-    });
-
-    // Verify the second car was reset
-    expect(updateSpy).toHaveBeenCalledWith('2', {
-      ...mockRollingStock[1],
-      currentLocation: {
-        industryId: 'yard2',
-        trackId: 'yard2'
-      }
+    // Verify that fetch was called with the correct parameters
+    expect(global.fetch).toHaveBeenCalledWith('/api/rolling-stock/reset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
   });
 }); 

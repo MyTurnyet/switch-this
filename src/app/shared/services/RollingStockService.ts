@@ -23,17 +23,15 @@ export class RollingStockService {
   }
 
   async resetToHomeYards(): Promise<void> {
-    const allRollingStock = await this.getAllRollingStock();
+    const response = await fetch('/api/rolling-stock/reset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     
-    for (const car of allRollingStock) {
-      const updatedCar: RollingStock = {
-        ...car,
-        currentLocation: {
-          industryId: car.homeYard,
-          trackId: car.homeYard
-        }
-      };
-      await this.updateRollingStock(car._id, updatedCar);
+    if (!response.ok) {
+      throw new Error('Failed to reset rolling stock to home yards');
     }
   }
 } 
