@@ -22,6 +22,7 @@ alwaysApply: true
 - Collective Code Ownership: Take responsibility for all code
 - Coding Standards: Follow established coding standards consistently
 - Sustainable Pace: Work at a sustainable pace that can be maintained indefinitely
+- Git Commit Standards: Follow Arlo Belshee's git commit notation as defined in @arlo-belshee-commit-notation.mdc
 
 ## Development Process
 1. Write a failing test first (MANDATORY - following all rules in @tdd-combined-always.mdc)
@@ -75,6 +76,7 @@ alwaysApply: true
 - Use appropriate design patterns
 - Follow established conventions
 - Never compromise on TDD practices
+- Use standardized commit messages following @arlo-belshee-commit-notation.mdc
 
 ## Documentation
 - Write clear, concise comments when needed
@@ -97,3 +99,4 @@ alwaysApply: true
 - Share knowledge
 - Mentor others
 - Continuously improve skills
+

@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Arlo Belshee's Git Commit Notation
+
+## Core Format
+- Follow this structure: `{prefix} {description}`
+- Format the prefix in brackets: `[prefix]` 
+- Keep descriptions concise and descriptive
+- The first letter after the prefix must be capitalized
+- Example: `[F] Add user authentication feature`
+
+## Commit Prefixes
+### Based on Arlo Belshee's Notation:
+
+- `[F]` = Feature: New functionality or completed user story
+- `[B]` = Bug: Fix for a bug
+- `[R]` = Refactor: Change that doesn't impact functionality
+- `[c]` = chore: Maintenance task that isn't a feature, bug fix, or refactor
+- `[d]` = docs: Documentation only changes
+- `[s]` = style: Changes that don't affect code meaning (white-space, formatting, etc.)
+- `[t]` = test: Adding or refactoring tests (no production code change)
+- `[a]` = arch: Architectural changes
+- `[e]` = experiment: Experimental code that might be removed
+- `[D]` = Developer-oriented task (dev-only)
+
+## Additional Notation
+### Namespacing (optional)
+- Add module or component name in parentheses after the prefix
+- Example: `[F][login] Add OAuth support`
+
+### Pairing/Mobbing Notation (optional)
+- `@` = Paired commit (followed by pair partner's initials)
+- `@@` = Mobbed commit (whole team)
+- Example: `[F]@JD Add password reset functionality`
+
+## Checking Commit Format
+1. Ensure each commit message starts with a recognized prefix in brackets
+2. Verify the description is clear and concise
+3. Check that the first letter of the description is capitalized
+4. Verify namespacing is correctly formatted (if used)
+5. Verify pairing notation is correctly formatted (if used)
+
+## Benefits
+- Improved code review process 
+- Better organization of git history
+- Automated changelog generation
+- Increased development visibility
+- Enhanced team communication
+- Simplified project management integration
+
+## Examples
+- `[F] Add user profile page`
+- `[B] Fix login authentication bug`
+- `[R] Refactor database access layer`
+- `[t] Add unit tests for payment gateway`
+- `[F][checkout] Add PayPal integration`
+- `[B]@PT Fix product search performance issue`
+- `[c] Update dependencies`
+- `[d] Update README with setup instructions`
