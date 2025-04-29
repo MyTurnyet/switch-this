@@ -45,42 +45,68 @@ const getColorStyle = (color: string): ColorStyle => {
     PURPLE: { bg: 'bg-purple-100', text: 'text-purple-800' },
     BROWN: { bg: 'bg-amber-100', text: 'text-amber-800' },
     WHITE: { bg: 'bg-gray-50', text: 'text-gray-800' },
-    SILVER: { bg: 'bg-gray-100', text: 'text-gray-800' }
+    SILVER: { bg: 'bg-gray-100', text: 'text-gray-800' },
+    BLACK: { bg: 'bg-gray-700', text: 'text-gray-100' }
   };
 
   return colorMap[color] || { bg: 'bg-gray-100', text: 'text-gray-800' };
 };
 
 const getYardName = (yardId: string, industries: Industry[]): string => {
-  const yard = industries.find(industry => industry._id === yardId && industry.industryType === 'YARD');
+  const yard = industries.find(industry => industry._id === yardId);
   return yard ? yard.name : 'Unknown Yard';
 };
 
-const getCurrentLocation = (carId: string, industries: Industry[]): CurrentLocation | null => {
-  for (const industry of industries) {
-    for (const track of industry.tracks) {
-      if (track.placedCars.includes(carId)) {
-        return {
-          industryName: industry.name,
-          trackName: track.name
-        };
-      }
-    }
+const getCurrentLocation = (car: RollingStock, industries: Industry[]): CurrentLocation | null => {
+  if (!car.currentLocation) {
+    return null;
   }
-  return null;
+
+  const { industryId, trackId } = car.currentLocation;
+  const industry = industries.find(ind => ind._id === industryId);
+  
+  if (!industry) {
+    return null;
+  }
+  
+  const track = industry.tracks.find(t => t._id === trackId);
+  
+  if (!track) {
+    return null;
+  }
+  
+  return {
+    industryName: industry.name,
+    trackName: track.name
+  };
 };
 
 export default function RollingStockList({ rollingStock, industries }: RollingStockListProps) {
+  // Sort cars by road name, and number
+  const sortedRollingStock = [...rollingStock].sort((a, b) => {
+    // First sort by road name
+    if (a.roadName !== b.roadName) {
+      return a.roadName < b.roadName ? -1 : 1;
+    }
+    
+    // Then sort by road number - using string comparison
+    const aNum = String(a.roadNumber || '');
+    const bNum = String(b.roadNumber || '');
+    return aNum < bNum ? -1 : aNum > bNum ? 1 : 0;
+  });
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {rollingStock.map((car) => {
-        const currentLocation = getCurrentLocation(car._id, industries);
+      {sortedRollingStock.map((car) => {
+        const currentLocation = getCurrentLocation(car, industries);
+        const homeYardName = getYardName(car.homeYard, industries);
         
         return (
           <div
             key={car._id}
             className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
             role="article"
+            data-testid="rolling-stock-item"
           >
             <div className="flex justify-between items-start mb-4">
               <div>
@@ -95,33 +121,36 @@ export default function RollingStockList({ rollingStock, industries }: RollingSt
                     {car.color}
                   </span>
                 </div>
-                <div className="mt-2 text-sm text-gray-600">
-                  <p>
-                    {currentLocation 
-                      ? `${currentLocation.industryName} - ${currentLocation.trackName}`
-                      : 'Not placed on any track'}
-                  </p>
-                </div>
               </div>
             </div>
             
             <div className="space-y-3">
-              <div className="text-sm text-gray-600">
-                <p className="font-medium text-gray-700 mb-1">Description</p>
-                <p>{car.description}</p>
+              {car.description && (
+                <div className="text-sm text-gray-600">
+                  <p>{car.description}</p>
+                </div>
+              )}
+              
+              <div className="text-sm">
+                <div className="font-medium text-gray-700">Location:</div>
+                <div className={currentLocation ? "text-green-600" : "text-red-600"}>
+                  {currentLocation 
+                    ? `${currentLocation.industryName} - ${currentLocation.trackName}`
+                    : 'Not placed on any track'}
+                </div>
+              </div>
+              
+              <div className="text-sm">
+                <div className="font-medium text-gray-700">Home Yard:</div>
+                <div>{homeYardName}</div>
               </div>
               
               {car.note && (
-                <div className="text-sm text-gray-600">
-                  <p className="font-medium text-gray-700 mb-1">Note</p>
-                  <p>{car.note}</p>
+                <div className="text-sm">
+                  <div className="font-medium text-gray-700">Note:</div>
+                  <div className="text-gray-600">{car.note}</div>
                 </div>
               )}
-
-              <div className="text-sm text-gray-600">
-                <p className="font-medium text-gray-700 mb-1">Home Yard</p>
-                <p>{getYardName(car.homeYard, industries)}</p>
-              </div>
             </div>
           </div>
         );
