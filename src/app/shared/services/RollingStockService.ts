@@ -23,15 +23,26 @@ export class RollingStockService {
   }
 
   async resetToHomeYards(): Promise<void> {
-    const response = await fetch('/api/rolling-stock/reset', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    console.log('Starting reset to home yards operation');
     
-    if (!response.ok) {
-      throw new Error('Failed to reset rolling stock to home yards');
+    try {
+      const response = await fetch('/api/rolling-stock/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Reset API returned error:', errorData);
+        throw new Error('Failed to reset rolling stock to home yards');
+      }
+      
+      console.log('Reset operation completed successfully');
+    } catch (error) {
+      console.error('Error during reset operation:', error);
+      throw error;
     }
   }
 } 

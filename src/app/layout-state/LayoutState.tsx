@@ -32,7 +32,10 @@ const getTrackCapacityStyle = (current: number, max: number) => {
 };
 
 const getCarsOnTrack = (track: Track, rollingStock: RollingStock[]) => {
-  return rollingStock.filter(car => track.placedCars.includes(car._id));
+  console.log(`Track ${track.name} has placedCars: ${JSON.stringify(track.placedCars)}`);
+  const cars = rollingStock.filter(car => track.placedCars.includes(car._id));
+  console.log(`Found ${cars.length} cars on track ${track.name}`);
+  return cars;
 };
 
 export default function LayoutState({ services }: LayoutStateProps) {
