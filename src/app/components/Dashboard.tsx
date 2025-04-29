@@ -9,7 +9,17 @@ interface DashboardProps {
   services: ClientServices;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ services }) => {
+interface DashboardData {
+  locations: Location[];
+  industries: Industry[];
+  trainRoutes: TrainRoute[];
+  rollingStock: RollingStock[];
+  error: string | null;
+  isLoading: boolean;
+  refreshData: () => Promise<void>;
+}
+
+const useDashboardData = (services: ClientServices): DashboardData => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [trainRoutes, setTrainRoutes] = useState<TrainRoute[]>([]);
@@ -45,6 +55,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ services }) => {
     refreshData();
   }, [services]);
 
+  return {
+    locations,
+    industries,
+    trainRoutes,
+    rollingStock,
+    error,
+    isLoading,
+    refreshData
+  };
+};
+
+export const Dashboard: React.FC<DashboardProps> = ({ services }) => {
+  const { locations, industries, trainRoutes, rollingStock, error, isLoading } = useDashboardData(services);
+
   if (error) {
     return (
       <div className="space-y-6">
@@ -56,22 +80,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ services }) => {
           <StatCard 
             count={0} 
             label="Locations" 
-            isLoading={false} 
+            isLoading={isLoading} 
           />
           <StatCard 
             count={0} 
             label="Industries" 
-            isLoading={false} 
+            isLoading={isLoading} 
           />
           <StatCard 
             count={0} 
             label="Train Routes" 
-            isLoading={false} 
+            isLoading={isLoading} 
           />
           <StatCard 
             count={0} 
             label="Rolling Stock" 
-            isLoading={false} 
+            isLoading={isLoading} 
           />
         </div>
       </div>

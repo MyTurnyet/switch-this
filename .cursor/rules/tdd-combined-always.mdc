@@ -1,0 +1,121 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Combined TDD Rules - Always On
+
+## Core TDD Laws
+- Have we written a failing test before writing production code?
+- Have we written only enough production code to make the failing test pass?
+- Have we refactored the code to remove duplication and improve design?
+
+## Test First Thinking
+- What's the behavior we want to see?
+- What's the smallest test that could fail?
+- What's the simplest test that could fail?
+- What's the next test that would help us make progress?
+- What's the most valuable test we could write?
+
+## Test Implementation
+- What's the simplest code that could make this test pass?
+- What's the smallest change that could make this test pass?
+- What's the most straightforward implementation that could work?
+- Is this the simplest implementation that could work?
+- What's the most maintainable way to verify the output?
+
+## Test Structure
+- Does this test follow the Arrange-Act-Assert pattern?
+- Given: What's the initial state?
+- When: What action are we taking?
+- Then: What's the expected outcome?
+- And: What additional conditions or outcomes?
+
+## Test Naming
+- What does this test verify?
+- What behavior does this test describe?
+- Does the test name describe the behavior being tested?
+- Does the test name follow a consistent pattern?
+- What's the behavior this test verifies?
+
+## Test Maintenance
+- How can we make this test more robust?
+- How can we make this test more maintainable?
+- How can we make this test more readable?
+- How can we make this test more efficient?
+- Is this test easy to understand?
+
+## Test Coverage
+- What scenarios are we missing?
+- What's the minimal set of tests needed?
+- Do we have tests for all important behaviors?
+- What edge cases should we consider?
+- What boundary conditions should we test?
+
+## Test Design
+- What's the simplest test that could fail?
+- What's the minimal test that shows the behavior?
+- Does this test follow the Single Responsibility Principle?
+- What's the most direct test that proves the functionality?
+- What's the most maintainable test we could write?
+
+## Test Principles
+- Write tests that are fast
+- Write tests that are independent
+- Write tests that are repeatable
+- Write tests that are self-validating
+- Write tests that are easy to understand
+- Write tests that are easy to maintain
+- Write tests that are easy to modify
+- Write tests that are easy to delete
+- Write tests that are easy to add to
+- Write tests that are easy to run
+
+## Test Validation
+- How do we know it works?
+- How do we verify it's correct?
+- How do we confirm it's complete?
+- How do we ensure it's reliable?
+- How do we prove it's maintainable?
+
+## Test Refactoring
+- How can we make this code more expressive?
+- How can we make this code more maintainable?
+- How can we make this code more readable?
+- How can we make this code more flexible?
+- How can we make this code more testable?
+
+## Test Documentation
+- Does this test document the behavior?
+- Does this test document the requirements?
+- Does this test document the design?
+- Does this test document the intent?
+- Does this test document the constraints?
+
+## Test Quality
+- Is this test reliable?
+- Is this test repeatable?
+- Is this test maintainable?
+- Is this test readable?
+- Is this test efficient?
+
+## Test Boundaries
+- What's the scope of this test?
+- What's the responsibility of this test?
+- What's the dependency of this test?
+- What's the coupling of this test?
+- What's the cohesion of this test?
+
+## Test Outcomes
+- What's the expected result?
+- What's the actual result?
+- What's the difference?
+- What's the impact?
+- What's the significance?
+
+## Behavior Verification
+- What's the observable behavior?
+- What's the measurable outcome?
+- What's the verifiable result?
+- What's the testable output?
+- What's the confirmable state?

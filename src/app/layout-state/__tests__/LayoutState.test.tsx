@@ -41,7 +41,8 @@ describe('LayoutState', () => {
       render(<LayoutState services={mockServices} />);
     });
     await waitFor(() => {
-      expect(screen.getByTestId('loading-pulse')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveClass('animate-spin');
     });
   });
 
@@ -138,7 +139,7 @@ describe('LayoutState', () => {
       render(<LayoutState services={mockServices} />);
     });
 
-    const resetButton = screen.getByText('Reset State');
+    const resetButton = screen.getByText('Reset to Home Yards');
     await act(async () => {
       resetButton.click();
     });
@@ -200,7 +201,7 @@ describe('LayoutState', () => {
                content.includes('BNSF 1234');
       });
       expect(carElement).toBeInTheDocument();
-      expect(carElement.closest('.ml-4')).toBeTruthy(); // Verify it's indented under the industry
+      expect(carElement.closest('.ml-2')).toBeTruthy(); // Updated to match new indentation
     });
   });
 
@@ -289,5 +290,194 @@ describe('LayoutState', () => {
       expect(track2Section).toHaveTextContent('UP 5678');
       expect(track2Section).toHaveTextContent('Hopper');
     });
+  });
+
+  it('displays industries grouped by location and block with proper hierarchy', async () => {
+    const mockData = {
+      locations: [{ 
+        _id: '1', 
+        stationName: 'Main Station',
+        block: 'A',
+        ownerId: '1'
+      }] as Location[],
+      industries: [{ 
+        _id: '1',
+        name: 'Factory',
+        locationId: '1',
+        blockName: 'A',
+        industryType: 'FREIGHT',
+        tracks: [{
+          _id: 'track1',
+          name: 'Loading Dock',
+          maxCars: 3,
+          placedCars: ['1']
+        }],
+        ownerId: '1'
+      }] as Industry[],
+      rollingStock: [{ 
+        _id: '1',
+        roadName: 'BNSF',
+        roadNumber: '1234',
+        aarType: 'XM',
+        description: '40ft Standard Boxcar',
+        color: 'RED',
+        note: 'Test note',
+        homeYard: 'Yard 1',
+        ownerId: '1'
+      }] as RollingStock[],
+    };
+
+    (mockServices.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockData.locations);
+    (mockServices.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockData.industries);
+    (mockServices.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue(mockData.rollingStock);
+
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+
+    // Verify location header
+    const locationHeader = screen.getByText('Main Station');
+    expect(locationHeader).toBeInTheDocument();
+    expect(locationHeader).toHaveClass('text-2xl', 'font-bold');
+
+    // Verify block header
+    const blockHeader = screen.getByText('Block A');
+    expect(blockHeader).toBeInTheDocument();
+    expect(blockHeader).toHaveClass('text-xl', 'font-semibold');
+
+    // Verify industry card
+    const industryCard = screen.getByText('Factory');
+    expect(industryCard).toBeInTheDocument();
+    expect(industryCard.closest('.border-blue-200')).toBeInTheDocument(); // Updated to match new styling
+
+    // Verify track information
+    const trackInfo = screen.getByText('Loading Dock');
+    expect(trackInfo).toBeInTheDocument();
+    expect(screen.getByText('(1/3 cars)')).toBeInTheDocument();
+
+    // Verify car information
+    const carInfo = screen.getByText('BNSF 1234', { selector: 'span.font-medium' });
+    expect(carInfo).toBeInTheDocument();
+    expect(screen.getByText('40ft Standard Boxcar')).toBeInTheDocument();
+  });
+
+  it('displays proper visual indicators for track capacity', async () => {
+    const mockData = {
+      locations: [{ 
+        _id: '1', 
+        stationName: 'Main Station',
+        block: 'A',
+        ownerId: '1'
+      }] as Location[],
+      industries: [{ 
+        _id: '1',
+        name: 'Factory',
+        locationId: '1',
+        blockName: 'A',
+        industryType: 'FREIGHT',
+        tracks: [{
+          _id: 'track1',
+          name: 'Loading Dock',
+          maxCars: 2,  // Changed to 2 to make 2 cars be at maximum capacity
+          placedCars: ['1', '2']
+        }],
+        ownerId: '1'
+      }] as Industry[],
+      rollingStock: [
+        { 
+          _id: '1',
+          roadName: 'BNSF',
+          roadNumber: '1234',
+          aarType: 'XM',
+          description: '40ft Standard Boxcar',
+          color: 'RED',
+          note: 'Test note',
+          homeYard: 'Yard 1',
+          ownerId: '1'
+        },
+        {
+          _id: '2',
+          roadName: 'UP',
+          roadNumber: '5678',
+          aarType: 'XM',
+          description: '40ft Standard Boxcar',
+          color: 'BLUE',
+          note: '',
+          homeYard: 'Yard 1',
+          ownerId: '1'
+        }
+      ] as RollingStock[],
+    };
+
+    (mockServices.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockData.locations);
+    (mockServices.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockData.industries);
+    (mockServices.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue(mockData.rollingStock);
+
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+
+    // Verify capacity indicator
+    const capacityIndicator = screen.getByText('(2/2 cars)');
+    expect(capacityIndicator).toBeInTheDocument();
+    expect(capacityIndicator).toHaveClass('text-red-600'); // Updated to check for full capacity
+  });
+
+  it('displays proper visual indicators for industry types', async () => {
+    const mockData = {
+      locations: [{ 
+        _id: '1', 
+        stationName: 'Main Station',
+        block: 'A',
+        ownerId: '1'
+      }] as Location[],
+      industries: [
+        { 
+          _id: '1',
+          name: 'Factory',
+          locationId: '1',
+          blockName: 'A',
+          industryType: 'FREIGHT',
+          tracks: [],
+          ownerId: '1'
+        },
+        {
+          _id: '2',
+          name: 'Passenger Station',
+          locationId: '1',
+          blockName: 'A',
+          industryType: 'PASSENGER',
+          tracks: [],
+          ownerId: '1'
+        },
+        {
+          _id: '3',
+          name: 'Yard',
+          locationId: '1',
+          blockName: 'A',
+          industryType: 'YARD',
+          tracks: [],
+          ownerId: '1'
+        }
+      ] as Industry[],
+      rollingStock: [] as RollingStock[],
+    };
+
+    (mockServices.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockData.locations);
+    (mockServices.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockData.industries);
+    (mockServices.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue(mockData.rollingStock);
+
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+
+    // Verify industry type indicators
+    const freightIndicator = screen.getByText('Factory').closest('.border-blue-200');
+    const passengerIndicator = screen.getByText('Passenger Station').closest('.border-green-200');
+    const yardIndicator = screen.getByText('Yard').closest('.border-gray-200');
+
+    expect(freightIndicator).toBeInTheDocument();
+    expect(passengerIndicator).toBeInTheDocument();
+    expect(yardIndicator).toBeInTheDocument();
   });
 }); 

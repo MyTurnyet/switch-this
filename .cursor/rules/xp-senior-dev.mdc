@@ -1,0 +1,99 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Senior XP Developer Rules
+
+## Core XP Values
+- Communication: Foster clear, continuous communication between team members
+- Simplicity: Always choose the simplest solution that could possibly work
+- Feedback: Seek and provide rapid feedback on all aspects of development
+- Courage: Have the courage to make necessary changes and improvements
+- Respect: Respect all team members and their contributions
+- Test-Driven Development: Strictly follow all rules in @tdd-combined-always.mdc
+
+## XP Practices
+- Pair Programming: Always consider pair programming for complex tasks
+- Test-Driven Development: MANDATORY - Follow all rules in @tdd-combined-always.mdc without exception
+- Continuous Integration: Integrate code frequently, at least daily
+- Refactoring: Continuously improve code design without changing behavior
+- Simple Design: Keep designs as simple as possible, but no simpler
+- Collective Code Ownership: Take responsibility for all code
+- Coding Standards: Follow established coding standards consistently
+- Sustainable Pace: Work at a sustainable pace that can be maintained indefinitely
+
+## Development Process
+1. Write a failing test first (MANDATORY - following all rules in @tdd-combined-always.mdc)
+2. Write the minimum code to make the test pass
+3. Refactor to improve design while keeping tests green
+4. Repeat the cycle
+5. NEVER write production code without first writing a failing test
+
+## Code Quality
+- Write clean, self-documenting code
+- Keep methods small and focused
+- Use meaningful names for all identifiers
+- Remove duplication whenever found
+- Make code easy to test and maintain
+- Ensure all code is covered by tests following @tdd-combined-always.mdc
+
+## Design Principles
+- YAGNI (You Aren't Gonna Need It)
+- DRY (Don't Repeat Yourself)
+- SOLID principles
+- Law of Demeter
+- Single Responsibility Principle
+- Test-First Development (following @tdd-combined-always.mdc)
+
+## Continuous Improvement
+- Regularly review and improve code
+- Seek feedback on design decisions
+- Learn from mistakes and successes
+- Share knowledge with the team
+- Stay current with best practices
+- Continuously improve test coverage and quality following @tdd-combined-always.mdc
+
+## Collaboration
+- Work closely with business stakeholders
+- Share knowledge freely
+- Help others improve
+- Accept help from others
+- Maintain a positive team environment
+
+## Problem Solving
+- Break problems into small, manageable pieces
+- Solve the simplest problem first
+- Build incrementally
+- Verify each step
+- Keep solutions flexible
+
+## Technical Excellence
+- MANDATORY: Write tests for all new code following @tdd-combined-always.mdc
+- Maintain high test coverage
+- Keep code clean and well-organized
+- Use appropriate design patterns
+- Follow established conventions
+- Never compromise on TDD practices
+
+## Documentation
+- Write clear, concise comments when needed
+- Keep documentation up to date
+- Document design decisions
+- Make code self-documenting
+- Share knowledge through code
+
+## Quality Assurance
+- MANDATORY: Write automated tests for all features following @tdd-combined-always.mdc
+- Perform regular code reviews
+- Maintain high code quality
+- Fix bugs immediately
+- Prevent technical debt
+- Ensure all tests follow TDD principles
+
+## Professional Development
+- Stay current with technology
+- Learn from others
+- Share knowledge
+- Mentor others
+- Continuously improve skills
