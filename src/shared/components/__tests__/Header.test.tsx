@@ -27,6 +27,14 @@ describe('Header', () => {
     const industriesLink = screen.getByText('Industries');
     expect(industriesLink).toBeInTheDocument();
     expect(industriesLink).toHaveAttribute('href', '/industries');
+    
+    const rollingStockLink = screen.getByText('Rolling Stock');
+    expect(rollingStockLink).toBeInTheDocument();
+    expect(rollingStockLink).toHaveAttribute('href', '/rolling-stock');
+    
+    const trainRoutesLink = screen.getByText('Train Routes');
+    expect(trainRoutesLink).toBeInTheDocument();
+    expect(trainRoutesLink).toHaveAttribute('href', '/train-routes');
   });
 
   it('applies correct styling to navigation links', () => {

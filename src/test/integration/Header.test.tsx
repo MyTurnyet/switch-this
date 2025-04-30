@@ -15,11 +15,15 @@ describe('Header Integration', () => {
     const aboutLink = screen.getByText('About');
     const layoutStateLink = screen.getByText('Layout State');
     const industriesLink = screen.getByText('Industries');
+    const rollingStockLink = screen.getByText('Rolling Stock');
+    const trainRoutesLink = screen.getByText('Train Routes');
     
     expect(homeLink).toHaveAttribute('href', '/');
     expect(aboutLink).toHaveAttribute('href', '/about');
     expect(layoutStateLink).toHaveAttribute('href', '/layout-state');
     expect(industriesLink).toHaveAttribute('href', '/industries');
+    expect(rollingStockLink).toHaveAttribute('href', '/rolling-stock');
+    expect(trainRoutesLink).toHaveAttribute('href', '/train-routes');
   });
 
   it('has proper semantic structure', () => {

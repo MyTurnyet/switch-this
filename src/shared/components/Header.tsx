@@ -54,6 +54,12 @@ const Header = () => {
             >
               Rolling Stock
             </Link>
+            <Link 
+              href="/train-routes" 
+              className={getLinkClass('/train-routes')}
+            >
+              Train Routes
+            </Link>
           </div>
         </div>
       </nav>

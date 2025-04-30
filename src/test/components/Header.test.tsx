@@ -14,11 +14,15 @@ describe('Header', () => {
     const aboutLink = screen.getByText(/About/i);
     const layoutStateLink = screen.getByText(/Layout State/i);
     const industriesLink = screen.getByText(/Industries/i);
+    const rollingStockLink = screen.getByText(/Rolling Stock/i);
+    const trainRoutesLink = screen.getByText(/Train Routes/i);
     
     expect(homeLink).toBeInTheDocument();
     expect(aboutLink).toBeInTheDocument();
     expect(layoutStateLink).toBeInTheDocument();
     expect(industriesLink).toBeInTheDocument();
+    expect(rollingStockLink).toBeInTheDocument();
+    expect(trainRoutesLink).toBeInTheDocument();
   });
 
   it('has correct navigation links with proper href attributes', () => {
@@ -27,11 +31,15 @@ describe('Header', () => {
     const aboutLink = screen.getByText(/About/i);
     const layoutStateLink = screen.getByText(/Layout State/i);
     const industriesLink = screen.getByText(/Industries/i);
+    const rollingStockLink = screen.getByText(/Rolling Stock/i);
+    const trainRoutesLink = screen.getByText(/Train Routes/i);
     
     expect(homeLink).toHaveAttribute('href', '/');
     expect(aboutLink).toHaveAttribute('href', '/about');
     expect(layoutStateLink).toHaveAttribute('href', '/layout-state');
     expect(industriesLink).toHaveAttribute('href', '/industries');
+    expect(rollingStockLink).toHaveAttribute('href', '/rolling-stock');
+    expect(trainRoutesLink).toHaveAttribute('href', '/train-routes');
   });
 
   it('applies correct styling classes', () => {
