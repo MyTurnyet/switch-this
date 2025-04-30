@@ -29,37 +29,39 @@ export async function POST() {
     await Promise.all(updatePromises);
     console.log('Cleared placedCars arrays from all tracks');
 
-    // Create a map of yard IDs to their tracks
-    const yardTracks = new Map<string, { trackId: string; carCount: number }[]>();
+    // Create a map of industry IDs to their tracks (both YARD and FREIGHT types)
+    const industryTracks = new Map<string, { trackId: string; carCount: number }[]>();
     
-    // Initialize the map with all yard tracks
-    const yards = allIndustries.filter(industry => industry.industryType === 'YARD');
-    const yardsCount = yards.length;
-    console.log(`Found ${yardsCount} yards`);
+    // Initialize the map with all industry tracks that can be home yards
+    const homeIndustries = allIndustries.filter(industry => 
+      industry.industryType === 'YARD' || industry.industryType === 'FREIGHT'
+    );
+    const homeIndustriesCount = homeIndustries.length;
+    console.log(`Found ${homeIndustriesCount} industries that can be home yards (YARD or FREIGHT)`);
     
-    yards.forEach(yard => {
-      const yardId = String(yard._id); // Ensure yard ID is a string
-      console.log(`Yard: ${yard.name}, ID: ${yardId}, Tracks: ${yard.tracks.length}`);
+    homeIndustries.forEach(industry => {
+      const industryId = String(industry._id); // Ensure industry ID is a string
+      console.log(`Industry: ${industry.name}, Type: ${industry.industryType}, ID: ${industryId}, Tracks: ${industry.tracks.length}`);
       
-      yardTracks.set(yardId, yard.tracks.map(track => ({
+      industryTracks.set(industryId, industry.tracks.map(track => ({
         trackId: String(track._id), // Ensure track ID is a string
         carCount: 0
       })));
     });
 
-    // Update each car to its home yard's least occupied track
+    // Update each car to its home industry's least occupied track
     for (const car of allRollingStock) {
       // Ensure homeYard is a string
-      const homeYardId = String(car.homeYard);
-      const yardTracksList = yardTracks.get(homeYardId);
+      const homeIndustryId = String(car.homeYard);
+      const industryTracksList = industryTracks.get(homeIndustryId);
       
-      if (yardTracksList) {
+      if (industryTracksList) {
         // Find the track with the fewest cars
-        const leastOccupiedTrack = yardTracksList.reduce((prev, current) => 
+        const leastOccupiedTrack = industryTracksList.reduce((prev, current) => 
           prev.carCount < current.carCount ? prev : current
         );
 
-        console.log(`Assigning car ${car.roadName} ${car.roadNumber} (ID: ${car._id}) to yard ID: ${homeYardId}, track ID: ${leastOccupiedTrack.trackId}`);
+        console.log(`Assigning car ${car.roadName} ${car.roadNumber} (ID: ${car._id}) to industry ID: ${homeIndustryId}, track ID: ${leastOccupiedTrack.trackId}`);
 
         // Update the car's location
         await rollingStockCollection.updateOne(
@@ -67,7 +69,7 @@ export async function POST() {
           {
             $set: {
               currentLocation: {
-                industryId: homeYardId,
+                industryId: homeIndustryId,
                 trackId: leastOccupiedTrack.trackId
               }
             }
@@ -77,7 +79,7 @@ export async function POST() {
         // Add car to the track's placedCars array
         await industriesCollection.updateOne(
           { 
-            _id: mongoService.toObjectId(homeYardId), 
+            _id: mongoService.toObjectId(homeIndustryId), 
             "tracks._id": leastOccupiedTrack.trackId 
           },
           { 
@@ -90,7 +92,7 @@ export async function POST() {
         // Increment the car count for the track
         leastOccupiedTrack.carCount++;
       } else {
-        console.warn(`No yard with ID ${homeYardId} found for car ${car.roadName} ${car.roadNumber} (ID: ${car._id})`);
+        console.warn(`No industry with ID ${homeIndustryId} found for car ${car.roadName} ${car.roadNumber} (ID: ${car._id})`);
       }
     }
 
