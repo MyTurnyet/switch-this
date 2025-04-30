@@ -36,9 +36,12 @@ export interface Industry extends BaseEntity {
 
 export interface TrainRoute extends BaseEntity {
   name: string;
+  routeNumber: string;
+  routeType: 'MIXED' | 'PASSENGER' | 'FREIGHT';
+  originatingYardId: string;
+  terminatingYardId: string;
+  stations: string[];
   description?: string;
-  startLocationId: string;
-  endLocationId: string;
 }
 
 export interface RollingStockLocation {

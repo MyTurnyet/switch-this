@@ -9,6 +9,7 @@ interface ServiceMethods {
   };
   trainRouteService: {
     getAllTrainRoutes: () => Promise<TrainRoute[]>;
+    updateTrainRoute: (id: string, trainRoute: TrainRoute) => Promise<TrainRoute>;
   };
   rollingStockService: {
     getAllRollingStock: () => Promise<RollingStock[]>;
@@ -34,6 +35,21 @@ export const services: ServiceMethods = {
     getAllTrainRoutes: async () => {
       const response = await fetch('/api/train-routes');
       if (!response.ok) throw new Error('Failed to fetch train routes');
+      return response.json();
+    },
+    updateTrainRoute: async (id: string, trainRoute: TrainRoute) => {
+      const response = await fetch(`/api/train-routes/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(trainRoute),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update train route with id ${id}`);
+      }
+      
       return response.json();
     }
   },
