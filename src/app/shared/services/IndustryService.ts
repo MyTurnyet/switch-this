@@ -30,6 +30,21 @@ function convertToSharedIndustry(industry: Partial<Industry>): Partial<SharedInd
     industryType: industry.industryType as unknown as 'FREIGHT' | 'YARD' | 'PASSENGER',
   };
   
+  // Include tracks when present in the update data
+  if (industry.tracks) {
+    result.tracks = industry.tracks.map(track => ({
+      _id: track._id,
+      name: track.name,
+      maxCars: track.maxCars || track.capacity || 0, // Ensure we have a maxCars value
+      placedCars: track.placedCars || []
+    }));
+  }
+  
+  // Include description if present
+  if (industry.description !== undefined) {
+    result.description = industry.description;
+  }
+  
   return result;
 }
 
