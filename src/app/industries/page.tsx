@@ -2,57 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { services } from '@/app/shared/services';
-import { Industry, IndustryType, Track } from '@/app/shared/types/models';
+import { Industry } from '@/app/shared/types/models';
 import { groupIndustriesByLocationAndBlock, GroupedIndustries } from '@/app/layout-state/utils/groupIndustries';
-import { Card, CardHeader, CardTitle, CardContent } from '@/app/components/ui/card';
-
-// Define API response type
-interface ApiIndustry {
-  _id: string;
-  name: string;
-  industryType: string;
-  locationId: string;
-  tracks: Array<{
-    _id: string;
-    name: string;
-    maxCars: number;
-    placedCars: string[];
-  }>;
-  ownerId: string;
-}
-
-// Type converter function to ensure API response data matches our expected model types
-const convertApiIndustryToModel = (apiIndustry: ApiIndustry): Industry => {
-  // Convert API tracks to model tracks
-  const tracks: Track[] = apiIndustry.tracks.map(track => ({
-    _id: track._id,
-    name: track.name,
-    maxCars: track.maxCars,
-    placedCars: track.placedCars,
-    length: 0, // Default value
-    capacity: track.maxCars, // Use maxCars as capacity
-    ownerId: apiIndustry.ownerId
-  }));
-
-  return {
-    _id: apiIndustry._id,
-    name: apiIndustry.name,
-    locationId: apiIndustry.locationId,
-    blockName: '', // Default value
-    industryType: apiIndustry.industryType === 'FREIGHT' 
-      ? IndustryType.FREIGHT 
-      : apiIndustry.industryType === 'YARD' 
-        ? IndustryType.YARD 
-        : IndustryType.PASSENGER,
-    tracks,
-    ownerId: apiIndustry.ownerId
-  };
-};
+import { Card, CardHeader, CardContent } from '@/app/components/ui/card';
+import { EditIndustryForm } from '@/app/components/EditIndustryForm';
+import { IndustryService } from '@/app/shared/services/IndustryService';
 
 export default function IndustriesPage() {
   const [groupedIndustries, setGroupedIndustries] = useState<GroupedIndustries>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingIndustry, setEditingIndustry] = useState<Industry | null>(null);
+  const industryService = new IndustryService();
 
   useEffect(() => {
     async function fetchData() {
@@ -60,13 +21,11 @@ export default function IndustriesPage() {
         setLoading(true);
         const [locationsData, industriesData] = await Promise.all([
           services.locationService.getAllLocations(),
-          services.industryService.getAllIndustries()
+          industryService.getAllIndustries() // Use the updated service with type conversion
         ]);
         
-        // Convert API data to match model types
-        const convertedIndustries = (industriesData as ApiIndustry[]).map(convertApiIndustryToModel);
-        
-        const grouped = groupIndustriesByLocationAndBlock(convertedIndustries, locationsData);
+        // Use the data that's already converted by the service
+        const grouped = groupIndustriesByLocationAndBlock(industriesData, locationsData);
         setGroupedIndustries(grouped);
         setLoading(false);
       } catch (err) {
@@ -78,6 +37,41 @@ export default function IndustriesPage() {
 
     fetchData();
   }, []);
+
+  const handleIndustryClick = (industry: Industry) => {
+    setEditingIndustry(industry);
+  };
+
+  const handleSaveIndustry = async (updatedIndustry: Industry) => {
+    try {
+      // Update the grouped industries with the updated industry
+      const newGroupedIndustries = { ...groupedIndustries };
+      const locationGroup = newGroupedIndustries[updatedIndustry.locationId];
+      
+      if (locationGroup) {
+        // Find the block that contains this industry
+        Object.keys(locationGroup.blocks).forEach(blockName => {
+          const blockIndustries = locationGroup.blocks[blockName];
+          const industryIndex = blockIndustries.findIndex(ind => ind._id === updatedIndustry._id);
+          
+          if (industryIndex !== -1) {
+            // Replace the industry with the updated one
+            blockIndustries[industryIndex] = updatedIndustry;
+          }
+        });
+      }
+      
+      setGroupedIndustries(newGroupedIndustries);
+      setEditingIndustry(null);
+    } catch (err) {
+      console.error('Error updating industry in UI:', err);
+      // Optionally show an error message
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIndustry(null);
+  };
 
   const getIndustryTypeStyle = (type: string) => {
     switch (type) {
@@ -108,6 +102,19 @@ export default function IndustriesPage() {
     );
   }
 
+  if (editingIndustry) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <h1 className="text-3xl font-bold mb-8">Edit Industry</h1>
+        <EditIndustryForm 
+          industry={editingIndustry} 
+          onSave={handleSaveIndustry} 
+          onCancel={handleCancelEdit} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Industries by Location and Block</h1>
@@ -133,7 +140,12 @@ export default function IndustriesPage() {
                       <Card key={industry._id} className={getIndustryTypeStyle(industry.industryType)}>
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-center">
-                            <CardTitle className="text-lg">{industry.name}</CardTitle>
+                            <div 
+                              className="text-lg font-semibold leading-none tracking-tight cursor-pointer hover:text-blue-600 hover:underline"
+                              onClick={() => handleIndustryClick(industry)}
+                            >
+                              {industry.name}
+                            </div>
                             <span className="text-sm font-medium px-2 py-1 rounded-full bg-white bg-opacity-60">
                               {industry.industryType}
                             </span>
@@ -142,6 +154,9 @@ export default function IndustriesPage() {
                         <CardContent>
                           <div className="text-sm text-gray-600">
                             <div>Tracks: {industry.tracks.length}</div>
+                            {industry.description && (
+                              <div className="mt-2">{industry.description}</div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
