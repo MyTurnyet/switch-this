@@ -84,4 +84,37 @@ export async function PUT(
   } finally {
     await mongoService.close();
   }
+}
+
+// DELETE an industry
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const mongoService = getMongoDbService();
+
+  try {
+    await mongoService.connect();
+    const collection = mongoService.getIndustriesCollection();
+    
+    const industryId = mongoService.toObjectId(params.id);
+    const result = await collection.deleteOne({ _id: industryId });
+    
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { error: 'Industry not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ message: 'Industry deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting industry:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete industry' },
+      { status: 500 }
+    );
+  } finally {
+    await mongoService.close();
+  }
 } 

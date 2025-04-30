@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GET, POST } from '../route';
+import { MongoDbService } from '@/lib/services/mongodb.service';
+import { getMongoDbService } from '@/lib/services/mongodb.provider';
 
 // Mock NextResponse
 jest.mock('next/server', () => ({
@@ -8,43 +10,56 @@ jest.mock('next/server', () => ({
   }
 }));
 
-// Mock MongoDB client
-jest.mock('mongodb', () => {
-  const mockCollection = {
-    find: jest.fn().mockReturnThis(),
-    toArray: jest.fn().mockResolvedValue([
-      { _id: '1', name: 'Test Industry' }
-    ]),
-    insertOne: jest.fn().mockResolvedValue({ 
-      insertedId: 'new-id' 
-    })
-  };
-
-  const mockDb = {
-    collection: jest.fn().mockReturnValue(mockCollection)
-  };
-
-  const mockClient = {
-    connect: jest.fn().mockResolvedValue(undefined),
-    db: jest.fn().mockReturnValue(mockDb),
-    close: jest.fn().mockResolvedValue(undefined)
-  };
-
+// Mock MongoDbService provider
+jest.mock('@/lib/services/mongodb.provider', () => {
   return {
-    MongoClient: jest.fn().mockImplementation(() => mockClient),
-    ObjectId: jest.fn(id => id)
+    getMongoDbService: jest.fn()
   };
 });
 
 describe('Industries API', () => {
+  let mockMongoService: MongoDbService;
+  
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Create mock collections
+    const mockIndustriesCollection = {
+      find: jest.fn().mockReturnThis(),
+      toArray: jest.fn().mockResolvedValue([
+        { _id: '1', name: 'Test Industry' }
+      ]),
+      insertOne: jest.fn().mockResolvedValue({ 
+        insertedId: 'new-id' 
+      })
+    };
+    
+    // Setup mock MongoDB service
+    mockMongoService = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      close: jest.fn().mockResolvedValue(undefined),
+      getIndustriesCollection: jest.fn().mockReturnValue(mockIndustriesCollection),
+      // Add other required methods
+      getCollection: jest.fn(),
+      getRollingStockCollection: jest.fn(),
+      getLocationsCollection: jest.fn(),
+      getTrainRoutesCollection: jest.fn(),
+      getLayoutStateCollection: jest.fn(),
+      toObjectId: jest.fn(id => id)
+    } as unknown as MongoDbService;
+    
+    // Inject our mock
+    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
   });
 
   describe('GET /api/industries', () => {
     it('should return industries from the database', async () => {
       // Call the API
       await GET();
+      
+      // Verify MongoDB connection was made
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
       
       // Verify response
       expect(NextResponse.json).toHaveBeenCalledWith([
@@ -53,9 +68,8 @@ describe('Industries API', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      // Mock error
-      const { MongoClient } = require('mongodb');
-      MongoClient().connect.mockRejectedValueOnce(new Error('DB connection error'));
+      // Mock connection error
+      (mockMongoService.connect as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('DB connection error')));
       
       // Call the API
       await GET();
@@ -85,9 +99,16 @@ describe('Industries API', () => {
       // Call the API
       await POST(mockRequest as unknown as Request);
       
+      // Verify connection
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      
+      // Verify correct collection was requested
+      expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
+      
+      // Get the mock collection
+      const mockCollection = mockMongoService.getIndustriesCollection();
+      
       // Verify data validation and insertion
-      const { MongoClient } = require('mongodb');
-      const mockCollection = MongoClient().db().collection();
       expect(mockCollection.insertOne).toHaveBeenCalledWith(expect.objectContaining({
         name: 'New Industry',
         locationId: 'loc1',
@@ -198,9 +219,9 @@ describe('Industries API', () => {
         })
       };
       
-      // Mock DB error
-      const { MongoClient } = require('mongodb');
-      MongoClient().db().collection().insertOne.mockRejectedValueOnce(new Error('Insert error'));
+      // Get the mock collection and override the insertOne method to reject
+      const mockCollection = mockMongoService.getIndustriesCollection();
+      (mockCollection.insertOne as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('Insert error')));
       
       // Call the API
       await POST(mockRequest as unknown as Request);

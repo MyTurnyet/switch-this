@@ -1,114 +1,188 @@
-import { NextRequest } from 'next/server';
 import { GET, PUT, DELETE } from '../route';
-import { MongoClient } from 'mongodb';
-
-// Mock MongoDB client
-jest.mock('mongodb', () => {
-  const mockUpdateOne = jest.fn().mockResolvedValue({ matchedCount: 1 });
-  const mockFindOne = jest.fn().mockResolvedValue({ _id: 'mock-id', roadName: 'TEST', roadNumber: '12345' });
-  const mockDeleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
-  const mockCollection = {
-    findOne: mockFindOne,
-    updateOne: mockUpdateOne,
-    deleteOne: mockDeleteOne
-  };
-  
-  const mockDb = {
-    collection: jest.fn().mockReturnValue(mockCollection)
-  };
-  
-  const mockClient = {
-    connect: jest.fn().mockResolvedValue(true),
-    db: jest.fn().mockReturnValue(mockDb),
-    close: jest.fn().mockResolvedValue(true)
-  };
-  
-  return {
-    MongoClient: jest.fn().mockImplementation(() => mockClient),
-    ObjectId: jest.fn(id => id)
-  };
-});
+import { NextRequest, NextResponse } from 'next/server';
+import { MongoDbService } from '@/lib/services/mongodb.service';
+import { getMongoDbService } from '@/lib/services/mongodb.provider';
 
 // Mock NextResponse
-jest.mock('next/server', () => {
-  const originalModule = jest.requireActual('next/server');
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: jest.fn().mockImplementation((data, options) => ({
+      json: () => data,
+      status: options?.status || 200
+    }))
+  }
+}));
+
+// Mock MongoDbService provider
+jest.mock('@/lib/services/mongodb.provider', () => {
   return {
-    ...originalModule,
-    NextRequest: jest.fn(),
-    NextResponse: {
-      json: jest.fn().mockImplementation((data, options) => ({
-        json: () => data,
-        status: options?.status || 200
-      }))
-    }
+    getMongoDbService: jest.fn()
   };
 });
 
 describe('Rolling Stock [id] API Route', () => {
-  const mockParams = { id: 'mock-id' };
-  const mockRequest = {
-    json: jest.fn().mockResolvedValue({ roadName: 'TEST', roadNumber: '12345' })
-  } as unknown as NextRequest;
+  let mockMongoService: MongoDbService;
+  const mockParams = { params: { id: 'mock-id' } };
+  const mockObjectId = 'mock-id';
   
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Create mock collections
+    const mockRollingStockCollection = {
+      findOne: jest.fn(),
+      updateOne: jest.fn(),
+      deleteOne: jest.fn()
+    };
+    
+    // Setup mock MongoDB service
+    mockMongoService = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      close: jest.fn().mockResolvedValue(undefined),
+      getRollingStockCollection: jest.fn().mockReturnValue(mockRollingStockCollection),
+      toObjectId: jest.fn().mockReturnValue(mockObjectId),
+      // Add other required methods
+      getCollection: jest.fn(),
+      getIndustriesCollection: jest.fn(),
+      getLocationsCollection: jest.fn(),
+      getTrainRoutesCollection: jest.fn(),
+      getLayoutStateCollection: jest.fn()
+    } as unknown as MongoDbService;
+    
+    // Inject our mock
+    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
   });
-  
+
   describe('GET', () => {
     it('should return a rolling stock item by id', async () => {
-      const response = await GET(mockRequest, { params: mockParams });
+      // Setup mock to return a rolling stock item
+      const mockRollingStock = { _id: 'mock-id', roadName: 'TEST', roadNumber: '12345' };
+      const mockCollection = mockMongoService.getRollingStockCollection();
+      (mockCollection.findOne as jest.Mock).mockResolvedValueOnce(mockRollingStock);
       
-      expect(response.json()).toEqual({ _id: 'mock-id', roadName: 'TEST', roadNumber: '12345' });
+      // Create a mock request
+      const mockRequest = {} as NextRequest;
+      
+      // Call the API
+      const response = await GET(mockRequest, mockParams);
+      
+      // Verify MongoDB was called correctly
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
+      expect(mockCollection.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ _id: mockObjectId })
+      );
+      
+      // Extract the JSON response
+      const responseData = await response.json();
+      
+      // Verify the response
+      expect(responseData).toEqual({ _id: 'mock-id', roadName: 'TEST', roadNumber: '12345' });
     });
     
     it('should return 404 when rolling stock is not found', async () => {
-      // Setup mock to return null for this test
-      const mockClient = new MongoClient('');
-      const mockCollection = mockClient.db().collection();
-      mockCollection.findOne = jest.fn().mockResolvedValue(null);
+      // Setup mock to return null (item not found)
+      const mockCollection = mockMongoService.getRollingStockCollection();
+      (mockCollection.findOne as jest.Mock).mockResolvedValueOnce(null);
       
-      const response = await GET(mockRequest, { params: mockParams });
+      // Create a mock request
+      const mockRequest = {} as NextRequest;
       
+      // Call the API
+      const response = await GET(mockRequest, mockParams);
+      
+      // Verify response status
       expect(response.status).toBe(404);
       expect(response.json()).toEqual({ error: 'Rolling stock not found' });
     });
   });
-  
+
   describe('PUT', () => {
     it('should update a rolling stock item', async () => {
-      const response = await PUT(mockRequest, { params: mockParams });
+      // Setup mocks for a successful update
+      const mockCollection = mockMongoService.getRollingStockCollection();
+      (mockCollection.updateOne as jest.Mock).mockResolvedValueOnce({ matchedCount: 1 });
       
-      expect(response.json()).toEqual({ message: 'Rolling stock updated successfully' });
+      // Create a mock request with update data
+      const mockRequest = {
+        json: jest.fn().mockResolvedValueOnce({ roadName: 'UPDATED', roadNumber: '54321' })
+      } as unknown as NextRequest;
+      
+      // Call the API
+      const response = await PUT(mockRequest, mockParams);
+      
+      // Verify MongoDB was called correctly
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
+      expect(mockCollection.updateOne).toHaveBeenCalledWith(
+        expect.objectContaining({ _id: mockObjectId }),
+        expect.objectContaining({ $set: { roadName: 'UPDATED', roadNumber: '54321' } })
+      );
+      
+      // Extract the JSON response
+      const responseData = await response.json();
+      
+      // Verify the response
+      expect(responseData).toEqual({ message: 'Rolling stock updated successfully' });
     });
     
     it('should return 404 when rolling stock is not found', async () => {
-      // Setup mock to return matchedCount 0 for this test
-      const mockClient = new MongoClient('');
-      const mockCollection = mockClient.db().collection();
-      mockCollection.updateOne = jest.fn().mockResolvedValue({ matchedCount: 0 });
+      // Setup mock to indicate no documents matched for update
+      const mockCollection = mockMongoService.getRollingStockCollection();
+      (mockCollection.updateOne as jest.Mock).mockResolvedValueOnce({ matchedCount: 0 });
       
-      const response = await PUT(mockRequest, { params: mockParams });
+      // Create a mock request with update data
+      const mockRequest = {
+        json: jest.fn().mockResolvedValueOnce({ roadName: 'UPDATED' })
+      } as unknown as NextRequest;
       
+      // Call the API
+      const response = await PUT(mockRequest, mockParams);
+      
+      // Verify response
       expect(response.status).toBe(404);
       expect(response.json()).toEqual({ error: 'Rolling stock not found' });
     });
   });
-  
+
   describe('DELETE', () => {
     it('should delete a rolling stock item', async () => {
-      const response = await DELETE(mockRequest, { params: mockParams });
+      // Setup mock for successful deletion
+      const mockCollection = mockMongoService.getRollingStockCollection();
+      (mockCollection.deleteOne as jest.Mock).mockResolvedValueOnce({ deletedCount: 1 });
       
-      expect(response.json()).toEqual({ message: 'Rolling stock deleted successfully' });
+      // Create a mock request
+      const mockRequest = {} as NextRequest;
+      
+      // Call the API
+      const response = await DELETE(mockRequest, mockParams);
+      
+      // Verify MongoDB was called correctly
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
+      expect(mockCollection.deleteOne).toHaveBeenCalledWith(
+        expect.objectContaining({ _id: mockObjectId })
+      );
+      
+      // Extract the JSON response
+      const responseData = await response.json();
+      
+      // Verify the response
+      expect(responseData).toEqual({ message: 'Rolling stock deleted successfully' });
     });
     
     it('should return 404 when rolling stock is not found', async () => {
-      // Setup mock to return deletedCount 0 for this test
-      const mockClient = new MongoClient('');
-      const mockCollection = mockClient.db().collection();
-      mockCollection.deleteOne = jest.fn().mockResolvedValue({ deletedCount: 0 });
+      // Setup mock to indicate no documents deleted
+      const mockCollection = mockMongoService.getRollingStockCollection();
+      (mockCollection.deleteOne as jest.Mock).mockResolvedValueOnce({ deletedCount: 0 });
       
-      const response = await DELETE(mockRequest, { params: mockParams });
+      // Create a mock request
+      const mockRequest = {} as NextRequest;
       
+      // Call the API
+      const response = await DELETE(mockRequest, mockParams);
+      
+      // Verify response
       expect(response.status).toBe(404);
       expect(response.json()).toEqual({ error: 'Rolling stock not found' });
     });

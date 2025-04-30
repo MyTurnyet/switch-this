@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import LayoutState from '../LayoutState';
 import { ClientServices } from '@/app/shared/services/clientServices';
@@ -228,5 +228,93 @@ describe('LayoutState Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Failed to load layout state')).toBeInTheDocument();
     });
+  });
+
+  it('resets rolling stock to home yards and saves updated state when reset button is clicked', async () => {
+    // Setup mock to return an existing layout state
+    const mockExistingState = {
+      _id: 'existing-state',
+      industries: [
+        {
+          _id: 'ind1',
+          name: 'Test Industry',
+          locationId: 'loc1',
+          blockName: 'block1',
+          industryType: 'YARD',
+          tracks: [
+            {
+              _id: 'track1',
+              name: 'Track 1',
+              length: 100,
+              capacity: 5,
+              maxCars: 5,
+              placedCars: ['car1', 'car2']
+            }
+          ],
+          ownerId: 'owner1'
+        }
+      ],
+      rollingStock: [
+        {
+          _id: 'car1',
+          roadName: 'BNSF',
+          roadNumber: '1234',
+          aarType: 'XM',
+          description: 'Boxcar',
+          color: 'RED',
+          note: '',
+          homeYard: 'ind1',
+          ownerId: 'owner1',
+          currentLocation: {
+            industryId: 'ind1',
+            trackId: 'track1'
+          }
+        }
+      ]
+    };
+    
+    mockGetLayoutState.mockResolvedValue(mockExistingState);
+    
+    // Mock resetToHomeYards to simulate successful reset
+    mockServices.rollingStockService.resetToHomeYards = jest.fn().mockResolvedValue(undefined);
+    
+    // Mock setTimeout to avoid waiting in tests
+    jest.useFakeTimers();
+    
+    // Render component
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+    
+    // Find and click the reset button
+    const resetButton = await screen.findByText('Reset to Home Yards');
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+    
+    // Fast-forward timer to skip the delay
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    
+    // Verify resetToHomeYards was called
+    await waitFor(() => {
+      expect(mockServices.rollingStockService.resetToHomeYards).toHaveBeenCalled();
+    });
+    
+    // Verify data was refreshed
+    await waitFor(() => {
+      expect(mockServices.locationService.getAllLocations).toHaveBeenCalledTimes(2);
+      expect(mockServices.industryService.getAllIndustries).toHaveBeenCalledTimes(2);
+      expect(mockServices.rollingStockService.getAllRollingStock).toHaveBeenCalledTimes(2);
+    });
+    
+    // Verify state was saved to the database
+    await waitFor(() => {
+      expect(mockSaveLayoutState).toHaveBeenCalled();
+    });
+    
+    // Restore real timers
+    jest.useRealTimers();
   });
 }); 

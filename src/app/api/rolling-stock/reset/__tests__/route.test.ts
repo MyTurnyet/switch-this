@@ -13,8 +13,12 @@ jest.mock('next/server', () => ({
   },
 }));
 
-// Mock MongoDB service
-jest.mock('@/lib/services/mongodb.provider');
+// Mock MongoDB service provider
+jest.mock('@/lib/services/mongodb.provider', () => {
+  return {
+    getMongoDbService: jest.fn()
+  };
+});
 
 describe('Rolling Stock Reset API', () => {
   let mockMongoService: jest.Mocked<MongoDbService>;

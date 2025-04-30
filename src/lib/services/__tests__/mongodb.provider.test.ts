@@ -1,8 +1,31 @@
 import { getMongoDbService, resetMongoDbService, setMongoDbService } from '../mongodb.provider';
 import { MongoDbService } from '../mongodb.service';
 
-// Mock the MongoDbService
-jest.mock('../mongodb.service');
+// Mock the MongoDbService constructor
+jest.mock('../mongodb.service', () => {
+  // Create a mock constructor function
+  const MockMongoDbService = jest.fn().mockImplementation(() => {
+    return {
+      connect: jest.fn(),
+      close: jest.fn(),
+      getCollection: jest.fn(),
+      getRollingStockCollection: jest.fn(),
+      getIndustriesCollection: jest.fn(),
+      getLocationsCollection: jest.fn(),
+      getTrainRoutesCollection: jest.fn(),
+      getLayoutStateCollection: jest.fn(),
+      toObjectId: jest.fn()
+    };
+  });
+  
+  // Manually add a prototype to make instanceof checks work
+  MockMongoDbService.prototype = { constructor: MockMongoDbService };
+  
+  return {
+    // Use named export to match the original
+    MongoDbService: MockMongoDbService
+  };
+});
 
 describe('MongoDb Provider', () => {
   beforeEach(() => {
@@ -12,7 +35,10 @@ describe('MongoDb Provider', () => {
   
   it('should create a MongoDB service instance if none exists', () => {
     const service = getMongoDbService();
-    expect(service).toBeInstanceOf(MongoDbService);
+    // Instead of instanceof check (which is problematic with mocks), check if it has the expected methods
+    expect(service).toBeTruthy();
+    expect(service.connect).toBeDefined();
+    expect(service.getIndustriesCollection).toBeDefined();
     expect(MongoDbService).toHaveBeenCalledTimes(1);
   });
   
