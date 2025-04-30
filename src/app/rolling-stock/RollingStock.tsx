@@ -8,28 +8,54 @@ type RollingStockProps = {
   services: ClientServices;
 };
 
+// Map to store industry id -> name for quick lookup
+type YardMap = {
+  [id: string]: string;
+};
+
 export default function RollingStock({ services }: RollingStockProps) {
   const [rollingStock, setRollingStock] = useState<RollingStockType[]>([]);
+  const [yards, setYards] = useState<YardMap>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRollingStock = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await services.rollingStockService.getAllRollingStock();
-        setRollingStock(data);
+        
+        // Fetch both rolling stock and industries in parallel
+        const [rollingStockData, industriesData] = await Promise.all([
+          services.rollingStockService.getAllRollingStock(),
+          services.industryService.getAllIndustries()
+        ]);
+
+        // Create a map of yard IDs to yard names
+        const yardMap: YardMap = {};
+        industriesData.forEach(industry => {
+          if (industry.industryType === 'YARD') {
+            yardMap[industry._id] = industry.name;
+          }
+        });
+
+        setRollingStock(rollingStockData);
+        setYards(yardMap);
         setError(null);
       } catch (error) {
-        console.error('Failed to fetch rolling stock:', error);
+        console.error('Failed to fetch data:', error);
         setError('Failed to load rolling stock. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRollingStock();
-  }, [services.rollingStockService]);
+    fetchData();
+  }, [services.rollingStockService, services.industryService]);
+
+  // Helper function to get yard name from id
+  const getYardName = (yardId: string): string => {
+    return yards[yardId] || 'Unknown Yard';
+  };
 
   if (loading) {
     return (
@@ -82,7 +108,7 @@ export default function RollingStock({ services }: RollingStockProps) {
                     <span className="font-medium">Type:</span> {car.aarType} - {car.description}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Home Yard:</span> {car.homeYard}
+                    <span className="font-medium">Home Yard:</span> {getYardName(car.homeYard)}
                   </p>
                   {car.note && (
                     <p className="text-sm text-gray-600">

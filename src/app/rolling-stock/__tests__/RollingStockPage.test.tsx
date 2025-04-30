@@ -4,13 +4,16 @@ import '@testing-library/jest-dom';
 
 import RollingStockPage from '@/app/rolling-stock/page';
 import { services } from '@/app/shared/services/clientServices';
-import { RollingStock } from '@/app/shared/types/models';
+import { RollingStock, Industry, IndustryType } from '@/app/shared/types/models';
 
 // Mock the services
 jest.mock('@/app/shared/services/clientServices', () => ({
   services: {
     rollingStockService: {
       getAllRollingStock: jest.fn(),
+    },
+    industryService: {
+      getAllIndustries: jest.fn(),
     },
   },
 }));
@@ -23,6 +26,7 @@ describe('RollingStockPage', () => {
   it('renders the page with a title', async () => {
     // Setup a simple resolved value to avoid test errors
     (services.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue([]);
+    (services.industryService.getAllIndustries as jest.Mock).mockResolvedValue([]);
     
     render(<RollingStockPage />);
     
@@ -34,6 +38,29 @@ describe('RollingStockPage', () => {
 
   it('fetches and displays rolling stock data', async () => {
     // Mock data
+    const mockYards: Industry[] = [
+      {
+        _id: 'yard1',
+        name: 'Central Yard',
+        industryType: IndustryType.YARD,
+        tracks: [],
+        locationId: 'loc1',
+        blockName: 'Block A',
+        ownerId: 'owner1',
+        description: ''
+      },
+      {
+        _id: 'yard2',
+        name: 'Eastern Yard',
+        industryType: IndustryType.YARD,
+        tracks: [],
+        locationId: 'loc2',
+        blockName: 'Block B',
+        ownerId: 'owner2',
+        description: ''
+      }
+    ];
+
     const mockRollingStock: RollingStock[] = [
       {
         _id: '1',
@@ -43,7 +70,7 @@ describe('RollingStockPage', () => {
         description: 'Boxcar',
         color: 'RED',
         note: 'Test note',
-        homeYard: 'Yard1',
+        homeYard: 'yard1',
         ownerId: 'owner1',
       },
       {
@@ -54,13 +81,14 @@ describe('RollingStockPage', () => {
         description: 'Flatcar',
         color: 'BLUE',
         note: '',
-        homeYard: 'Yard2',
+        homeYard: 'yard2',
         ownerId: 'owner2',
       },
     ];
 
     // Setup the mock to return our test data
     (services.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue(mockRollingStock);
+    (services.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockYards);
 
     render(<RollingStockPage />);
 
@@ -76,6 +104,10 @@ describe('RollingStockPage', () => {
     expect(screen.getByText('CP 67890')).toBeInTheDocument();
     expect(screen.getByText(/XM - Boxcar/i)).toBeInTheDocument();
     expect(screen.getByText(/FB - Flatcar/i)).toBeInTheDocument();
+    
+    // Check yard names are displayed
+    expect(screen.getByText('Central Yard')).toBeInTheDocument();
+    expect(screen.getByText('Eastern Yard')).toBeInTheDocument();
   });
 
   it('displays an error message when fetching fails', async () => {
