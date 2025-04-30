@@ -14,9 +14,10 @@ type IndustryMap = {
 };
 
 // Car types data
-const CAR_TYPES = [
+export const CAR_TYPES = [
   { aarType: 'XM', description: 'Boxcar' },
-  { aarType: 'FBC', description: 'Flatcar BlhHd' },
+  { aarType: 'FB', description: 'Flatcar BlhHd' },
+  { aarType: 'FBC', description: 'Flatcar Centerbeam' },
   { aarType: 'FD', description: 'FlatCar' },
   { aarType: 'GS', description: 'Gondola' },
   { aarType: 'GHC', description: 'Coal Hopper' },
@@ -322,7 +323,7 @@ export default function RollingStock({ services }: RollingStockProps) {
 }
 
 // Helper function to map color names to Tailwind classes
-function getColorClass(color: string): string {
+export function getColorClass(color: string): string {
   const colorMap: Record<string, string> = {
     RED: 'red',
     BLUE: 'blue',
