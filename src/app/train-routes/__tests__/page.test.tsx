@@ -16,17 +16,6 @@ jest.mock('@/app/shared/services', () => ({
   },
 }));
 
-// Mock console.log and console.error to avoid cluttering test output
-beforeAll(() => {
-  jest.spyOn(console, 'log').mockImplementation(() => {});
-  jest.spyOn(console, 'error').mockImplementation(() => {});
-});
-
-afterAll(() => {
-  (console.log as jest.Mock).mockRestore();
-  (console.error as jest.Mock).mockRestore();
-});
-
 describe('TrainRoutesPage', () => {
   const mockTrainRoutes = [
     {

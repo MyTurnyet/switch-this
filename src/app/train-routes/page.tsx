@@ -2,27 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { services } from '@/app/shared/services';
+import { Location, TrainRoute } from '@/shared/types/models';
 import { Card, CardHeader, CardContent } from '@/app/components/ui/card';
-
-// Define the interfaces explicitly here to avoid import conflicts
-interface Location {
-  _id: string;
-  stationName: string;
-  block: string;
-  ownerId: string;
-}
-
-// Define the TrainRoute interface to match what comes from the database
-interface TrainRoute {
-  _id: string;
-  name: string;
-  routeNumber: string;
-  routeType: 'MIXED' | 'PASSENGER' | 'FREIGHT';
-  originatingYardId: string;
-  terminatingYardId: string;
-  stations: string[]; // Array of location IDs, not Location objects
-  ownerId: string;
-}
 
 export default function TrainRoutesPage() {
   const [trainRoutes, setTrainRoutes] = useState<TrainRoute[]>([]);
@@ -34,16 +15,11 @@ export default function TrainRoutesPage() {
     async function fetchData() {
       try {
         setLoading(true);
-        console.log('Fetching train routes and locations from the database...');
         const [trainRoutesData, locationsData] = await Promise.all([
           services.trainRouteService.getAllTrainRoutes(),
           services.locationService.getAllLocations()
         ]);
         
-        console.log('Received train routes:', trainRoutesData);
-        console.log('Received locations:', locationsData);
-        
-        // Use type assertion with 'unknown' to bridge between the different interfaces
         setTrainRoutes(trainRoutesData as unknown as TrainRoute[]);
         setLocations(locationsData as unknown as Location[]);
         setLoading(false);
