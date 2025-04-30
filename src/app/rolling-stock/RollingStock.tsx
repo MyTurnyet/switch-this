@@ -58,17 +58,8 @@ export default function RollingStock({ services }: RollingStockProps) {
       try {
         setLoading(true);
         
-        // Fetch both rolling stock and industries in parallel
-        const [rollingStockData, industriesData] = await Promise.all([
-          services.rollingStockService.getAllRollingStock(),
-          services.industryService.getAllIndustries()
-        ]);
-
-        // Create a map of industry IDs to industry names
-        const industryNameMap: IndustryMap = {};
-        industriesData.forEach(industry => {
-          industryNameMap[industry._id] = industry.name;
-        });
+        const [rollingStockData, industriesData] = await fetchRollingStockAndIndustries();
+        const industryNameMap = createIndustryNameMap(industriesData);
 
         setRollingStock(rollingStockData);
         setIndustries(industriesData);
@@ -85,7 +76,21 @@ export default function RollingStock({ services }: RollingStockProps) {
     fetchData();
   }, [services.rollingStockService, services.industryService]);
 
-  // Helper function to get industry name from id
+  const fetchRollingStockAndIndustries = async () => {
+    return await Promise.all([
+      services.rollingStockService.getAllRollingStock(),
+      services.industryService.getAllIndustries()
+    ]);
+  };
+
+  const createIndustryNameMap = (industries: Industry[]): IndustryMap => {
+    const industryNameMap: IndustryMap = {};
+    industries.forEach(industry => {
+      industryNameMap[industry._id] = industry.name;
+    });
+    return industryNameMap;
+  };
+
   const getIndustryName = (industryId: string): string => {
     return industryMap[industryId] || 'Unknown Industry';
   };
@@ -93,8 +98,7 @@ export default function RollingStock({ services }: RollingStockProps) {
   const handleEdit = (car: RollingStockType) => {
     setEditingId(car._id);
     
-    // Find the CAR_TYPE entry that matches the current car's aarType
-    const carTypeValue = `${car.aarType}|${car.description}`;
+    const carTypeValue = buildCarTypeValue(car);
     
     setEditForm({
       roadName: car.roadName,
@@ -102,6 +106,10 @@ export default function RollingStock({ services }: RollingStockProps) {
       carType: carTypeValue,
       homeYard: car.homeYard
     });
+  };
+
+  const buildCarTypeValue = (car: RollingStockType): string => {
+    return `${car.aarType}|${car.description}`;
   };
 
   const handleCancel = () => {
@@ -113,16 +121,7 @@ export default function RollingStock({ services }: RollingStockProps) {
       const carToUpdate = rollingStock.find(car => car._id === carId);
       if (!carToUpdate) return;
 
-      // Parse car type value (format: "aarType|description")
-      let aarType, description;
-      if (editForm.carType.includes('|')) {
-        [aarType, description] = editForm.carType.split('|');
-      } else {
-        // Handle case where carType might not be in the expected format
-        const selectedCarType = CAR_TYPES.find(ct => ct.aarType === editForm.carType);
-        aarType = selectedCarType?.aarType || carToUpdate.aarType;
-        description = selectedCarType?.description || carToUpdate.description;
-      }
+      const { aarType, description } = parseCarTypeValue(editForm.carType, carToUpdate);
 
       const updatedCar = {
         ...carToUpdate,
@@ -135,17 +134,38 @@ export default function RollingStock({ services }: RollingStockProps) {
 
       await services.rollingStockService.updateRollingStock(carId, updatedCar);
 
-      // Update local state after successful API call
-      setRollingStock(prev => 
-        prev.map(car => car._id === carId ? updatedCar : car)
-      );
-      
-      // Exit edit mode
-      setEditingId(null);
+      updateLocalRollingStock(carId, updatedCar);
+      exitEditMode();
     } catch (error) {
       console.error('Failed to update rolling stock:', error);
       setError('Failed to update rolling stock. Please try again later.');
     }
+  };
+
+  const parseCarTypeValue = (carTypeValue: string, carToUpdate: RollingStockType) => {
+    let aarType, description;
+    if (carTypeValue.includes('|')) {
+      [aarType, description] = carTypeValue.split('|');
+    } else {
+      const selectedCarType = findCarTypeByAarType(carTypeValue);
+      aarType = selectedCarType?.aarType || carToUpdate.aarType;
+      description = selectedCarType?.description || carToUpdate.description;
+    }
+    return { aarType, description };
+  };
+
+  const findCarTypeByAarType = (aarType: string) => {
+    return CAR_TYPES.find(ct => ct.aarType === aarType);
+  };
+
+  const updateLocalRollingStock = (carId: string, updatedCar: RollingStockType) => {
+    setRollingStock(prev => 
+      prev.map(car => car._id === carId ? updatedCar : car)
+    );
+  };
+
+  const exitEditMode = () => {
+    setEditingId(null);
   };
 
   const handleInputChange = (
@@ -200,18 +220,7 @@ export default function RollingStock({ services }: RollingStockProps) {
               data-testid={`car-${car._id}`}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
             >
-              {car.color === 'RED' && <div className="h-3 w-full bg-red-500"></div>}
-              {car.color === 'BLUE' && <div className="h-3 w-full bg-blue-500"></div>}
-              {car.color === 'GREEN' && <div className="h-3 w-full bg-green-500"></div>}
-              {car.color === 'YELLOW' && <div className="h-3 w-full bg-yellow-500"></div>}
-              {car.color === 'ORANGE' && <div className="h-3 w-full bg-orange-500"></div>}
-              {car.color === 'PURPLE' && <div className="h-3 w-full bg-purple-500"></div>}
-              {car.color === 'BLACK' && <div className="h-3 w-full bg-black"></div>}
-              {car.color === 'WHITE' && <div className="h-3 w-full bg-gray-500"></div>}
-              {car.color === 'BROWN' && <div className="h-3 w-full bg-stone-700"></div>}
-              {car.color === 'GRAY' && <div className="h-3 w-full bg-gray-500"></div>}
-              {!['RED', 'BLUE', 'GREEN', 'YELLOW', 'ORANGE', 'PURPLE', 'BLACK', 'WHITE', 'BROWN', 'GRAY'].includes(car.color) && 
-                <div className="h-3 w-full bg-gray-500"></div>}
+              {renderColorBar(car.color)}
               <div className="p-4">
                 {editingId === car._id ? (
                   <div className="mb-4">
@@ -333,7 +342,24 @@ export default function RollingStock({ services }: RollingStockProps) {
   );
 }
 
-// Helper function to map color names to Tailwind classes
+const renderColorBar = (color: string) => {
+  const colorMap: Record<string, string> = {
+    RED: 'bg-red-500',
+    BLUE: 'bg-blue-500',
+    GREEN: 'bg-green-500',
+    YELLOW: 'bg-yellow-500',
+    ORANGE: 'bg-orange-500',
+    PURPLE: 'bg-purple-500',
+    BLACK: 'bg-black',
+    WHITE: 'bg-gray-500',
+    BROWN: 'bg-stone-700',
+    GRAY: 'bg-gray-500',
+  };
+
+  const colorClass = colorMap[color] || 'bg-gray-500';
+  return <div className={`h-3 w-full ${colorClass}`}></div>;
+};
+
 export function getColorClass(color: string): string {
   const colorMap: Record<string, string> = {
     RED: 'red',
