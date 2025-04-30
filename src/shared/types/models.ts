@@ -19,7 +19,10 @@ export interface Industry {
   tracks: Track[];
   locationId: string;
   ownerId: string;
+  description?: string;
+  blockName?: string;
 }
+
 export interface RollingStock {
   _id: string;
   roadName: string;
