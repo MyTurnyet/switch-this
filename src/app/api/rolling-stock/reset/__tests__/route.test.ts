@@ -1,6 +1,7 @@
 import { POST } from '../route';
 import { NextResponse } from 'next/server';
-import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
+import { MongoDbService } from '@/lib/services/mongodb.service';
+import { getMongoDbService } from '@/lib/services/mongodb.provider';
 
 // Mock NextResponse
 jest.mock('next/server', () => ({
@@ -12,13 +13,19 @@ jest.mock('next/server', () => ({
   },
 }));
 
-// Mock MongoDB
-jest.mock('mongodb', () => {
-  const updateOneMock = jest.fn().mockResolvedValue({ acknowledged: true });
-  const findMock = jest.fn();
-  findMock.mockReturnValue({
-    toArray: jest.fn()
-      .mockResolvedValueOnce([
+// Mock MongoDB service
+jest.mock('@/lib/services/mongodb.provider');
+
+describe('Rolling Stock Reset API', () => {
+  let mockMongoService: jest.Mocked<MongoDbService>;
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Create mock collections
+    const rollingStockCollection = {
+      find: jest.fn().mockReturnThis(),
+      toArray: jest.fn().mockResolvedValue([
         // Mock rolling stock
         {
           _id: '1',
@@ -50,8 +57,13 @@ jest.mock('mongodb', () => {
           homeYard: 'yard2',
           ownerId: '1',
         },
-      ])
-      .mockResolvedValueOnce([
+      ]),
+      updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
+    };
+    
+    const industriesCollection = {
+      find: jest.fn().mockReturnThis(),
+      toArray: jest.fn().mockResolvedValue([
         // Mock industries
         {
           _id: 'yard1',
@@ -86,33 +98,24 @@ jest.mock('mongodb', () => {
           ],
         },
       ]),
-  });
-
-  const mockCollection = {
-    find: findMock,
-    updateOne: updateOneMock,
-  };
-
-  const mockDb = {
-    collection: jest.fn().mockReturnValue(mockCollection),
-  };
-  
-  const mockClient = {
-    db: jest.fn().mockReturnValue(mockDb),
-    close: jest.fn().mockResolvedValue(undefined),
-  };
-
-  return {
-    MongoClient: {
-      connect: jest.fn().mockResolvedValue(mockClient),
-    },
-    ObjectId: jest.fn(id => id),
-  };
-});
-
-describe('Rolling Stock Reset API', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+      updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
+    };
+    
+    // Create mock MongoDB service
+    mockMongoService = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      close: jest.fn().mockResolvedValue(undefined),
+      getCollection: jest.fn(),
+      getRollingStockCollection: jest.fn().mockReturnValue(rollingStockCollection),
+      getIndustriesCollection: jest.fn().mockReturnValue(industriesCollection),
+      getLocationsCollection: jest.fn(),
+      getTrainRoutesCollection: jest.fn(),
+      getLayoutStateCollection: jest.fn(),
+      toObjectId: jest.fn(id => id)
+    } as unknown as jest.Mocked<MongoDbService>;
+    
+    // Mock the getMongoDbService to return our mock
+    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
   });
 
   it('should reset rolling stock to their home yards on the least occupied tracks', async () => {
@@ -123,38 +126,29 @@ describe('Rolling Stock Reset API', () => {
     expect(NextResponse.json).toHaveBeenCalledWith({ success: true });
     expect(result.status).toBe(200);
     
-    // Extract the mocked updateOne function
-    const { MongoClient } = require('mongodb');
-    const mockClient = await MongoClient.connect();
-    const mockDb = mockClient.db();
-    const mockCollection = mockDb.collection();
-    const { updateOne } = mockCollection;
+    // Verify the MongoDB service was used correctly
+    expect(mockMongoService.connect).toHaveBeenCalled();
+    expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
+    expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
+    expect(mockMongoService.close).toHaveBeenCalled();
     
-    // Verify the updateOne was called
-    expect(updateOne).toHaveBeenCalled();
-    
-    // Verify the client was closed
-    expect(mockClient.close).toHaveBeenCalled();
+    // Verify updateOne was called for the rolling stock
+    const rollingStockCollection = mockMongoService.getRollingStockCollection();
+    expect(rollingStockCollection.updateOne).toHaveBeenCalledTimes(3);
   });
 
   it('should use the correct collection names', async () => {
     // Call the API route handler
     await POST();
     
-    // Extract the mocked collection function
-    const { MongoClient } = require('mongodb');
-    const mockClient = await MongoClient.connect();
-    const mockDb = mockClient.db();
-    
-    // Verify the correct collection names were used
-    expect(mockDb.collection).toHaveBeenCalledWith(DB_COLLECTIONS.ROLLING_STOCK);
-    expect(mockDb.collection).toHaveBeenCalledWith(DB_COLLECTIONS.INDUSTRIES);
+    // Verify the correct collection methods were called
+    expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
+    expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
   });
 
   it('should handle errors gracefully', async () => {
-    // Mock MongoDB to throw an error
-    const { MongoClient } = require('mongodb');
-    MongoClient.connect.mockRejectedValueOnce(new Error('Database connection failed'));
+    // Mock the connect method to throw an error
+    mockMongoService.connect.mockRejectedValueOnce(new Error('Database connection failed'));
 
     // Call the API route handler
     await POST();
@@ -164,5 +158,8 @@ describe('Rolling Stock Reset API', () => {
       { error: 'Failed to reset rolling stock' }, 
       { status: 500 }
     );
+    
+    // Verify close was still called for cleanup
+    expect(mockMongoService.close).toHaveBeenCalled();
   });
 }); 

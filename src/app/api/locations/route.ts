@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
-import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
+import { getMongoDbService } from '@/lib/services/mongodb.provider';
 
 export async function GET() {
-  const uri = process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017';
-  const dbName = process.env.MONGODB_DB || 'switch-this';
-  const client = new MongoClient(uri);
+  const mongoService = getMongoDbService();
 
   try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(DB_COLLECTIONS.LOCATIONS);
+    await mongoService.connect();
+    const collection = mongoService.getLocationsCollection();
     const locations = await collection.find().toArray();
     return NextResponse.json(locations);
   } catch (error) {
@@ -20,6 +16,6 @@ export async function GET() {
       { status: 500 }
     );
   } finally {
-    await client.close();
+    await mongoService.close();
   }
 } 

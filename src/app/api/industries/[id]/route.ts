@@ -1,23 +1,19 @@
 import { NextResponse } from 'next/server';
-import { MongoClient, ObjectId } from 'mongodb';
-import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
+import { getMongoDbService } from '@/lib/services/mongodb.provider';
 
 // GET a specific industry by ID
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const uri = process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017';
-  const dbName = process.env.MONGODB_DB || 'switch-this';
-  const client = new MongoClient(uri);
+  const mongoService = getMongoDbService();
 
   try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(DB_COLLECTIONS.INDUSTRIES);
+    await mongoService.connect();
+    const collection = mongoService.getIndustriesCollection();
     
     const industry = await collection.findOne({ 
-      _id: new ObjectId(params.id) 
+      _id: mongoService.toObjectId(params.id) 
     });
     
     if (!industry) {
@@ -35,7 +31,7 @@ export async function GET(
       { status: 500 }
     );
   } finally {
-    await client.close();
+    await mongoService.close();
   }
 }
 
@@ -44,9 +40,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const uri = process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017';
-  const dbName = process.env.MONGODB_DB || 'switch-this';
-  const client = new MongoClient(uri);
+  const mongoService = getMongoDbService();
 
   try {
     const data = await request.json();
@@ -59,12 +53,11 @@ export async function PUT(
       );
     }
     
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(DB_COLLECTIONS.INDUSTRIES);
+    await mongoService.connect();
+    const collection = mongoService.getIndustriesCollection();
     
     // Don't allow changing _id, convert string ID to ObjectId
-    const industryId = new ObjectId(params.id);
+    const industryId = mongoService.toObjectId(params.id);
     delete data._id;
     
     const result = await collection.updateOne(
@@ -89,6 +82,6 @@ export async function PUT(
       { status: 500 }
     );
   } finally {
-    await client.close();
+    await mongoService.close();
   }
 } 

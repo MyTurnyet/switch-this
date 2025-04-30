@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import { RollingStock, Industry } from '@/app/shared/types/models';
-import { MongoClient, ObjectId } from 'mongodb';
-import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
+import { getMongoDbService } from '@/lib/services/mongodb.provider';
 
 export async function POST() {
   console.log('Reset API endpoint called');
+  const mongoService = getMongoDbService();
+  
   try {
-    const client = await MongoClient.connect(process.env.MONGODB_URI!);
+    await mongoService.connect();
     console.log('Connected to MongoDB');
     
-    const db = client.db();
-    const rollingStockCollection = db.collection(DB_COLLECTIONS.ROLLING_STOCK);
-    const industriesCollection = db.collection(DB_COLLECTIONS.INDUSTRIES);
+    const rollingStockCollection = mongoService.getRollingStockCollection();
+    const industriesCollection = mongoService.getIndustriesCollection();
 
     // Get all rolling stock and industries
     const allRollingStock = await rollingStockCollection.find({}).toArray() as unknown as RollingStock[];
@@ -22,7 +22,7 @@ export async function POST() {
     // First, clear all placedCars arrays from all tracks
     const updatePromises = allIndustries.map(industry => 
       industriesCollection.updateOne(
-        { _id: typeof industry._id === 'string' ? new ObjectId(industry._id) : industry._id },
+        { _id: typeof industry._id === 'string' ? mongoService.toObjectId(industry._id) : industry._id },
         { $set: { "tracks.$[].placedCars": [] } }
       )
     );
@@ -63,7 +63,7 @@ export async function POST() {
 
         // Update the car's location
         await rollingStockCollection.updateOne(
-          { _id: typeof car._id === 'string' ? new ObjectId(car._id) : car._id },
+          { _id: typeof car._id === 'string' ? mongoService.toObjectId(car._id) : car._id },
           {
             $set: {
               currentLocation: {
@@ -77,7 +77,7 @@ export async function POST() {
         // Add car to the track's placedCars array
         await industriesCollection.updateOne(
           { 
-            _id: new ObjectId(homeYardId), 
+            _id: mongoService.toObjectId(homeYardId), 
             "tracks._id": leastOccupiedTrack.trackId 
           },
           { 
@@ -94,11 +94,12 @@ export async function POST() {
       }
     }
 
-    await client.close();
+    await mongoService.close();
     console.log('Reset operation completed successfully');
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error resetting rolling stock:', error);
+    await mongoService.close();
     return NextResponse.json({ error: 'Failed to reset rolling stock' }, { status: 500 });
   }
 } 

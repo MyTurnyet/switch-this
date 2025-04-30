@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoClient, ObjectId } from 'mongodb';
-import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
-
-const uri = process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017';
-const dbName = process.env.MONGODB_DB || 'switch-this';
+import { getMongoDbService } from '@/lib/services/mongodb.provider';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const client = new MongoClient(uri);
+  const mongoService = getMongoDbService();
   
   try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(DB_COLLECTIONS.ROLLING_STOCK);
+    await mongoService.connect();
+    const collection = mongoService.getRollingStockCollection();
     
-    const rollingStock = await collection.findOne({ _id: new ObjectId(params.id) });
+    const rollingStock = await collection.findOne({ _id: mongoService.toObjectId(params.id) });
     
     if (!rollingStock) {
       return NextResponse.json(
@@ -33,7 +28,7 @@ export async function GET(
       { status: 500 }
     );
   } finally {
-    await client.close();
+    await mongoService.close();
   }
 }
 
@@ -41,7 +36,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const client = new MongoClient(uri);
+  const mongoService = getMongoDbService();
   
   try {
     const updatedData = await request.json();
@@ -51,12 +46,11 @@ export async function PUT(
       delete updatedData._id;
     }
     
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(DB_COLLECTIONS.ROLLING_STOCK);
+    await mongoService.connect();
+    const collection = mongoService.getRollingStockCollection();
     
     const result = await collection.updateOne(
-      { _id: new ObjectId(params.id) },
+      { _id: mongoService.toObjectId(params.id) },
       { $set: updatedData }
     );
     
@@ -75,7 +69,7 @@ export async function PUT(
       { status: 500 }
     );
   } finally {
-    await client.close();
+    await mongoService.close();
   }
 }
 
@@ -83,14 +77,13 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const client = new MongoClient(uri);
+  const mongoService = getMongoDbService();
   
   try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(DB_COLLECTIONS.ROLLING_STOCK);
+    await mongoService.connect();
+    const collection = mongoService.getRollingStockCollection();
     
-    const result = await collection.deleteOne({ _id: new ObjectId(params.id) });
+    const result = await collection.deleteOne({ _id: mongoService.toObjectId(params.id) });
     
     if (result.deletedCount === 0) {
       return NextResponse.json(
@@ -107,6 +100,6 @@ export async function DELETE(
       { status: 500 }
     );
   } finally {
-    await client.close();
+    await mongoService.close();
   }
 } 

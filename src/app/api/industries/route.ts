@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
-import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
+import { getMongoDbService } from '@/lib/services/mongodb.provider';
 
 export async function GET() {
-  const uri = process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017';
-  const dbName = process.env.MONGODB_DB || 'switch-this';
-  const client = new MongoClient(uri);
+  const mongoService = getMongoDbService();
 
   try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(DB_COLLECTIONS.INDUSTRIES);
+    await mongoService.connect();
+    const collection = mongoService.getIndustriesCollection();
     const industries = await collection.find().toArray();
     return NextResponse.json(industries);
   } catch (error) {
@@ -20,14 +16,12 @@ export async function GET() {
       { status: 500 }
     );
   } finally {
-    await client.close();
+    await mongoService.close();
   }
 }
 
 export async function POST(request: Request) {
-  const uri = process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017';
-  const dbName = process.env.MONGODB_DB || 'switch-this';
-  const client = new MongoClient(uri);
+  const mongoService = getMongoDbService();
 
   try {
     const data = await request.json();
@@ -61,9 +55,8 @@ export async function POST(request: Request) {
       );
     }
     
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(DB_COLLECTIONS.INDUSTRIES);
+    await mongoService.connect();
+    const collection = mongoService.getIndustriesCollection();
     
     // Ensure the industry has an empty tracks array if not provided
     if (!data.tracks) {
@@ -85,6 +78,6 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   } finally {
-    await client.close();
+    await mongoService.close();
   }
 } 
