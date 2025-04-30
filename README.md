@@ -57,6 +57,27 @@ yarn install
 3. Set up environment variables:
 Create a `.env` file based on the provided example and configure your MongoDB connection details.
 
+### Environment Variables
+
+Your `.env` file should include the following variables:
+
+```
+# MongoDB Connection
+MONGODB_URI=mongodb://localhost:27017/switch-this
+MONGODB_DB=switch-this
+
+# API Configuration
+API_URL=http://localhost:3000/api
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
+
+# Authentication (if implemented)
+JWT_SECRET=your-jwt-secret-key
+JWT_EXPIRY=7d
+
+# Development Settings
+NODE_ENV=development
+```
+
 4. Start the MongoDB container (if using Docker):
 ```bash
 docker-compose up -d
