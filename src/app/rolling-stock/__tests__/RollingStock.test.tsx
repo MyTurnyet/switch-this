@@ -93,8 +93,8 @@ describe('RollingStock', () => {
       _id: '2',
       roadName: 'CP',
       roadNumber: '67890',
-      aarType: 'FB',
-      description: 'Flatcar',
+      aarType: 'FBC',
+      description: 'Flatcar BlhHd',
       color: 'BLUE',
       note: '',
       homeYard: 'yard2',
@@ -140,7 +140,7 @@ describe('RollingStock', () => {
 
     expect(screen.getByText('CP 67890')).toBeInTheDocument();
     expect(screen.getByText(/XM - Boxcar/i)).toBeInTheDocument();
-    expect(screen.getByText(/FB - Flatcar/i)).toBeInTheDocument();
+    expect(screen.getByText(/FBC - Flatcar BlhHd/i)).toBeInTheDocument();
   });
 
   it('displays error message when fetch fails', async () => {
@@ -237,7 +237,7 @@ describe('RollingStock', () => {
     const carTypeSelect = screen.getByLabelText('Car Type');
     const homeYardSelect = screen.getByLabelText('Home Yard');
     
-    fireEvent.change(carTypeSelect, { target: { value: 'FB|Flatcar' } });
+    fireEvent.change(carTypeSelect, { target: { value: 'FBC|Flatcar BlhHd' } });
     fireEvent.change(homeYardSelect, { target: { value: 'ind1' } }); // Now selecting a freight industry
 
     // Submit the form
@@ -250,8 +250,8 @@ describe('RollingStock', () => {
         ...mockRollingStock[0],
         roadName: 'ATSF',
         roadNumber: '12345',
-        aarType: 'FB',
-        description: 'Flatcar',
+        aarType: 'FBC',
+        description: 'Flatcar BlhHd',
         homeYard: 'ind1'
       });
     });
@@ -261,7 +261,7 @@ describe('RollingStock', () => {
     
     // Use within to scope queries to just this element
     await waitFor(() => {
-      const typeText = within(firstCarElement).getByText(/FB - Flatcar/i);
+      const typeText = within(firstCarElement).getByText(/FBC - Flatcar BlhHd/i);
       const yardText = within(firstCarElement).getByText('Steel Factory');
       expect(typeText).toBeInTheDocument();
       expect(yardText).toBeInTheDocument();

@@ -16,11 +16,20 @@ type IndustryMap = {
 // Car types data
 const CAR_TYPES = [
   { aarType: 'XM', description: 'Boxcar' },
-  { aarType: 'FB', description: 'Flatcar' },
+  { aarType: 'FBC', description: 'Flatcar BlhHd' },
+  { aarType: 'FD', description: 'FlatCar' },
   { aarType: 'GS', description: 'Gondola' },
+  { aarType: 'GHC', description: 'Coal Hopper' },
+  { aarType: 'GTS', description: 'Woodchip Car' },
   { aarType: 'HK', description: 'Hopper' },
+  { aarType: 'HM', description: 'Hopper - 2-Bay' },
+  { aarType: 'HT', description: 'Hopper' },
+  { aarType: 'HTC', description: 'Hopper - Cylndr' },
   { aarType: 'RB', description: 'Refrigerator Car' },
-  { aarType: 'TG', description: 'Tank Car' },
+  { aarType: 'TA', description: 'Tank Car' },
+  { aarType: 'XMO', description: 'Boxcar - Hi-Cube' },
+  { aarType: 'XPB', description: 'Boxcar - Beer' },
+  { aarType: 'XPT', description: 'Boxcar - Thrall' },
   { aarType: 'CS', description: 'Caboose' },
 ];
 
@@ -82,10 +91,14 @@ export default function RollingStock({ services }: RollingStockProps) {
 
   const handleEdit = (car: RollingStockType) => {
     setEditingId(car._id);
+    
+    // Find the CAR_TYPE entry that matches the current car's aarType
+    const carTypeValue = `${car.aarType}|${car.description}`;
+    
     setEditForm({
       roadName: car.roadName,
       roadNumber: car.roadNumber,
-      carType: `${car.aarType}|${car.description}`,
+      carType: carTypeValue,
       homeYard: car.homeYard
     });
   };
@@ -100,7 +113,15 @@ export default function RollingStock({ services }: RollingStockProps) {
       if (!carToUpdate) return;
 
       // Parse car type value (format: "aarType|description")
-      const [aarType, description] = editForm.carType.split('|');
+      let aarType, description;
+      if (editForm.carType.includes('|')) {
+        [aarType, description] = editForm.carType.split('|');
+      } else {
+        // Handle case where carType might not be in the expected format
+        const selectedCarType = CAR_TYPES.find(ct => ct.aarType === editForm.carType);
+        aarType = selectedCarType?.aarType || carToUpdate.aarType;
+        description = selectedCarType?.description || carToUpdate.description;
+      }
 
       const updatedCar = {
         ...carToUpdate,
