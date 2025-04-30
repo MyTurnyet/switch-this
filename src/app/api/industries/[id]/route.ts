@@ -1,5 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { Collection, ObjectId } from 'mongodb';
+
+interface Industry {
+  _id?: string | ObjectId;
+  name: string;
+  locationId: string;
+  industryType: string;
+  blockName: string;
+  tracks?: any[];
+  [key: string]: any;
+}
 
 // GET a specific industry by ID
 export async function GET(
@@ -12,15 +23,10 @@ export async function GET(
     await mongoService.connect();
     const collection = mongoService.getIndustriesCollection();
     
-    const industry = await collection.findOne({ 
-      _id: mongoService.toObjectId(params.id) 
-    });
+    const industry = await findIndustryById(collection, params.id, mongoService);
     
     if (!industry) {
-      return NextResponse.json(
-        { error: 'Industry not found' },
-        { status: 404 }
-      );
+      return createNotFoundResponse();
     }
     
     return NextResponse.json(industry);
@@ -35,6 +41,19 @@ export async function GET(
   }
 }
 
+async function findIndustryById(collection: Collection, id: string, mongoService: any) {
+  return await collection.findOne({ 
+    _id: mongoService.toObjectId(id) 
+  });
+}
+
+function createNotFoundResponse() {
+  return NextResponse.json(
+    { error: 'Industry not found' },
+    { status: 404 }
+  );
+}
+
 // PUT to update an industry
 export async function PUT(
   request: Request,
@@ -45,34 +64,22 @@ export async function PUT(
   try {
     const data = await request.json();
     
-    // Validate required fields
-    if (!data.name) {
-      return NextResponse.json(
-        { error: 'Industry name is required' },
-        { status: 400 }
-      );
+    if (!validateRequiredName(data)) {
+      return createInvalidNameResponse();
     }
     
     await mongoService.connect();
     const collection = mongoService.getIndustriesCollection();
     
-    // Don't allow changing _id, convert string ID to ObjectId
-    const industryId = mongoService.toObjectId(params.id);
-    delete data._id;
+    const industryId = prepareForUpdate(params.id, data, mongoService);
     
-    const result = await collection.updateOne(
-      { _id: industryId },
-      { $set: data }
-    );
+    const result = await updateIndustry(collection, industryId, data);
     
     if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { error: 'Industry not found' },
-        { status: 404 }
-      );
+      return createNotFoundResponse();
     }
     
-    const updatedIndustry = await collection.findOne({ _id: industryId });
+    const updatedIndustry = await findIndustryById(collection, params.id, mongoService);
     
     return NextResponse.json(updatedIndustry);
   } catch (error) {
@@ -84,6 +91,30 @@ export async function PUT(
   } finally {
     await mongoService.close();
   }
+}
+
+function validateRequiredName(data: Partial<Industry>): boolean {
+  return !!data.name;
+}
+
+function createInvalidNameResponse() {
+  return NextResponse.json(
+    { error: 'Industry name is required' },
+    { status: 400 }
+  );
+}
+
+function prepareForUpdate(id: string, data: Partial<Industry>, mongoService: any): ObjectId {
+  const industryId = mongoService.toObjectId(id);
+  delete data._id;
+  return industryId;
+}
+
+async function updateIndustry(collection: Collection, industryId: ObjectId, data: Partial<Industry>) {
+  return await collection.updateOne(
+    { _id: industryId },
+    { $set: data }
+  );
 }
 
 // DELETE an industry
@@ -98,16 +129,13 @@ export async function DELETE(
     const collection = mongoService.getIndustriesCollection();
     
     const industryId = mongoService.toObjectId(params.id);
-    const result = await collection.deleteOne({ _id: industryId });
+    const result = await deleteIndustry(collection, industryId);
     
     if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { error: 'Industry not found' },
-        { status: 404 }
-      );
+      return createNotFoundResponse();
     }
     
-    return NextResponse.json({ message: 'Industry deleted successfully' });
+    return createSuccessResponse();
   } catch (error) {
     console.error('Error deleting industry:', error);
     return NextResponse.json(
@@ -117,4 +145,12 @@ export async function DELETE(
   } finally {
     await mongoService.close();
   }
+}
+
+async function deleteIndustry(collection: Collection, industryId: ObjectId) {
+  return await collection.deleteOne({ _id: industryId });
+}
+
+function createSuccessResponse() {
+  return NextResponse.json({ message: 'Industry deleted successfully' });
 } 

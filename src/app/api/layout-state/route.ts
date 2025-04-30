@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { Collection } from 'mongodb';
+
+interface LayoutState {
+  _id?: string | any;
+  updatedAt: Date;
+  [key: string]: any;
+}
 
 // GET - retrieves the latest layout state
 export async function GET() {
@@ -9,13 +16,11 @@ export async function GET() {
     await mongoService.connect();
     const collection = mongoService.getLayoutStateCollection();
     
-    // Get the latest state (there should only be one document)
-    const layoutState = await collection.findOne({}, { sort: { updatedAt: -1 } });
+    const layoutState = await fetchLatestLayoutState(collection);
     
     if (!layoutState) {
-      // No state found in database
       await mongoService.close();
-      return NextResponse.json({ exists: false });
+      return handleNoStateFound();
     }
     
     await mongoService.close();
@@ -30,6 +35,14 @@ export async function GET() {
   }
 }
 
+async function fetchLatestLayoutState(collection: Collection): Promise<LayoutState | null> {
+  return await collection.findOne<LayoutState>({}, { sort: { updatedAt: -1 } });
+}
+
+function handleNoStateFound() {
+  return NextResponse.json({ exists: false });
+}
+
 // POST - saves the current layout state
 export async function POST(request: Request) {
   const mongoService = getMongoDbService();
@@ -40,23 +53,12 @@ export async function POST(request: Request) {
     await mongoService.connect();
     const collection = mongoService.getLayoutStateCollection();
     
-    // Add timestamp
-    const stateToSave = {
-      ...data,
-      updatedAt: new Date()
-    };
+    const stateToSave = addTimeStamp(data);
     
-    // Save as a new document (upsert with the layout state id if it exists)
     if (data._id) {
-      await collection.updateOne(
-        { _id: data._id }, // Use the _id directly as provided by the test
-        { $set: stateToSave },
-        { upsert: true }
-      );
+      await upsertExistingState(collection, data._id, stateToSave);
     } else {
-      // Insert new document if no _id
-      const result = await collection.insertOne(stateToSave);
-      stateToSave._id = result.insertedId;
+      await insertNewState(collection, stateToSave);
     }
     
     await mongoService.close();
@@ -69,4 +71,24 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function addTimeStamp(data: Partial<LayoutState>): LayoutState {
+  return {
+    ...data,
+    updatedAt: new Date()
+  };
+}
+
+async function upsertExistingState(collection: Collection, id: string | any, stateToSave: LayoutState): Promise<void> {
+  await collection.updateOne(
+    { _id: id },
+    { $set: stateToSave },
+    { upsert: true }
+  );
+}
+
+async function insertNewState(collection: Collection, stateToSave: LayoutState): Promise<void> {
+  const result = await collection.insertOne(stateToSave);
+  stateToSave._id = result.insertedId;
 } 
