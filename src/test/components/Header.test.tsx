@@ -12,18 +12,26 @@ describe('Header', () => {
     render(<Header />);
     const homeLink = screen.getByText(/Home/i);
     const aboutLink = screen.getByText(/About/i);
+    const layoutStateLink = screen.getByText(/Layout State/i);
+    const industriesLink = screen.getByText(/Industries/i);
     
     expect(homeLink).toBeInTheDocument();
     expect(aboutLink).toBeInTheDocument();
+    expect(layoutStateLink).toBeInTheDocument();
+    expect(industriesLink).toBeInTheDocument();
   });
 
   it('has correct navigation links with proper href attributes', () => {
     render(<Header />);
     const homeLink = screen.getByText(/Home/i);
     const aboutLink = screen.getByText(/About/i);
+    const layoutStateLink = screen.getByText(/Layout State/i);
+    const industriesLink = screen.getByText(/Industries/i);
     
     expect(homeLink).toHaveAttribute('href', '/');
     expect(aboutLink).toHaveAttribute('href', '/about');
+    expect(layoutStateLink).toHaveAttribute('href', '/layout-state');
+    expect(industriesLink).toHaveAttribute('href', '/industries');
   });
 
   it('applies correct styling classes', () => {

@@ -13,8 +13,13 @@ describe('Header Integration', () => {
     // Check for navigation links
     const homeLink = screen.getByText('Home');
     const aboutLink = screen.getByText('About');
+    const layoutStateLink = screen.getByText('Layout State');
+    const industriesLink = screen.getByText('Industries');
+    
     expect(homeLink).toHaveAttribute('href', '/');
     expect(aboutLink).toHaveAttribute('href', '/about');
+    expect(layoutStateLink).toHaveAttribute('href', '/layout-state');
+    expect(industriesLink).toHaveAttribute('href', '/industries');
   });
 
   it('has proper semantic structure', () => {

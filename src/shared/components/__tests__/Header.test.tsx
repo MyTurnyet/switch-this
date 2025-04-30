@@ -23,6 +23,10 @@ describe('Header', () => {
     const layoutStateLink = screen.getByText('Layout State');
     expect(layoutStateLink).toBeInTheDocument();
     expect(layoutStateLink).toHaveAttribute('href', '/layout-state');
+    
+    const industriesLink = screen.getByText('Industries');
+    expect(industriesLink).toBeInTheDocument();
+    expect(industriesLink).toHaveAttribute('href', '/industries');
   });
 
   it('applies correct styling to navigation links', () => {
