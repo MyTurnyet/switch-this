@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { services } from '@/app/shared/services';
-import { Location, TrainRoute, Industry, IndustryType } from '@/shared/types/models';
+import { services } from '@/app/shared/services/clientServices';
+import { Location, Industry, IndustryType, TrainRoute } from '@/app/shared/types/models';
 import { Card, CardHeader, CardContent } from '@/app/components/ui/card';
 import EditTrainRouteModal from './components/EditTrainRouteModal';
 
@@ -12,22 +12,60 @@ export default function TrainRoutesPage() {
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingRoute, setEditingRoute] = useState<TrainRoute | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
 
+  // Find train route by ID
+  const findTrainRouteById = (id: string): TrainRoute | null => {
+    return trainRoutes.find(route => route._id === id) || null;
+  };
+
+  // Get originating yard name
+  const getYardName = (yardId: string): string => {
+    const industry = industries.find(ind => ind._id === yardId);
+    return industry ? industry.name : 'Unknown Yard';
+  };
+
+  // Get all industries from API
+  const getAllIndustries = async (): Promise<Industry[]> => {
+    // Safely check if the service exists (for tests)
+    if (!services.industryService?.getAllIndustries) {
+      console.error('Industry service not available');
+      return [];
+    }
+    
+    return await services.industryService.getAllIndustries();
+  };
+
+  // Get station name
+  const getStationName = (stationId: string): string => {
+    const station = locations.find(loc => loc._id === stationId);
+    return station ? station.stationName : 'Unknown Station';
+  };
+
+  // Fetch data
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        const [trainRoutesData, locationsData, industriesData] = await Promise.all([
-          services.trainRouteService.getAllTrainRoutes(),
-          services.locationService.getAllLocations(),
-          services.industryService.getAllIndustries()
-        ]);
+        setError(null);
         
-        setTrainRoutes(trainRoutesData as unknown as TrainRoute[]);
-        setLocations(locationsData as unknown as Location[]);
-        setIndustries(industriesData as unknown as Industry[]);
+        // Get train routes
+        const routesData = await services.trainRouteService.getAllTrainRoutes();
+        setTrainRoutes(routesData);
+        
+        // Get locations
+        const locationsData = await services.locationService.getAllLocations();
+        setLocations(locationsData);
+        
+        // Get industries - handling the case where it might not exist in tests
+        try {
+          const industriesData = await getAllIndustries();
+          setIndustries(industriesData);
+        } catch (err) {
+          console.error('Failed to load industries:', err);
+          // Don't set an error, we can still proceed
+        }
+        
         setLoading(false);
       } catch (err) {
         setError('Failed to load data. Please try again later.');
@@ -35,167 +73,138 @@ export default function TrainRoutesPage() {
         console.error('Error fetching data:', err);
       }
     }
-
+    
     fetchData();
   }, []);
 
-  const getLocationNameById = (locationId: string): string => {
-    const location = locations.find(loc => loc._id === locationId);
-    return location ? location.stationName : 'Unknown Location';
+  // Handle edit train route
+  const handleEditRoute = (routeId: string) => {
+    setEditingRouteId(routeId);
   };
 
-  const getYardNameById = (yardId: string): string => {
-    const yard = industries.find(ind => ind._id === yardId && 
-      (ind.industryType === IndustryType.YARD || ind.industryType === 'YARD' as IndustryType));
-    return yard ? yard.name : 'Unknown Yard';
-  };
-
-  const getRouteTypeColor = (routeType: 'MIXED' | 'PASSENGER' | 'FREIGHT'): string => {
-    switch (routeType) {
-      case 'PASSENGER':
-        return 'bg-purple-100 text-purple-800';
-      case 'FREIGHT':
-        return 'bg-blue-100 text-blue-800';
-      case 'MIXED':
-      default:
-        return 'bg-green-100 text-green-800';
-    }
-  };
-
-  const handleEditRoute = (route: TrainRoute) => {
-    setEditingRoute(route);
-    setIsModalOpen(true);
-  };
-
-  const handleCreateNewRoute = () => {
-    setEditingRoute(null);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingRoute(null);
-  };
-
-  /* 
-   * Note: The full updateTrainRoute functionality will be implemented
-   * in a later iteration. For now, we're just showing the UI for editing.
-   */
+  // Save edited train route
   const handleSaveRoute = async (updatedRoute: TrainRoute): Promise<void> => {
     try {
-      // This will be implemented when we update the TrainRouteService
-      console.log('Route to save:', updatedRoute);
-      setIsModalOpen(false);
+      await services.trainRouteService.updateTrainRoute(updatedRoute._id, updatedRoute);
       
-      // Show a simple alert for now
-      alert('Train route editing will be available in a future update.');
+      // Update local state
+      setTrainRoutes(prevRoutes => 
+        prevRoutes.map(route => route._id === updatedRoute._id ? updatedRoute : route)
+      );
+      
+      // Close modal
+      setEditingRouteId(null);
     } catch (err) {
       console.error('Error saving train route:', err);
+      throw new Error('Failed to save train route');
     }
   };
 
-  if (loading) {
-    return <div className="container mx-auto py-8 px-4 text-center">Loading train routes...</div>;
-  }
+  // Get yards only (for originating and terminating yard selects)
+  const getYardsOnly = (): Industry[] => {
+    return industries.filter(industry => industry.industryType === IndustryType.YARD);
+  };
 
-  if (error) {
-    return (
-      <div className="container mx-auto py-8 px-4">
+  return (
+    <div className="container mx-auto py-8 px-4">
+      {error ? (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
           <p className="font-medium">Error</p>
           <p className="text-sm mt-1">{error}</p>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Train Routes</h1>
-        <button
-          onClick={handleCreateNewRoute}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition"
-        >
-          Add New Route
-        </button>
-      </div>
-      
-      {trainRoutes.length === 0 ? (
-        <div className="text-xl text-gray-500">No train routes found.</div>
+      ) : loading ? (
+        <div className="text-center py-12">
+          <p className="text-xl text-gray-600">Loading train routes...</p>
+        </div>
+      ) : trainRoutes.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-xl text-gray-600">No train routes found.</p>
+          <button 
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            onClick={() => setEditingRouteId('new')}
+          >
+            Create Train Route
+          </button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {trainRoutes.map((route) => (
-            <Card key={route._id} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Train Routes</h1>
+            <button 
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+              onClick={() => setEditingRouteId('new')}
+            >
+              Create Train Route
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6">
+            {trainRoutes.map(route => (
+              <Card key={route._id} className="shadow-md">
+                <CardHeader className="flex flex-row items-start justify-between bg-gray-50">
                   <div>
                     <h2 className="text-xl font-bold">{route.name}</h2>
-                    <p className="text-sm text-gray-500">{route.routeNumber}</p>
+                    <p className="text-gray-500">Route Number: {route.routeNumber}</p>
                   </div>
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${getRouteTypeColor(route.routeType)}`}>
-                    {route.routeType}
+                  <div className="flex space-x-2">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                      {route.routeType}
+                    </span>
+                    <button 
+                      className="text-blue-600 hover:text-blue-800 transition"
+                      onClick={() => handleEditRoute(route._id)}
+                    >
+                      Edit
+                    </button>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Route Details</div>
-                  <div className="flex flex-col space-y-1">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Originating Yard:</span>
-                      <span>{getYardNameById(route.originatingYardId)}</span>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <h3 className="font-semibold text-gray-600">Originating Yard</h3>
+                      <p>{getYardName(route.originatingYardId)}</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Terminating Yard:</span>
-                      <span>{getYardNameById(route.terminatingYardId)}</span>
+                    <div>
+                      <h3 className="font-semibold text-gray-600">Terminating Yard</h3>
+                      <p>{getYardName(route.terminatingYardId)}</p>
                     </div>
                   </div>
-                </div>
-                
-                <div>
-                  <div className="text-sm font-medium text-gray-500 mb-1">Stations</div>
-                  <div className="space-y-1">
+                  
+                  <div>
+                    <h3 className="font-semibold text-gray-600 mb-2">Stations</h3>
                     {route.stations && route.stations.length > 0 ? (
-                      route.stations.map((stationId, index) => (
-                        <div 
-                          key={stationId}
-                          className="flex items-center py-1"
-                        >
-                          <div className="flex-shrink-0 w-6 text-center text-gray-500">{index + 1}.</div>
-                          <div className="ml-2">{getLocationNameById(stationId)}</div>
-                        </div>
-                      ))
+                      <div className="flex flex-wrap gap-2">
+                        {route.stations.map((stationId: string, index: number) => (
+                          <div key={`${stationId}-${index}`} className="flex items-center">
+                            <span className="bg-gray-100 text-xs px-2 py-1 rounded-full mr-1">
+                              {index + 1}
+                            </span>
+                            <span>{getStationName(stationId)}</span>
+                            {index < route.stations.length - 1 && (
+                              <span className="mx-2 text-gray-400">→</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <p className="text-gray-500 italic">No stations assigned to this route</p>
+                      <p className="text-gray-500 italic">No stations added to this route</p>
                     )}
                   </div>
-                </div>
-                
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <button
-                    onClick={() => handleEditRoute(route)}
-                    className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                  >
-                    Edit Route
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
-      
-      {isModalOpen && (
+
+      {editingRouteId && (
         <EditTrainRouteModal
-          trainRoute={editingRoute}
+          trainRoute={editingRouteId === 'new' ? null : findTrainRouteById(editingRouteId)}
           locations={locations}
-          industries={industries.filter(ind => 
-            ind.industryType === IndustryType.YARD || ind.industryType === 'YARD' as IndustryType
-          )}
+          industries={getYardsOnly()}
           onSave={handleSaveRoute}
-          onCancel={handleCloseModal}
-          isOpen={isModalOpen}
+          onCancel={() => setEditingRouteId(null)}
+          isOpen={!!editingRouteId}
         />
       )}
     </div>

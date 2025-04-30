@@ -19,6 +19,7 @@ export interface IndustryService extends EntityService<Industry> {
 
 export interface TrainRouteService extends EntityService<TrainRoute> {
   getAllTrainRoutes(): Promise<TrainRoute[]>;
+  updateTrainRoute(id: string, trainRoute: TrainRoute): Promise<TrainRoute>;
 }
 
 export interface RollingStockService extends EntityService<RollingStock> {
@@ -78,6 +79,22 @@ class TrainRouteServiceImpl extends EntityServiceImpl<TrainRoute> implements Tra
 
   async getAllTrainRoutes(): Promise<TrainRoute[]> {
     return this.getAll();
+  }
+  
+  async updateTrainRoute(id: string, trainRoute: TrainRoute): Promise<TrainRoute> {
+    const response = await fetch(`${this.endpoint}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(trainRoute),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update train route with id ${id}`);
+    }
+    
+    return response.json();
   }
 }
 
