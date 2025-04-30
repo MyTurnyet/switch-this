@@ -9,7 +9,7 @@ export async function POST() {
     console.log('Connected to MongoDB');
     
     const db = client.db();
-    const rollingStockCollection = db.collection('rollingStock');
+    const rollingStockCollection = db.collection('rolling-stock');
     const industriesCollection = db.collection('industries');
 
     // Get all rolling stock and industries

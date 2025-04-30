@@ -136,6 +136,20 @@ describe('Rolling Stock Reset API', () => {
     expect(mockClient.close).toHaveBeenCalled();
   });
 
+  it('should use the correct collection names', async () => {
+    // Call the API route handler
+    await POST();
+    
+    // Extract the mocked collection function
+    const { MongoClient } = require('mongodb');
+    const mockClient = await MongoClient.connect();
+    const mockDb = mockClient.db();
+    
+    // Verify the correct collection names were used
+    expect(mockDb.collection).toHaveBeenCalledWith('rolling-stock');
+    expect(mockDb.collection).toHaveBeenCalledWith('industries');
+  });
+
   it('should handle errors gracefully', async () => {
     // Mock MongoDB to throw an error
     const { MongoClient } = require('mongodb');
