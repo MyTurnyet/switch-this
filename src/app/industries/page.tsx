@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { services } from '@/app/shared/services';
 import { Industry } from '@/app/shared/types/models';
 import { groupIndustriesByLocationAndBlock, GroupedIndustries } from '@/app/layout-state/utils/groupIndustries';
-import { Card, CardHeader, CardContent } from '@/app/components/ui/card';
+import { Card, CardHeader, CardContent, PageContainer, Badge } from '@/app/components/ui';
 import { EditIndustryForm } from '@/app/components/EditIndustryForm';
 import { AddIndustryForm } from '@/app/components/AddIndustryForm';
 import { IndustryService } from '@/app/shared/services/IndustryService';
@@ -123,70 +123,55 @@ export default function IndustriesPage() {
   const getIndustryTypeStyle = (type: string) => {
     switch (type) {
       case 'FREIGHT':
-        return 'border-blue-200 bg-blue-50';
+        return 'primary';
       case 'YARD':
-        return 'border-green-200 bg-green-50';
+        return 'success';
       case 'PASSENGER':
-        return 'border-purple-200 bg-purple-50';
+        return 'secondary';
       default:
-        return 'border-gray-200 bg-gray-50';
+        return 'info';
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading industries...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl text-red-500">{error}</div>
-      </div>
-    );
-  }
-
   if (editingIndustry) {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8">Edit Industry</h1>
+      <PageContainer title="Edit Industry">
         <EditIndustryForm 
           industry={editingIndustry} 
           onSave={handleSaveIndustry} 
           onCancel={handleCancelEdit} 
         />
-      </div>
+      </PageContainer>
     );
   }
 
   if (isAddingIndustry) {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8">Add New Industry</h1>
+      <PageContainer title="Add New Industry">
         <AddIndustryForm 
           onSave={handleSaveNewIndustry} 
           onCancel={handleCancelAdd} 
         />
-      </div>
+      </PageContainer>
     );
   }
 
+  const actions = [
+    {
+      label: 'Add New Industry',
+      onClick: handleAddNewIndustry,
+      variant: 'success' as const,
+    }
+  ];
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Industries by Location and Block</h1>
-        <button
-          onClick={handleAddNewIndustry}
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded shadow"
-        >
-          Add New Industry
-        </button>
-      </div>
-      
-      {Object.keys(groupedIndustries).length === 0 ? (
+    <PageContainer 
+      title="Industries by Location and Block" 
+      isLoading={loading}
+      error={error || undefined}
+      actions={actions}
+    >
+      {Object.keys(groupedIndustries).length === 0 && !loading ? (
         <div className="text-xl text-gray-500">No industries found.</div>
       ) : (
         <div className="space-y-12">
@@ -202,31 +187,28 @@ export default function IndustriesPage() {
                     Block: {blockName}
                   </h3>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {blockIndustries.map((industry) => (
-                      <Card key={industry._id} className={getIndustryTypeStyle(industry.industryType)}>
-                        <CardHeader className="pb-2">
-                          <div className="flex justify-between items-center">
-                            <div 
-                              className="text-lg font-semibold leading-none tracking-tight cursor-pointer hover:text-blue-600 hover:underline"
-                              onClick={() => handleIndustryClick(industry)}
-                            >
-                              {industry.name}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {blockIndustries.map(industry => (
+                      <div key={industry._id} className="cursor-pointer" onClick={() => handleIndustryClick(industry)}>
+                        <Card className="hover:shadow-md transition-shadow">
+                          <CardHeader>
+                            <div className="flex justify-between items-start">
+                              <div className="font-bold text-lg">{industry.name}</div>
+                              <Badge variant={getIndustryTypeStyle(industry.industryType)}>
+                                {industry.industryType}
+                              </Badge>
                             </div>
-                            <span className="text-sm font-medium px-2 py-1 rounded-full bg-white bg-opacity-60">
-                              {industry.industryType}
-                            </span>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-sm text-gray-600">
-                            <div>Tracks: {industry.tracks.length}</div>
-                            {industry.description && (
-                              <div className="mt-2">{industry.description}</div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <p><span className="font-medium">Tracks: </span>{industry.tracks.length}</p>
+                              {industry.description && (
+                                <p><span className="font-medium">Description: </span>{industry.description}</p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -235,6 +217,6 @@ export default function IndustriesPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 } 
