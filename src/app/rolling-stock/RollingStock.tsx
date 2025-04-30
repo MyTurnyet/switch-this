@@ -208,7 +208,7 @@ export default function RollingStock({ services }: RollingStockProps) {
               {car.color === 'PURPLE' && <div className="h-3 w-full bg-purple-500"></div>}
               {car.color === 'BLACK' && <div className="h-3 w-full bg-black"></div>}
               {car.color === 'WHITE' && <div className="h-3 w-full bg-gray-500"></div>}
-              {car.color === 'BROWN' && <div className="h-3 w-full bg-yellow-700"></div>}
+              {car.color === 'BROWN' && <div className="h-3 w-full bg-stone-700"></div>}
               {car.color === 'GRAY' && <div className="h-3 w-full bg-gray-500"></div>}
               {!['RED', 'BLUE', 'GREEN', 'YELLOW', 'ORANGE', 'PURPLE', 'BLACK', 'WHITE', 'BROWN', 'GRAY'].includes(car.color) && 
                 <div className="h-3 w-full bg-gray-500"></div>}
@@ -344,7 +344,7 @@ export function getColorClass(color: string): string {
     PURPLE: 'purple',
     BLACK: 'black',
     WHITE: 'gray',
-    BROWN: 'yellow',
+    BROWN: 'stone',
     GRAY: 'gray',
   };
 

@@ -8,7 +8,7 @@ module.exports = {
     'bg-blue-500',
     'bg-green-500',
     'bg-yellow-500',
-    'bg-yellow-700',
+    'bg-stone-700',
     'bg-orange-500',
     'bg-purple-500',
     'bg-gray-500',

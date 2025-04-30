@@ -10,7 +10,7 @@ describe('getColorClass', () => {
     expect(getColorClass('PURPLE')).toBe('purple');
     expect(getColorClass('BLACK')).toBe('black');
     expect(getColorClass('WHITE')).toBe('gray');
-    expect(getColorClass('BROWN')).toBe('yellow');
+    expect(getColorClass('BROWN')).toBe('stone');
     expect(getColorClass('GRAY')).toBe('gray');
   });
 

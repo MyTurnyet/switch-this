@@ -333,7 +333,7 @@ describe('RollingStock Additional Tests', () => {
     expect(screen.getByTestId('car-1').querySelector('.bg-red-500')).toBeInTheDocument();
     expect(screen.getByTestId('car-2').querySelector('.bg-blue-500')).toBeInTheDocument();
     expect(screen.getByTestId('car-3').querySelector('.bg-green-500')).toBeInTheDocument();
-    expect(screen.getByTestId('car-4').querySelector('.bg-yellow-700')).toBeInTheDocument();
+    expect(screen.getByTestId('car-4').querySelector('.bg-stone-700')).toBeInTheDocument();
     expect(screen.getByTestId('car-5').querySelector('.bg-black')).toBeInTheDocument();
   });
 }); 
