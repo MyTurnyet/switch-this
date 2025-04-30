@@ -1,8 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { RollingStock as RollingStockType, Industry } from '@/app/shared/types/models';
+import { RollingStock as RollingStockType, Industry, RollingStockLocation } from '@/app/shared/types/models';
 import { ClientServices } from '@/app/shared/services/clientServices';
+import { 
+  PageContainer, 
+  DataTable, 
+  Input, 
+  Select, 
+  Button, 
+  Badge,
+  Form,
+  FormSection,
+  FormGroup,
+  FormLabel,
+  FormActions
+} from '@/app/components/ui';
+import { Column } from '@/app/components/ui/data-table';
 
 type RollingStockProps = {
   services: ClientServices;
@@ -86,12 +100,16 @@ export default function RollingStock({ services }: RollingStockProps) {
   const createIndustryNameMap = (industries: Industry[]): IndustryMap => {
     const industryNameMap: IndustryMap = {};
     industries.forEach(industry => {
-      industryNameMap[industry._id] = industry.name;
+      industryMap[industry._id] = industry.name;
     });
     return industryNameMap;
   };
 
-  const getIndustryName = (industryId: string): string => {
+  const getIndustryName = (industryId: string | RollingStockLocation | undefined | null): string => {
+    if (!industryId) return 'Unassigned';
+    if (typeof industryId === 'object') {
+      return industryMap[industryId.industryId] || 'Unknown Industry';
+    }
     return industryMap[industryId] || 'Unknown Industry';
   };
 
@@ -178,201 +196,220 @@ export default function RollingStock({ services }: RollingStockProps) {
     }));
   };
 
-  if (loading) {
+  // Function to render the appropriate badge for the car type
+  const renderCarTypeBadge = (aarType: string) => {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading rolling stock...</p>
+      <Badge variant="primary">
+        {aarType}
+      </Badge>
+    );
+  };
+
+  // Function to display car color as a visual indicator
+  const renderColorBar = (color: string) => {
+    return (
+      <div 
+        className={`h-4 w-8 rounded ${getColorClass(color)}`} 
+        title={color} 
+      />
+    );
+  };
+
+  // Define columns with proper typing
+  const columns: Column<Record<string, unknown>>[] = [
+    {
+      key: 'roadName',
+      header: 'Road',
+      accessor: (item: Record<string, unknown>) => {
+        const car = item as unknown as RollingStockType;
+        return (
+          <div className="flex items-center">
+            {car.color && renderColorBar(car.color)}
+            <span className="ml-2 font-medium">{car.roadName}</span>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'roadNumber',
+      header: 'Number'
+    },
+    {
+      key: 'aarType',
+      header: 'Type',
+      accessor: (item: Record<string, unknown>) => {
+        const car = item as unknown as RollingStockType;
+        return renderCarTypeBadge(car.aarType);
+      }
+    },
+    {
+      key: 'description',
+      header: 'Description'
+    },
+    {
+      key: 'currentLocation',
+      header: 'Current Location',
+      accessor: (item: Record<string, unknown>) => {
+        const car = item as unknown as RollingStockType;
+        return <span>{getIndustryName(car.currentLocation)}</span>;
+      }
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      accessor: (item: Record<string, unknown>) => {
+        const car = item as unknown as RollingStockType;
+        return (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(car);
+            }}
+          >
+            Edit
+          </Button>
+        );
+      }
+    }
+  ];
+
+  if (editingId) {
+    const car = rollingStock.find(c => c._id === editingId);
+    if (!car) return null;
+    
+    const carTypeOptions = CAR_TYPES.map(ct => ({
+      value: `${ct.aarType}|${ct.description}`,
+      label: `${ct.aarType} - ${ct.description}`
+    }));
+    
+    const yardOptions = industries
+      .filter(ind => ind.industryType === 'YARD')
+      .map(yard => ({
+        value: yard._id,
+        label: yard.name
+      }));
+    
+    return (
+      <PageContainer title={`Edit Car ${car.roadName} ${car.roadNumber}`}>
+        <div className="max-w-2xl mx-auto">
+          <Form onSubmit={(e) => { 
+            e.preventDefault();
+            handleSave(car._id);
+          }}>
+            <FormSection>
+              <FormGroup>
+                <FormLabel htmlFor="roadName" required>Road Name</FormLabel>
+                <Input
+                  id="roadName"
+                  name="roadName"
+                  value={editForm.roadName}
+                  onChange={handleInputChange}
+                  fullWidth
+                  data-testid="roadName-input"
+                />
+              </FormGroup>
+              
+              <FormGroup>
+                <FormLabel htmlFor="roadNumber" required>Road Number</FormLabel>
+                <Input
+                  id="roadNumber"
+                  name="roadNumber"
+                  value={editForm.roadNumber}
+                  onChange={handleInputChange}
+                  fullWidth
+                  data-testid="roadNumber-input"
+                />
+              </FormGroup>
+              
+              <FormGroup>
+                <FormLabel htmlFor="carType">Car Type</FormLabel>
+                <Select
+                  id="carType"
+                  name="carType"
+                  value={editForm.carType}
+                  onChange={handleInputChange}
+                  options={carTypeOptions}
+                  fullWidth
+                  data-testid="carType-select"
+                />
+              </FormGroup>
+              
+              <FormGroup>
+                <FormLabel htmlFor="homeYard">Home Yard</FormLabel>
+                <Select
+                  id="homeYard"
+                  name="homeYard"
+                  value={editForm.homeYard}
+                  onChange={handleInputChange}
+                  options={yardOptions}
+                  fullWidth
+                  data-testid="homeYard-select"
+                />
+              </FormGroup>
+              
+              <FormActions>
+                <Button
+                  variant="outline"
+                  onClick={handleCancel}
+                  type="button"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                >
+                  Save Changes
+                </Button>
+              </FormActions>
+            </FormSection>
+          </Form>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
-  if (error) {
-    return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 mt-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const actions = [
+    {
+      label: 'Add Car',
+      onClick: () => alert('Adding a new car functionality to be implemented'),
+      variant: 'success' as const
+    }
+  ];
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">Rolling Stock</h1>
-      
-      {rollingStock.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No rolling stock available.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rollingStock.map((car) => (
-            <div
-              key={car._id}
-              data-testid={`car-${car._id}`}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
-            >
-              {renderColorBar(car.color)}
-              <div className="p-4">
-                {editingId === car._id ? (
-                  <div className="mb-4">
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div>
-                        <label htmlFor="roadName" className="block text-sm font-medium text-gray-700">
-                          Road Name
-                        </label>
-                        <input
-                          type="text"
-                          id="roadName"
-                          name="roadName"
-                          value={editForm.roadName}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="roadNumber" className="block text-sm font-medium text-gray-700">
-                          Road Number
-                        </label>
-                        <input
-                          type="text"
-                          id="roadNumber"
-                          name="roadNumber"
-                          value={editForm.roadNumber}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-2 mb-3">
-                      <div>
-                        <label htmlFor="carType" className="block text-sm font-medium text-gray-700">
-                          Car Type
-                        </label>
-                        <select
-                          id="carType"
-                          name="carType"
-                          value={editForm.carType}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                          aria-label="Car Type"
-                        >
-                          {CAR_TYPES.map((type) => (
-                            <option key={type.aarType} value={`${type.aarType}|${type.description}`}>
-                              {type.aarType} - {type.description}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="homeYard" className="block text-sm font-medium text-gray-700">
-                          Home Yard
-                        </label>
-                        <select
-                          id="homeYard"
-                          name="homeYard"
-                          value={editForm.homeYard}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                          aria-label="Home Yard"
-                        >
-                          {industries.map((industry) => (
-                            <option key={industry._id} value={industry._id}>
-                              {industry.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-end space-x-2 mt-3">
-                      <button
-                        type="button"
-                        onClick={handleCancel}
-                        className="py-1 px-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSave(car._id)}
-                        className="py-1 px-3 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <h2 
-                    className="text-xl font-semibold text-gray-800 cursor-pointer hover:text-indigo-600"
-                    onClick={() => handleEdit(car)}
-                  >
-                    {car.roadName} {car.roadNumber}
-                  </h2>
-                )}
-                <div className="mt-2 space-y-1">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Type:</span> {car.aarType} - {car.description}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Home Yard:</span> {getIndustryName(car.homeYard)}
-                  </p>
-                  {car.note && (
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Note:</span> {car.note}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <PageContainer 
+      title="Rolling Stock" 
+      description="Manage your fleet of cars and locomotives"
+      actions={actions}
+      error={error || undefined}
+      isLoading={loading}
+    >
+      <DataTable
+        columns={columns}
+        data={rollingStock as unknown as Record<string, unknown>[]}
+        keyExtractor={(item) => item._id as string}
+        zebra
+        bordered
+      />
+    </PageContainer>
   );
 }
 
-const renderColorBar = (color: string) => {
-  const colorMap: Record<string, string> = {
-    RED: 'bg-red-500',
-    BLUE: 'bg-blue-500',
-    GREEN: 'bg-green-500',
-    YELLOW: 'bg-yellow-500',
-    ORANGE: 'bg-orange-500',
-    PURPLE: 'bg-purple-500',
-    BLACK: 'bg-black',
-    WHITE: 'bg-gray-500',
-    BROWN: 'bg-stone-700',
-    GRAY: 'bg-gray-500',
-  };
-
-  const colorClass = colorMap[color] || 'bg-gray-500';
-  return <div className={`h-3 w-full ${colorClass}`}></div>;
-};
-
 export function getColorClass(color: string): string {
   const colorMap: Record<string, string> = {
-    RED: 'red',
-    BLUE: 'blue',
-    GREEN: 'green',
-    YELLOW: 'yellow',
-    ORANGE: 'orange',
-    PURPLE: 'purple',
-    BLACK: 'black',
-    WHITE: 'gray',
-    BROWN: 'stone',
-    GRAY: 'gray',
+    red: 'bg-red-500',
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    yellow: 'bg-yellow-500',
+    brown: 'bg-stone-700',
+    orange: 'bg-orange-500',
+    purple: 'bg-purple-500',
+    gray: 'bg-gray-500',
+    amber: 'bg-amber-500',
+    black: 'bg-black',
   };
 
-  return colorMap[color.toUpperCase()] || 'gray';
+  return colorMap[color.toLowerCase()] || 'bg-gray-500';
 } 

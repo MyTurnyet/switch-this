@@ -97,17 +97,20 @@ describe('RollingStockPage', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByText('ATSF 12345')).toBeInTheDocument();
+      expect(screen.getByText('ATSF')).toBeInTheDocument();
+      expect(screen.getByText('12345')).toBeInTheDocument();
     });
 
     // Check if other data is displayed
-    expect(screen.getByText('CP 67890')).toBeInTheDocument();
-    expect(screen.getByText(/XM - Boxcar/i)).toBeInTheDocument();
-    expect(screen.getByText(/FB - Flatcar/i)).toBeInTheDocument();
-    
-    // Check yard names are displayed
-    expect(screen.getByText('Central Yard')).toBeInTheDocument();
-    expect(screen.getByText('Eastern Yard')).toBeInTheDocument();
+    expect(screen.getByText('CP')).toBeInTheDocument();
+    expect(screen.getByText('67890')).toBeInTheDocument();
+    expect(screen.getByText('XM')).toBeInTheDocument();
+    expect(screen.getByText('Boxcar')).toBeInTheDocument();
+    expect(screen.getByText('FB')).toBeInTheDocument();
+    expect(screen.getByText('Flatcar')).toBeInTheDocument();
+
+    // Check location text is displayed
+    expect(screen.getAllByText('Unassigned').length).toBeGreaterThan(0);
   });
 
   it('displays an error message when fetching fails', async () => {
