@@ -200,7 +200,18 @@ export default function RollingStock({ services }: RollingStockProps) {
               data-testid={`car-${car._id}`}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
             >
-              <div className={`h-3 w-full bg-${getColorClass(car.color)}-500`}></div>
+              {car.color === 'RED' && <div className="h-3 w-full bg-red-500"></div>}
+              {car.color === 'BLUE' && <div className="h-3 w-full bg-blue-500"></div>}
+              {car.color === 'GREEN' && <div className="h-3 w-full bg-green-500"></div>}
+              {car.color === 'YELLOW' && <div className="h-3 w-full bg-yellow-500"></div>}
+              {car.color === 'ORANGE' && <div className="h-3 w-full bg-orange-500"></div>}
+              {car.color === 'PURPLE' && <div className="h-3 w-full bg-purple-500"></div>}
+              {car.color === 'BLACK' && <div className="h-3 w-full bg-black"></div>}
+              {car.color === 'WHITE' && <div className="h-3 w-full bg-gray-500"></div>}
+              {car.color === 'BROWN' && <div className="h-3 w-full bg-yellow-700"></div>}
+              {car.color === 'GRAY' && <div className="h-3 w-full bg-gray-500"></div>}
+              {!['RED', 'BLUE', 'GREEN', 'YELLOW', 'ORANGE', 'PURPLE', 'BLACK', 'WHITE', 'BROWN', 'GRAY'].includes(car.color) && 
+                <div className="h-3 w-full bg-gray-500"></div>}
               <div className="p-4">
                 {editingId === car._id ? (
                   <div className="mb-4">
@@ -331,9 +342,9 @@ export function getColorClass(color: string): string {
     YELLOW: 'yellow',
     ORANGE: 'orange',
     PURPLE: 'purple',
-    BLACK: 'gray',
+    BLACK: 'black',
     WHITE: 'gray',
-    BROWN: 'amber',
+    BROWN: 'yellow',
     GRAY: 'gray',
   };
 

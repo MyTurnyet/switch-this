@@ -8,9 +8,9 @@ describe('getColorClass', () => {
     expect(getColorClass('YELLOW')).toBe('yellow');
     expect(getColorClass('ORANGE')).toBe('orange');
     expect(getColorClass('PURPLE')).toBe('purple');
-    expect(getColorClass('BLACK')).toBe('gray');
+    expect(getColorClass('BLACK')).toBe('black');
     expect(getColorClass('WHITE')).toBe('gray');
-    expect(getColorClass('BROWN')).toBe('amber');
+    expect(getColorClass('BROWN')).toBe('yellow');
     expect(getColorClass('GRAY')).toBe('gray');
   });
 

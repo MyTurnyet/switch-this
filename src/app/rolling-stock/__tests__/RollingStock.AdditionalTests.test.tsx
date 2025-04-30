@@ -87,6 +87,24 @@ describe('RollingStock Additional Tests', () => {
   });
 
   it('renders the correct color classes for different car colors', async () => {
+    // For this test, we need to modify the mock data to have consistent colors
+    const modifiedMockRollingStock = [
+      {
+        ...mockRollingStock[0],
+        color: 'RED'
+      },
+      {
+        ...mockRollingStock[1],
+        color: 'BLUE'
+      },
+      {
+        ...mockRollingStock[2],
+        color: 'YELLOW'
+      }
+    ];
+    
+    mockGetAllRollingStock.mockResolvedValue(modifiedMockRollingStock);
+    
     render(<RollingStock services={mockServices} />);
     
     await waitFor(() => {
@@ -285,5 +303,37 @@ describe('RollingStock Additional Tests', () => {
     // Check that the note label is present
     const noteLabel = within(firstCarElement).getByText('Note:');
     expect(noteLabel).toBeInTheDocument();
+  });
+
+  it('renders correct colors for different car types', async () => {
+    // Mock data with different colors
+    const mockRollingStockData: RollingStockType[] = [
+      { _id: '1', roadName: 'Test', roadNumber: '123', aarType: 'XM', description: 'Box Car', color: 'RED', homeYard: 'yard1', note: '', ownerId: 'user1' },
+      { _id: '2', roadName: 'Test', roadNumber: '124', aarType: 'FB', description: 'Flat Car', color: 'BLUE', homeYard: 'yard1', note: '', ownerId: 'user1' },
+      { _id: '3', roadName: 'Test', roadNumber: '125', aarType: 'GS', description: 'Gondola', color: 'GREEN', homeYard: 'yard1', note: '', ownerId: 'user1' },
+      { _id: '4', roadName: 'Test', roadNumber: '126', aarType: 'HK', description: 'Hopper', color: 'BROWN', homeYard: 'yard1', note: '', ownerId: 'user1' },
+      { _id: '5', roadName: 'Test', roadNumber: '127', aarType: 'CS', description: 'Caboose', color: 'BLACK', homeYard: 'yard1', note: '', ownerId: 'user1' },
+    ];
+
+    // Setup mocks
+    mockGetAllRollingStock.mockResolvedValue(mockRollingStockData);
+    mockGetAllIndustries.mockResolvedValue([
+      { _id: 'yard1', name: 'Test Yard', industryType: IndustryType.YARD, locationId: 'loc1', blockName: 'B1', tracks: [], ownerId: 'user1' }
+    ]);
+    
+    // Render the component
+    render(<RollingStock services={mockServices} />);
+    
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.queryByText('Loading rolling stock...')).not.toBeInTheDocument();
+    });
+
+    // Verify correct color classes are applied
+    expect(screen.getByTestId('car-1').querySelector('.bg-red-500')).toBeInTheDocument();
+    expect(screen.getByTestId('car-2').querySelector('.bg-blue-500')).toBeInTheDocument();
+    expect(screen.getByTestId('car-3').querySelector('.bg-green-500')).toBeInTheDocument();
+    expect(screen.getByTestId('car-4').querySelector('.bg-yellow-700')).toBeInTheDocument();
+    expect(screen.getByTestId('car-5').querySelector('.bg-black')).toBeInTheDocument();
   });
 }); 

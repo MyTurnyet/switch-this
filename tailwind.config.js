@@ -3,6 +3,18 @@ module.exports = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    'bg-red-500',
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-yellow-700',
+    'bg-orange-500',
+    'bg-purple-500',
+    'bg-gray-500',
+    'bg-amber-500',
+    'bg-black',
+  ],
   theme: {
     extend: {
       colors: {
