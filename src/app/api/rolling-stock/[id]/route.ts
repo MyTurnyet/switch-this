@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient, ObjectId } from 'mongodb';
+import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
 
 const uri = process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017';
 const dbName = process.env.MONGODB_DB || 'switch-this';
@@ -13,7 +14,7 @@ export async function GET(
   try {
     await client.connect();
     const db = client.db(dbName);
-    const collection = db.collection('rolling-stock');
+    const collection = db.collection(DB_COLLECTIONS.ROLLING_STOCK);
     
     const rollingStock = await collection.findOne({ _id: new ObjectId(params.id) });
     
@@ -52,7 +53,7 @@ export async function PUT(
     
     await client.connect();
     const db = client.db(dbName);
-    const collection = db.collection('rolling-stock');
+    const collection = db.collection(DB_COLLECTIONS.ROLLING_STOCK);
     
     const result = await collection.updateOne(
       { _id: new ObjectId(params.id) },
@@ -87,7 +88,7 @@ export async function DELETE(
   try {
     await client.connect();
     const db = client.db(dbName);
-    const collection = db.collection('rolling-stock');
+    const collection = db.collection(DB_COLLECTIONS.ROLLING_STOCK);
     
     const result = await collection.deleteOne({ _id: new ObjectId(params.id) });
     

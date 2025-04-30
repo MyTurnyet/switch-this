@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MongoClient, ObjectId } from 'mongodb';
+import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
 
 // GET a specific industry by ID
 export async function GET(
@@ -13,7 +14,7 @@ export async function GET(
   try {
     await client.connect();
     const db = client.db(dbName);
-    const collection = db.collection('industries');
+    const collection = db.collection(DB_COLLECTIONS.INDUSTRIES);
     
     const industry = await collection.findOne({ 
       _id: new ObjectId(params.id) 
@@ -60,7 +61,7 @@ export async function PUT(
     
     await client.connect();
     const db = client.db(dbName);
-    const collection = db.collection('industries');
+    const collection = db.collection(DB_COLLECTIONS.INDUSTRIES);
     
     // Don't allow changing _id, convert string ID to ObjectId
     const industryId = new ObjectId(params.id);

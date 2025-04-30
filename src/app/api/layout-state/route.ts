@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
+import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
 
 // GET - retrieves the latest layout state
 export async function GET() {
@@ -9,7 +10,7 @@ export async function GET() {
   try {
     const client = await MongoClient.connect(uri);
     const db = client.db(dbName);
-    const collection = db.collection('layoutState');
+    const collection = db.collection(DB_COLLECTIONS.LAYOUT_STATE);
     
     // Get the latest state (there should only be one document)
     const layoutState = await collection.findOne({}, { sort: { updatedAt: -1 } });
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     
     const client = await MongoClient.connect(uri);
     const db = client.db(dbName);
-    const collection = db.collection('layoutState');
+    const collection = db.collection(DB_COLLECTIONS.LAYOUT_STATE);
     
     // Add timestamp
     const stateToSave = {

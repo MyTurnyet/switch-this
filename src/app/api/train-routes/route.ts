@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
+import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
 
 export async function GET() {
   const uri = process.env.MONGODB_URI || 'mongodb://admin:password@localhost:27017';
@@ -9,7 +10,7 @@ export async function GET() {
   try {
     await client.connect();
     const db = client.db(dbName);
-    const collection = db.collection('trainRoutes');
+    const collection = db.collection(DB_COLLECTIONS.TRAIN_ROUTES);
     const trainRoutes = await collection.find().toArray();
     return NextResponse.json(trainRoutes);
   } catch (error) {

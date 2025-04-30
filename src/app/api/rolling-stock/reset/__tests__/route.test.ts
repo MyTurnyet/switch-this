@@ -1,5 +1,6 @@
 import { POST } from '../route';
 import { NextResponse } from 'next/server';
+import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
 
 // Mock NextResponse
 jest.mock('next/server', () => ({
@@ -146,8 +147,8 @@ describe('Rolling Stock Reset API', () => {
     const mockDb = mockClient.db();
     
     // Verify the correct collection names were used
-    expect(mockDb.collection).toHaveBeenCalledWith('rolling-stock');
-    expect(mockDb.collection).toHaveBeenCalledWith('industries');
+    expect(mockDb.collection).toHaveBeenCalledWith(DB_COLLECTIONS.ROLLING_STOCK);
+    expect(mockDb.collection).toHaveBeenCalledWith(DB_COLLECTIONS.INDUSTRIES);
   });
 
   it('should handle errors gracefully', async () => {

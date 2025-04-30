@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { RollingStock, Industry } from '@/app/shared/types/models';
 import { MongoClient, ObjectId } from 'mongodb';
+import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
 
 export async function POST() {
   console.log('Reset API endpoint called');
@@ -9,8 +10,8 @@ export async function POST() {
     console.log('Connected to MongoDB');
     
     const db = client.db();
-    const rollingStockCollection = db.collection('rolling-stock');
-    const industriesCollection = db.collection('industries');
+    const rollingStockCollection = db.collection(DB_COLLECTIONS.ROLLING_STOCK);
+    const industriesCollection = db.collection(DB_COLLECTIONS.INDUSTRIES);
 
     // Get all rolling stock and industries
     const allRollingStock = await rollingStockCollection.find({}).toArray() as unknown as RollingStock[];
