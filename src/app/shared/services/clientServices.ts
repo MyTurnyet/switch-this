@@ -27,14 +27,27 @@ export interface RollingStockService extends EntityService<RollingStock> {
   resetToHomeYards(): Promise<void>;
 }
 
+export interface LayoutStateData {
+  _id?: string;
+  industries: Industry[];
+  rollingStock: RollingStock[];
+  updatedAt?: Date;
+}
+
+export interface LayoutStateService {
+  getLayoutState(): Promise<LayoutStateData | null>;
+  saveLayoutState(state: LayoutStateData): Promise<LayoutStateData>;
+}
+
 export interface ClientServices {
   locationService: LocationService;
   industryService: IndustryService;
   trainRouteService: TrainRouteService;
   rollingStockService: RollingStockService;
+  layoutStateService: LayoutStateService;
 }
 
-abstract class EntityServiceImpl<T> extends BaseService<T> implements EntityService<T> {
+abstract class EntityServiceImpl<T extends { _id: string }> extends BaseService<T> implements EntityService<T> {
   // The BaseService already has getAll implementation
 }
 
@@ -91,9 +104,46 @@ class RollingStockServiceImpl extends EntityServiceImpl<RollingStock> implements
   }
 }
 
+export class LayoutStateServiceImpl implements LayoutStateService {
+  private readonly endpoint = '/api/layout-state';
+
+  async getLayoutState(): Promise<LayoutStateData | null> {
+    const response = await fetch(this.endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch layout state: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.exists === false) {
+      return null;
+    }
+    
+    return data;
+  }
+  
+  async saveLayoutState(state: LayoutStateData): Promise<LayoutStateData> {
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(state),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to save layout state: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+}
+
 export const services: ClientServices = {
   locationService: new LocationServiceImpl(),
   industryService: new IndustryServiceImpl(),
   trainRouteService: new TrainRouteServiceImpl(),
-  rollingStockService: new RollingStockServiceImpl()
+  rollingStockService: new RollingStockServiceImpl(),
+  layoutStateService: new LayoutStateServiceImpl()
 }; 

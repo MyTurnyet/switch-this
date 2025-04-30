@@ -8,24 +8,6 @@ import type { Location, Industry, RollingStock, Track } from '@/app/shared/types
 import type { ClientServices } from '../shared/services/clientServices';
 import RollingStockList from './components/RollingStockList';
 
-// Simple mock interface to replace the missing module
-interface LayoutStateData {
-  _id?: string;
-  industries: Industry[];
-  rollingStock: RollingStock[];
-}
-
-// Simple mock class to replace the missing module
-class LayoutStateService {
-  async getLayoutState(): Promise<LayoutStateData | null> {
-    return null;
-  }
-  
-  async saveLayoutState(state: LayoutStateData): Promise<LayoutStateData> {
-    return { ...state, _id: state._id || 'new-id' };
-  }
-}
-
 interface LayoutStateProps {
   services: ClientServices;
 }
@@ -62,8 +44,6 @@ export default function LayoutState({ services }: LayoutStateProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [layoutStateId, setLayoutStateId] = useState<string | undefined>(undefined);
-  
-  const layoutStateService = new LayoutStateService();
 
   const logBackgroundOperationError = (operation: string, err: unknown) => {
     console.error(`Failed to ${operation}:`, err);
@@ -72,21 +52,21 @@ export default function LayoutState({ services }: LayoutStateProps) {
 
   const persistLayoutState = useCallback(async (updatedIndustries: Industry[], updatedRollingStock: RollingStock[]) => {
     try {
-      const stateToSave: LayoutStateData = {
+      const stateToSave = {
         _id: layoutStateId,
         industries: updatedIndustries,
         rollingStock: updatedRollingStock
       };
       
-      const savedState = await layoutStateService.saveLayoutState(stateToSave);
+      const savedState = await services.layoutStateService.saveLayoutState(stateToSave);
       
       updateLayoutStateIdIfNeeded(savedState);
     } catch (err) {
       logBackgroundOperationError('save layout state', err);
     }
-  }, [layoutStateId]);
+  }, [layoutStateId, services.layoutStateService]);
 
-  const updateLayoutStateIdIfNeeded = (savedState: LayoutStateData) => {
+  const updateLayoutStateIdIfNeeded = (savedState: { _id?: string }) => {
     if (!layoutStateId && savedState._id) {
       setLayoutStateId(savedState._id);
     }
@@ -101,7 +81,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
       
       setLocations(locationsData);
       
-      const savedState = await loadSavedLayoutState();
+      const savedState = await services.layoutStateService.getLayoutState();
       
       if (savedState) {
         applyExistingSavedState(savedState);
@@ -114,13 +94,9 @@ export default function LayoutState({ services }: LayoutStateProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [services, persistLayoutState]);
+  }, [services]);
 
-  const loadSavedLayoutState = async () => {
-    return layoutStateService.getLayoutState();
-  };
-
-  const applyExistingSavedState = (savedState: LayoutStateData) => {
+  const applyExistingSavedState = (savedState: { _id?: string, industries: Industry[], rollingStock: RollingStock[] }) => {
     console.log('Loading saved layout state from database');
     setIndustries(savedState.industries);
     setRollingStock(savedState.rollingStock);
