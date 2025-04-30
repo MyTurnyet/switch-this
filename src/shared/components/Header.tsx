@@ -1,6 +1,18 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const Header = () => {
+  const pathname = usePathname();
+
+  const getLinkClass = (path: string) => {
+    const baseClass = "font-medium transition-colors";
+    return pathname === path 
+      ? `${baseClass} text-primary-600` 
+      : `${baseClass} text-gray-600 hover:text-primary-600`;
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <nav className="container mx-auto px-4">
@@ -14,27 +26,33 @@ const Header = () => {
           <div className="flex items-center space-x-6">
             <Link 
               href="/" 
-              className="text-gray-600 hover:text-primary-600 font-medium transition-colors"
+              className={getLinkClass('/')}
             >
               Home
             </Link>
             <Link 
               href="/about" 
-              className="text-gray-600 hover:text-primary-600 font-medium transition-colors"
+              className={getLinkClass('/about')}
             >
               About
             </Link>
             <Link 
               href="/layout-state" 
-              className="text-gray-600 hover:text-primary-600 font-medium transition-colors"
+              className={getLinkClass('/layout-state')}
             >
               Layout State
             </Link>
             <Link 
               href="/industries" 
-              className="text-gray-600 hover:text-primary-600 font-medium transition-colors"
+              className={getLinkClass('/industries')}
             >
               Industries
+            </Link>
+            <Link 
+              href="/rolling-stock" 
+              className={getLinkClass('/rolling-stock')}
+            >
+              Rolling Stock
             </Link>
           </div>
         </div>
