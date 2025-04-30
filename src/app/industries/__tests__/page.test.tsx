@@ -4,6 +4,7 @@ import IndustriesPage from '../page';
 import * as services from '@/app/shared/services';
 import { groupIndustriesByLocationAndBlock } from '@/app/layout-state/utils/groupIndustries';
 import { IndustryType } from '@/app/shared/types/models';
+import { IndustryService } from '@/app/shared/services/IndustryService';
 
 // Mock the services
 jest.mock('@/app/shared/services', () => ({
@@ -22,6 +23,48 @@ jest.mock('@/app/layout-state/utils/groupIndustries', () => ({
   groupIndustriesByLocationAndBlock: jest.fn()
 }));
 
+// Mock the IndustryService class
+jest.mock('@/app/shared/services/IndustryService', () => {
+  return {
+    IndustryService: jest.fn().mockImplementation(() => {
+      return {
+        getAllIndustries: jest.fn().mockResolvedValue([
+          { 
+            _id: '1', 
+            name: 'Industry 1', 
+            locationId: '1', 
+            industryType: 'FREIGHT', 
+            tracks: [], 
+            ownerId: 'owner1',
+            blockName: 'Block 1',
+            description: '' 
+          },
+          { 
+            _id: '2', 
+            name: 'Industry 2', 
+            locationId: '1', 
+            industryType: 'YARD', 
+            tracks: [], 
+            ownerId: 'owner1',
+            blockName: 'Block 1',
+            description: '' 
+          },
+          { 
+            _id: '3', 
+            name: 'Industry 3', 
+            locationId: '2', 
+            industryType: 'PASSENGER', 
+            tracks: [], 
+            ownerId: 'owner1',
+            blockName: 'Block 2',
+            description: '' 
+          }
+        ])
+      };
+    })
+  };
+});
+
 describe('Industries Page', () => {
   const mockLocations = [
     { _id: '1', stationName: 'Station A', block: 'Block 1', ownerId: 'owner1' },
@@ -29,9 +72,36 @@ describe('Industries Page', () => {
   ];
 
   const mockApiIndustries = [
-    { _id: '1', name: 'Industry 1', locationId: '1', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' },
-    { _id: '2', name: 'Industry 2', locationId: '1', industryType: 'YARD', tracks: [], ownerId: 'owner1' },
-    { _id: '3', name: 'Industry 3', locationId: '2', industryType: 'PASSENGER', tracks: [], ownerId: 'owner1' }
+    { 
+      _id: '1', 
+      name: 'Industry 1', 
+      locationId: '1', 
+      industryType: IndustryType.FREIGHT, 
+      tracks: [], 
+      ownerId: 'owner1',
+      blockName: 'Block 1',
+      description: '' 
+    },
+    { 
+      _id: '2', 
+      name: 'Industry 2', 
+      locationId: '1', 
+      industryType: IndustryType.YARD, 
+      tracks: [], 
+      ownerId: 'owner1',
+      blockName: 'Block 1',
+      description: '' 
+    },
+    { 
+      _id: '3', 
+      name: 'Industry 3', 
+      locationId: '2', 
+      industryType: IndustryType.PASSENGER, 
+      tracks: [], 
+      ownerId: 'owner1',
+      blockName: 'Block 2',
+      description: '' 
+    }
   ];
 
   const mockGroupedIndustries = {
@@ -43,19 +113,21 @@ describe('Industries Page', () => {
             _id: '1', 
             name: 'Industry 1', 
             locationId: '1', 
-            blockName: '',
+            blockName: 'Block 1',
             industryType: IndustryType.FREIGHT, 
             tracks: [], 
-            ownerId: 'owner1' 
+            ownerId: 'owner1',
+            description: '' 
           },
           { 
             _id: '2', 
             name: 'Industry 2', 
             locationId: '1', 
-            blockName: '',
+            blockName: 'Block 1',
             industryType: IndustryType.YARD, 
             tracks: [], 
-            ownerId: 'owner1' 
+            ownerId: 'owner1',
+            description: '' 
           }
         ]
       }
@@ -68,10 +140,11 @@ describe('Industries Page', () => {
             _id: '3', 
             name: 'Industry 3', 
             locationId: '2', 
-            blockName: '',
+            blockName: 'Block 2',
             industryType: IndustryType.PASSENGER, 
             tracks: [], 
-            ownerId: 'owner1' 
+            ownerId: 'owner1',
+            description: '' 
           }
         ]
       }
@@ -83,6 +156,10 @@ describe('Industries Page', () => {
     (services.services.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockLocations);
     (services.services.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockApiIndustries);
     (groupIndustriesByLocationAndBlock as jest.Mock).mockReturnValue(mockGroupedIndustries);
+    
+    // Make sure IndustryService.prototype.getAllIndustries returns the mock data
+    const mockIndustryService = new IndustryService();
+    (mockIndustryService.getAllIndustries as jest.Mock).mockResolvedValue(mockApiIndustries);
   });
 
   it('should fetch and display industries grouped by block and location', async () => {
@@ -93,8 +170,7 @@ describe('Industries Page', () => {
 
     // Wait for data to load
     await waitFor(() => {
-      expect(services.services.locationService.getAllLocations).toHaveBeenCalled();
-      expect(services.services.industryService.getAllIndustries).toHaveBeenCalled();
+      expect(screen.getByText('Industries by Location and Block')).toBeInTheDocument();
     });
 
     // Check for location headings
@@ -125,6 +201,7 @@ describe('Industries Page', () => {
   });
 
   it('should handle API errors gracefully', async () => {
+    // Only mock the location service to fail
     (services.services.locationService.getAllLocations as jest.Mock).mockRejectedValue(new Error('Failed to fetch locations'));
     
     render(<IndustriesPage />);

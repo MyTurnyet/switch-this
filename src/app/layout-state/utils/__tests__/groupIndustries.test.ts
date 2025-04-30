@@ -1,5 +1,5 @@
 import { groupIndustriesByLocationAndBlock } from '../groupIndustries';
-import { Location, Industry } from '@/shared/types/models';
+import { Location, Industry, IndustryType } from '@/app/shared/types/models';
 
 describe('groupIndustriesByLocationAndBlock', () => {
   it('groups industries by location and block', () => {
@@ -9,9 +9,9 @@ describe('groupIndustriesByLocationAndBlock', () => {
     ];
 
     const industries: Industry[] = [
-      { _id: '1', name: 'Industry 1', locationId: '1', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' },
-      { _id: '2', name: 'Industry 2', locationId: '1', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' },
-      { _id: '3', name: 'Industry 3', locationId: '2', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' }
+      { _id: '1', name: 'Industry 1', locationId: '1', blockName: 'Block 1', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' },
+      { _id: '2', name: 'Industry 2', locationId: '1', blockName: 'Block 1', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' },
+      { _id: '3', name: 'Industry 3', locationId: '2', blockName: 'Block 2', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' }
     ];
 
     const result = groupIndustriesByLocationAndBlock(industries, locations);
@@ -21,8 +21,8 @@ describe('groupIndustriesByLocationAndBlock', () => {
         locationName: 'Station A',
         blocks: {
           'Block 1': [
-            { _id: '1', name: 'Industry 1', locationId: '1', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' },
-            { _id: '2', name: 'Industry 2', locationId: '1', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' }
+            { _id: '1', name: 'Industry 1', locationId: '1', blockName: 'Block 1', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' },
+            { _id: '2', name: 'Industry 2', locationId: '1', blockName: 'Block 1', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' }
           ]
         }
       },
@@ -30,7 +30,7 @@ describe('groupIndustriesByLocationAndBlock', () => {
         locationName: 'Station B',
         blocks: {
           'Block 2': [
-            { _id: '3', name: 'Industry 3', locationId: '2', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' }
+            { _id: '3', name: 'Industry 3', locationId: '2', blockName: 'Block 2', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' }
           ]
         }
       }
@@ -44,7 +44,7 @@ describe('groupIndustriesByLocationAndBlock', () => {
 
   it('handles industries with missing locations', () => {
     const industries: Industry[] = [
-      { _id: '1', name: 'Industry 1', locationId: '999', industryType: 'FREIGHT', tracks: [], ownerId: 'owner1' }
+      { _id: '1', name: 'Industry 1', locationId: '999', blockName: 'Block 1', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' }
     ];
     const locations: Location[] = [];
 

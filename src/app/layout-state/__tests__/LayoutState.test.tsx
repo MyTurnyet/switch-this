@@ -155,7 +155,7 @@ const mockSaveLayoutState = jest.fn().mockImplementation((state) => Promise.reso
 const mockGetLayoutState = jest.fn().mockResolvedValue(null);
 
 // Mock the LayoutStateService class
-jest.mock('../services/LayoutStateService', () => {
+jest.mock('@/app/layout-state/components/__tests__/services/LayoutStateService', () => {
   return {
     LayoutStateService: jest.fn().mockImplementation(() => ({
       getLayoutState: mockGetLayoutState,

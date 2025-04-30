@@ -1,20 +1,25 @@
 import { LayoutState } from '../LayoutState';
-import { Industry, RollingStock } from '@/shared/types/models';
+import { Industry, RollingStock, IndustryType } from '@/app/shared/types/models';
 
 describe('LayoutState', () => {
   let layoutState: LayoutState;
   const mockIndustry: Industry = {
     _id: '1',
     name: 'Test Industry',
-    industryType: 'FREIGHT',
+    industryType: IndustryType.FREIGHT,
     tracks: [{
       _id: 'track1',
       name: 'Track 1',
       maxCars: 3,
-      placedCars: []
+      placedCars: [],
+      length: 0,
+      capacity: 3,
+      ownerId: 'owner1'
     }],
     locationId: 'loc1',
-    ownerId: 'owner1'
+    blockName: 'Test Block',
+    ownerId: 'owner1',
+    description: ''
   };
 
   const mockCar: RollingStock = {
@@ -81,10 +86,20 @@ describe('LayoutState', () => {
     const mockIndustry: Industry = {
       _id: '1',
       name: 'Test Industry',
-      tracks: [{ _id: 'track1', name: 'Track 1', maxCars: 1, placedCars: [] }],
+      tracks: [{ 
+        _id: 'track1', 
+        name: 'Track 1', 
+        maxCars: 1, 
+        placedCars: [],
+        length: 0,
+        capacity: 1,
+        ownerId: 'owner1'
+      }],
       locationId: 'loc1',
-      industryType: 'FREIGHT',
-      ownerId: 'owner1'
+      industryType: IndustryType.FREIGHT,
+      blockName: 'Test Block',
+      ownerId: 'owner1',
+      description: ''
     };
     const mockCar1: RollingStock = {
       _id: 'car1',
@@ -150,15 +165,20 @@ describe('LayoutState', () => {
     const mockIndustry2: Industry = {
       _id: '2',
       name: 'Test Industry 2',
-      industryType: 'FREIGHT',
+      industryType: IndustryType.FREIGHT,
       tracks: [{
         _id: 'track2',
         name: 'Track 2',
         maxCars: 3,
-        placedCars: []
+        placedCars: [],
+        length: 0,
+        capacity: 3,
+        ownerId: 'owner1'
       }],
       locationId: 'loc2',
-      ownerId: 'owner1'
+      blockName: 'Test Block 2',
+      ownerId: 'owner1',
+      description: ''
     };
     const mockCar2: RollingStock = {
       _id: 'car2',

@@ -1,8 +1,8 @@
 import { Industry as SharedIndustry } from '@/shared/types/models';
-import { Industry as AppIndustry, IndustryType } from '@/app/shared/types/models';
+import { Industry, IndustryType, Track } from '@/app/shared/types/models';
 
 // Function to convert from shared model to app model
-function convertToAppIndustry(industry: SharedIndustry): AppIndustry {
+function convertToAppIndustry(industry: SharedIndustry): Industry {
   return {
     _id: industry._id,
     name: industry.name,
@@ -15,16 +15,16 @@ function convertToAppIndustry(industry: SharedIndustry): AppIndustry {
       length: 0, // Default value
       capacity: track.maxCars, // Use maxCars as capacity
       ownerId: industry.ownerId
-    })) : [],
+    } as Track)) : [],
     locationId: industry.locationId,
-    blockName: '', // Default value since it's required in AppIndustry
+    blockName: '', // Default value since it's required in Industry
     ownerId: industry.ownerId,
     description: ''
   };
 }
 
 // Function to convert from app model to shared model for API requests
-function convertToSharedIndustry(industry: Partial<AppIndustry>): Partial<SharedIndustry> {
+function convertToSharedIndustry(industry: Partial<Industry>): Partial<SharedIndustry> {
   const result: Partial<SharedIndustry> = {
     name: industry.name,
     industryType: industry.industryType as unknown as 'FREIGHT' | 'YARD' | 'PASSENGER',
@@ -34,7 +34,7 @@ function convertToSharedIndustry(industry: Partial<AppIndustry>): Partial<Shared
 }
 
 export class IndustryService {
-  async getAllIndustries(): Promise<AppIndustry[]> {
+  async getAllIndustries(): Promise<Industry[]> {
     try {
       const response = await fetch('/api/industries');
       if (!response.ok) {
@@ -48,7 +48,7 @@ export class IndustryService {
     }
   }
 
-  async getIndustryById(id: string): Promise<AppIndustry> {
+  async getIndustryById(id: string): Promise<Industry> {
     try {
       const response = await fetch(`/api/industries/${id}`);
       if (!response.ok) {
@@ -62,7 +62,7 @@ export class IndustryService {
     }
   }
 
-  async updateIndustry(id: string, data: Partial<AppIndustry>): Promise<AppIndustry> {
+  async updateIndustry(id: string, data: Partial<Industry>): Promise<Industry> {
     try {
       const sharedData = convertToSharedIndustry(data);
       

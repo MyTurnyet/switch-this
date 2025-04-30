@@ -1,5 +1,5 @@
 import { Location } from './Location';
-import { Industry } from './Industry';
+import { Industry } from '@/app/shared/types/models';
 
 export interface Company {
   id: string;

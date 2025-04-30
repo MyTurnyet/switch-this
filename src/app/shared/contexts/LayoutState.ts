@@ -1,4 +1,4 @@
-import { Industry, RollingStock } from '@/shared/types/models';
+import { Industry, RollingStock } from '@/app/shared/types/models';
 
 export class LayoutState {
   private industries: Map<string, Industry> = new Map();

@@ -1,4 +1,4 @@
-import { Location, Industry, TrainRoute, RollingStock } from '@/shared/types/models';
+import { Location, Industry, TrainRoute, RollingStock } from '@/app/shared/types/models';
 
 interface ServiceMethods {
   locationService: {

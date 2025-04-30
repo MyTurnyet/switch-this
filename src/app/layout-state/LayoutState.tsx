@@ -7,7 +7,7 @@ import { initializeLayoutState, syncRollingStockLocations } from './utils/layout
 import type { Location, Industry, RollingStock, Track } from '@/app/shared/types/models';
 import type { ClientServices } from '../shared/services/clientServices';
 import RollingStockList from './components/RollingStockList';
-import { LayoutStateService, LayoutStateData } from './services/LayoutStateService';
+import { LayoutStateService, LayoutStateData } from './components/__tests__/services/LayoutStateService';
 
 interface LayoutStateProps {
   services: ClientServices;

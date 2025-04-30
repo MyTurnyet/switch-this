@@ -1,5 +1,5 @@
 import { IndustryService } from '../IndustryService';
-import { Industry as AppIndustry, IndustryType } from '@/app/shared/types/models';
+import { Industry, IndustryType } from '@/app/shared/types/models';
 
 describe('IndustryService', () => {
   let service: IndustryService;
@@ -130,7 +130,7 @@ describe('IndustryService', () => {
       const industryId = '1';
       const updateData = { 
         name: 'Updated Industry', 
-        industryType: 'YARD' as unknown as IndustryType
+        industryType: IndustryType.YARD
       };
       
       // Raw API response
@@ -177,7 +177,7 @@ describe('IndustryService', () => {
 
     it('should handle update error with error message from response', async () => {
       const industryId = '1';
-      const updateData: Partial<AppIndustry> = { name: 'Updated Industry' };
+      const updateData: Partial<Industry> = { name: 'Updated Industry' };
       const errorResponse = { error: 'Invalid industry data' };
       
       fetchMock.mockResolvedValueOnce({
@@ -190,7 +190,7 @@ describe('IndustryService', () => {
 
     it('should handle update error with default error message', async () => {
       const industryId = '1';
-      const updateData: Partial<AppIndustry> = { name: 'Updated Industry' };
+      const updateData: Partial<Industry> = { name: 'Updated Industry' };
       
       fetchMock.mockResolvedValueOnce({
         ok: false,
@@ -202,7 +202,7 @@ describe('IndustryService', () => {
 
     it('should handle network error during update', async () => {
       const industryId = '1';
-      const updateData: Partial<AppIndustry> = { name: 'Updated Industry' };
+      const updateData: Partial<Industry> = { name: 'Updated Industry' };
       
       fetchMock.mockRejectedValueOnce(new Error('Network error'));
 
