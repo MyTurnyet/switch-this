@@ -40,9 +40,24 @@ function convertToSharedIndustry(industry: Partial<Industry>): Partial<SharedInd
     }));
   }
   
-  // Include description if present
+  // Include optional fields when present
   if (industry.description !== undefined) {
     result.description = industry.description;
+  }
+  
+  // Include locationId if present
+  if (industry.locationId !== undefined) {
+    result.locationId = industry.locationId;
+  }
+  
+  // Include blockName if present
+  if (industry.blockName !== undefined) {
+    result.blockName = industry.blockName;
+  }
+  
+  // Include ownerId if present
+  if (industry.ownerId !== undefined) {
+    result.ownerId = industry.ownerId;
   }
   
   return result;
@@ -98,6 +113,31 @@ export class IndustryService {
       return convertToAppIndustry(updatedIndustry);
     } catch (error) {
       console.error(`Error updating industry with id ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async createIndustry(data: Partial<Industry>): Promise<Industry> {
+    try {
+      const sharedData = convertToSharedIndustry(data);
+      
+      const response = await fetch('/api/industries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sharedData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create industry');
+      }
+      
+      const newIndustry: SharedIndustry = await response.json();
+      return convertToAppIndustry(newIndustry);
+    } catch (error) {
+      console.error('Error creating industry:', error);
       throw error;
     }
   }

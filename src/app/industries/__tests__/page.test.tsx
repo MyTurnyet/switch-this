@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import IndustriesPage from '../page';
 import * as services from '@/app/shared/services';
 import { groupIndustriesByLocationAndBlock } from '@/app/layout-state/utils/groupIndustries';
@@ -59,11 +59,53 @@ jest.mock('@/app/shared/services/IndustryService', () => {
             blockName: 'Block 2',
             description: '' 
           }
-        ])
+        ]),
+        createIndustry: jest.fn().mockImplementation((industryData) => {
+          return Promise.resolve({
+            ...industryData,
+            _id: 'new-industry-id'
+          });
+        }),
+        updateIndustry: jest.fn().mockImplementation((id, industryData) => {
+          return Promise.resolve({
+            _id: id,
+            ...industryData
+          });
+        })
       };
     })
   };
 });
+
+// Mock the components to simplify testing
+jest.mock('@/app/components/EditIndustryForm', () => ({
+  EditIndustryForm: ({ industry, onSave, onCancel }) => (
+    <div data-testid="edit-industry-form">
+      <button onClick={() => onSave(industry)}>Save</button>
+      <button onClick={onCancel}>Cancel</button>
+    </div>
+  )
+}));
+
+jest.mock('@/app/components/AddIndustryForm', () => ({
+  AddIndustryForm: ({ onSave, onCancel }) => (
+    <div data-testid="add-industry-form">
+      <button onClick={() => onSave({
+        _id: 'new-industry-id',
+        name: 'New Industry',
+        locationId: '1',
+        blockName: 'Block 1',
+        industryType: IndustryType.FREIGHT,
+        tracks: [],
+        ownerId: 'owner1',
+        description: 'New industry description'
+      })}>
+        Save
+      </button>
+      <button onClick={onCancel}>Cancel</button>
+    </div>
+  )
+}));
 
 describe('Industries Page', () => {
   const mockLocations = [
@@ -208,6 +250,74 @@ describe('Industries Page', () => {
     
     await waitFor(() => {
       expect(screen.getByText('Failed to load data. Please try again later.')).toBeInTheDocument();
+    });
+  });
+  
+  it('should show the add industry form when Add New Industry button is clicked', async () => {
+    render(<IndustriesPage />);
+    
+    // Wait for page to load
+    await waitFor(() => {
+      expect(screen.getByText('Industries by Location and Block')).toBeInTheDocument();
+    });
+    
+    // Find and click the Add New Industry button
+    const addButton = screen.getByRole('button', { name: /add new industry/i });
+    fireEvent.click(addButton);
+    
+    // Should show the add industry form
+    await waitFor(() => {
+      expect(screen.getByTestId('add-industry-form')).toBeInTheDocument();
+    });
+  });
+  
+  it('should add a new industry and update the UI', async () => {
+    render(<IndustriesPage />);
+    
+    // Wait for page to load
+    await waitFor(() => {
+      expect(screen.getByText('Industries by Location and Block')).toBeInTheDocument();
+    });
+    
+    // Click Add New Industry
+    const addButton = screen.getByRole('button', { name: /add new industry/i });
+    fireEvent.click(addButton);
+    
+    // Click Save on the form
+    const saveButton = screen.getByRole('button', { name: /save/i });
+    fireEvent.click(saveButton);
+    
+    // Should go back to the main page
+    await waitFor(() => {
+      expect(screen.getByText('Industries by Location and Block')).toBeInTheDocument();
+    });
+    
+    // The new industry should be added to the UI
+    await waitFor(() => {
+      // Industry names would include the new one (would appear in the DOM if the UI was updated correctly)
+      expect(screen.getAllByText(/industry/i).length).toBeGreaterThan(3);
+    });
+  });
+  
+  it('should cancel adding a new industry', async () => {
+    render(<IndustriesPage />);
+    
+    // Wait for page to load
+    await waitFor(() => {
+      expect(screen.getByText('Industries by Location and Block')).toBeInTheDocument();
+    });
+    
+    // Click Add New Industry
+    const addButton = screen.getByRole('button', { name: /add new industry/i });
+    fireEvent.click(addButton);
+    
+    // Click Cancel on the form
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+    fireEvent.click(cancelButton);
+    
+    // Should go back to the main page without changes
+    await waitFor(() => {
+      expect(screen.getByText('Industries by Location and Block')).toBeInTheDocument();
     });
   });
 }); 

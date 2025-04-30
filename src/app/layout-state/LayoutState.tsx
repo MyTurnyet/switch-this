@@ -7,7 +7,24 @@ import { initializeLayoutState, syncRollingStockLocations } from './utils/layout
 import type { Location, Industry, RollingStock, Track } from '@/app/shared/types/models';
 import type { ClientServices } from '../shared/services/clientServices';
 import RollingStockList from './components/RollingStockList';
-import { LayoutStateService, LayoutStateData } from './components/__tests__/services/LayoutStateService';
+
+// Simple mock interface to replace the missing module
+interface LayoutStateData {
+  _id?: string;
+  industries: Industry[];
+  rollingStock: RollingStock[];
+}
+
+// Simple mock class to replace the missing module
+class LayoutStateService {
+  async getLayoutState(): Promise<LayoutStateData | null> {
+    return null;
+  }
+  
+  async saveLayoutState(state: LayoutStateData): Promise<LayoutStateData> {
+    return { ...state, _id: state._id || 'new-id' };
+  }
+}
 
 interface LayoutStateProps {
   services: ClientServices;

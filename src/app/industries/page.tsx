@@ -6,6 +6,7 @@ import { Industry } from '@/app/shared/types/models';
 import { groupIndustriesByLocationAndBlock, GroupedIndustries } from '@/app/layout-state/utils/groupIndustries';
 import { Card, CardHeader, CardContent } from '@/app/components/ui/card';
 import { EditIndustryForm } from '@/app/components/EditIndustryForm';
+import { AddIndustryForm } from '@/app/components/AddIndustryForm';
 import { IndustryService } from '@/app/shared/services/IndustryService';
 
 export default function IndustriesPage() {
@@ -13,6 +14,7 @@ export default function IndustriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingIndustry, setEditingIndustry] = useState<Industry | null>(null);
+  const [isAddingIndustry, setIsAddingIndustry] = useState(false);
   const industryService = new IndustryService();
 
   useEffect(() => {
@@ -69,8 +71,53 @@ export default function IndustriesPage() {
     }
   };
 
+  const handleAddNewIndustry = () => {
+    setIsAddingIndustry(true);
+  };
+
+  const handleSaveNewIndustry = async (newIndustry: Industry) => {
+    try {
+      // Add the new industry to the grouped industries
+      const newGroupedIndustries = { ...groupedIndustries };
+      const locationGroup = newGroupedIndustries[newIndustry.locationId];
+      
+      if (locationGroup) {
+        // Check if the block exists
+        if (!locationGroup.blocks[newIndustry.blockName]) {
+          locationGroup.blocks[newIndustry.blockName] = [];
+        }
+        
+        // Add the new industry to the block
+        locationGroup.blocks[newIndustry.blockName].push(newIndustry);
+      } else {
+        // If the location doesn't exist in our current grouped data, fetch the data again
+        const locationsData = await services.locationService.getAllLocations();
+        const location = locationsData.find(loc => loc._id === newIndustry.locationId);
+        
+        if (location) {
+          newGroupedIndustries[newIndustry.locationId] = {
+            locationName: location.stationName,
+            blocks: {
+              [newIndustry.blockName]: [newIndustry]
+            }
+          };
+        }
+      }
+      
+      setGroupedIndustries(newGroupedIndustries);
+      setIsAddingIndustry(false);
+    } catch (err) {
+      console.error('Error adding new industry to UI:', err);
+      // Optionally show an error message
+    }
+  };
+
   const handleCancelEdit = () => {
     setEditingIndustry(null);
+  };
+
+  const handleCancelAdd = () => {
+    setIsAddingIndustry(false);
   };
 
   const getIndustryTypeStyle = (type: string) => {
@@ -115,9 +162,29 @@ export default function IndustriesPage() {
     );
   }
 
+  if (isAddingIndustry) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <h1 className="text-3xl font-bold mb-8">Add New Industry</h1>
+        <AddIndustryForm 
+          onSave={handleSaveNewIndustry} 
+          onCancel={handleCancelAdd} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">Industries by Location and Block</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Industries by Location and Block</h1>
+        <button
+          onClick={handleAddNewIndustry}
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded shadow"
+        >
+          Add New Industry
+        </button>
+      </div>
       
       {Object.keys(groupedIndustries).length === 0 ? (
         <div className="text-xl text-gray-500">No industries found.</div>
