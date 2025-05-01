@@ -243,22 +243,12 @@ export default function LayoutState({ services }: LayoutStateProps) {
     await services.rollingStockService.resetToHomeYards();
   };
 
-  const refreshDataAndUpdateState = async () => {
-    const [locationsData, industriesData, rollingStockData] = await loadBaseData();
-    
-    setLocations(locationsData);
-    setIndustries(industriesData);
-    setRollingStock(rollingStockData);
-    
-    return { industriesData, rollingStockData };
-  };
-
   const handleReset = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      console.log('Starting reset to home yards process');
+      console.log('Starting complete layout state reset process');
       
       // Step 1: Reset rolling stock to home yards via API
       await resetRollingStockToHomeYards();
@@ -267,18 +257,30 @@ export default function LayoutState({ services }: LayoutStateProps) {
       // This gives time for MongoDB operations to finish before we fetch the updated state
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Step 3: Refresh local data with latest from database
-      console.log('Refreshing data after reset');
-      const { industriesData, rollingStockData } = await refreshDataAndUpdateState();
+      // Step 3: Fetch fresh data from database
+      console.log('Fetching fresh data from database');
+      const [locationsData, industriesData, rollingStockData] = await loadBaseData();
       
-      // Step 4: Persist updated layout state to database
-      console.log('Saving updated layout state to database');
-      await persistLayoutState(industriesData, rollingStockData);
+      // Step 4: Initialize a completely new state
+      console.log('Creating fresh layout state');
+      const initializedIndustries = initializeLayoutState(industriesData, rollingStockData);
+      const updatedRollingStock = syncRollingStockLocations(initializedIndustries, rollingStockData);
       
-      console.log('Reset operation completed successfully');
+      // Step 5: Update local state
+      setLocations(locationsData);
+      setIndustries(initializedIndustries);
+      setRollingStock(updatedRollingStock);
+      
+      // Step 6: Persist as new layout state
+      console.log('Saving new layout state to database');
+      // Clear layout state ID to force creation of a new state
+      setLayoutStateId(undefined);
+      await persistLayoutState(initializedIndustries, updatedRollingStock);
+      
+      console.log('Complete reset operation successful');
     } catch (err) {
       console.error('Error during reset operation:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reset rolling stock';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reset layout state';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -299,7 +301,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
           onClick={handleReset}
           className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
         >
-          Reset to Home Yards
+          Reset Layout State
         </button>
       </div>
 
