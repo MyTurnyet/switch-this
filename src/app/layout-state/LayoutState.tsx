@@ -124,6 +124,36 @@ const TrackWithCars = ({ track, rollingStock }: { track: Track, rollingStock: Ro
   );
 };
 
+// Add this function to sort locations by type
+const sortLocationsByType = (
+  locationsMap: {
+    [locationId: string]: {
+      locationName: string;
+      industries: Industry[];
+    }
+  }, 
+  locationsList: Location[]
+) => {
+  // Define the priority order
+  const typePriority: Record<string, number> = {
+    'ON_LAYOUT': 1,
+    'FIDDLE_YARD': 2,
+    'OFF_LAYOUT': 3,
+    'undefined': 4 // For any locations without a type
+  };
+  
+  return Object.entries(locationsMap).sort((a, b) => {
+    const locationA = locationsList.find(loc => loc._id === a[0]);
+    const locationB = locationsList.find(loc => loc._id === b[0]);
+    
+    const typeA = locationA?.locationType || 'undefined';
+    const typeB = locationB?.locationType || 'undefined';
+    
+    // Sort by type priority first
+    return typePriority[typeA as keyof typeof typePriority] - typePriority[typeB as keyof typeof typePriority];
+  });
+};
+
 export default function LayoutState({ services }: LayoutStateProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [industries, setIndustries] = useState<Industry[]>([]);
@@ -297,7 +327,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
                   </div>
                   
                   <div className="space-y-8 mt-4">
-                    {Object.entries(blockGroup.locations).map(([locationId, locationData]) => {
+                    {sortLocationsByType(blockGroup.locations, locations).map(([locationId, locationData]) => {
                       // Find the location to get its type
                       const location = locations.find(loc => loc._id === locationId);
                       const locationType = location?.locationType;
@@ -310,7 +340,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
                           </h3>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {locationData.industries.map(industry => (
+                            {locationData.industries.map((industry: Industry) => (
                               <div
                                 key={industry._id}
                                 className={`p-4 rounded-lg border ${getIndustryTypeStyle(industry.industryType)}`}
@@ -325,7 +355,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
                                 </div>
                                 
                                 <div className="space-y-1">
-                                  {industry.tracks.map(track => (
+                                  {industry.tracks.map((track: Track) => (
                                     <TrackWithCars key={track._id} track={track} rollingStock={rollingStock} />
                                   ))}
                                   

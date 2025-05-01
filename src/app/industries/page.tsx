@@ -174,6 +174,28 @@ export default function IndustriesPage() {
     }
   };
 
+  // Add this function to sort locations by type
+  const sortLocationsByType = (groupedIndustries: GroupedIndustries, locationsList: Location[]) => {
+    // Define the priority order
+    const typePriority: Record<string, number> = {
+      'ON_LAYOUT': 1,
+      'FIDDLE_YARD': 2,
+      'OFF_LAYOUT': 3,
+      'undefined': 4 // For any locations without a type
+    };
+    
+    return Object.entries(groupedIndustries).sort((a, b) => {
+      const locationA = locationsList.find(loc => loc._id === a[0]);
+      const locationB = locationsList.find(loc => loc._id === b[0]);
+      
+      const typeA = locationA?.locationType || 'undefined';
+      const typeB = locationB?.locationType || 'undefined';
+      
+      // Sort by type priority first
+      return typePriority[typeA as keyof typeof typePriority] - typePriority[typeB as keyof typeof typePriority];
+    });
+  };
+
   if (editingIndustry) {
     return (
       <PageContainer title="Edit Industry">
@@ -216,7 +238,7 @@ export default function IndustriesPage() {
         <div className="text-xl text-gray-500">No industries found.</div>
       ) : (
         <div className="space-y-12">
-          {Object.entries(groupedIndustries).map(([locationId, locationGroup]) => {
+          {sortLocationsByType(groupedIndustries, locations).map(([locationId, locationGroup]) => {
             // Find the location to get its type
             const location = locations.find(loc => loc._id === locationId);
             const locationType = location?.locationType;
