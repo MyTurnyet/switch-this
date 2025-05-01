@@ -11,6 +11,19 @@ jest.mock('../components/EditRollingStockModal', () => {
   return jest.fn(({ rollingStock, onSave, onCancel, isOpen }) => {
     if (!isOpen) return null;
     
+    // For testing error handling
+    const handleSaveClick = async () => {
+      try {
+        await onSave({
+          ...rollingStock,
+          roadName: 'UPDATED',
+          roadNumber: '99999'
+        });
+      } catch (error) {
+        // Do nothing with the error - we're just testing that it's thrown
+      }
+    };
+    
     return (
       <div data-testid="modal-content">
         <div>Editing: {rollingStock ? rollingStock.roadName : 'New Rolling Stock'}</div>
@@ -18,11 +31,8 @@ jest.mock('../components/EditRollingStockModal', () => {
         <div>Car Type: {rollingStock ? rollingStock.aarType : ''}</div>
         <button onClick={() => onCancel()}>Cancel</button>
         <button 
-          onClick={() => onSave({
-            ...rollingStock,
-            roadName: 'UPDATED',
-            roadNumber: '99999'
-          })}
+          onClick={handleSaveClick}
+          data-testid="save-button"
         >
           Save
         </button>
@@ -242,10 +252,11 @@ describe('RollingStock Additional Tests', () => {
     });
   });
 
-  // Skipping this test until we can fix it properly
-  it.skip('handles error when updating rolling stock fails', async () => {
+  it('handles error when updating rolling stock fails', async () => {
     // Mock API error before rendering
     mockUpdateRollingStock.mockRejectedValueOnce(new Error('Update failed'));
+    
+    // Spy on console.error to verify it's called
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     render(<RollingStock services={mockServices} />);
@@ -263,6 +274,19 @@ describe('RollingStock Additional Tests', () => {
       expect(screen.getByTestId('modal-content')).toBeInTheDocument();
     });
     
+    // Click the save button
+    fireEvent.click(screen.getByTestId('save-button'));
+    
+    // Wait for the error to be logged
+    await waitFor(() => {
+      expect(mockUpdateRollingStock).toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to save rolling stock:', expect.any(Error));
+    });
+    
+    // The modal should remain open when there's an error
+    expect(screen.getByTestId('modal-content')).toBeInTheDocument();
+    
+    // Clean up
     consoleSpy.mockRestore();
   });
 
