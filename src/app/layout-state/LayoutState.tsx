@@ -36,6 +36,55 @@ const getCarsOnTrack = (track: Track, rollingStock: RollingStock[]) => {
   return rollingStock.filter(car => track.placedCars.includes(car._id));
 };
 
+// Component for a collapsible track with cars
+const TrackWithCars = ({ track, rollingStock }: { track: Track, rollingStock: RollingStock[] }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const carsOnTrack = getCarsOnTrack(track, rollingStock);
+  
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+  
+  return (
+    <div key={track._id} className="border border-gray-100 rounded mb-2 overflow-hidden">
+      <div 
+        className="flex justify-between items-center py-1 px-2 bg-gray-50 cursor-pointer"
+        onClick={toggleCollapse}
+      >
+        <span className="font-medium text-gray-800">
+          {track.name}
+        </span>
+        <div className="flex items-center">
+          <span className={`text-sm font-medium ${getTrackCapacityStyle(carsOnTrack.length, track.maxCars)}`}>
+            ({carsOnTrack.length}/{track.maxCars} cars)
+          </span>
+          <button className="ml-2 text-gray-500">
+            {isCollapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </div>
+      
+      {!isCollapsed && carsOnTrack.length > 0 && (
+        <div className="pl-4 py-1 space-y-1 bg-white">
+          {carsOnTrack.map(car => (
+            <div key={car._id} className="text-sm text-gray-700">
+              {car.roadName} {car.roadNumber} ({car.aarType})
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function LayoutState({ services }: LayoutStateProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [industries, setIndustries] = useState<Industry[]>([]);
@@ -230,32 +279,16 @@ export default function LayoutState({ services }: LayoutStateProps) {
                                 </span>
                               </div>
                               
-                              <div className="space-y-3">
-                                {industry.tracks.map(track => {
-                                  const carsOnTrack = getCarsOnTrack(track, rollingStock);
-                                  return (
-                                    <div key={track._id}>
-                                      <div className="flex justify-between items-center mb-1">
-                                        <span className="font-medium text-gray-800">
-                                          {track.name}
-                                        </span>
-                                        <span className={`text-sm font-medium ${getTrackCapacityStyle(carsOnTrack.length, track.maxCars)}`}>
-                                          ({carsOnTrack.length}/{track.maxCars} cars)
-                                        </span>
-                                      </div>
-                                      
-                                      {carsOnTrack.length > 0 ? (
-                                        <div className="pl-4 space-y-1">
-                                          {carsOnTrack.map(car => (
-                                            <div key={car._id} className="text-sm text-gray-700">
-                                              {car.roadName} {car.roadNumber} ({car.aarType})
-                                            </div>
-                                          ))}
-                                        </div>
-                                      ) : null}
-                                    </div>
-                                  );
-                                })}
+                              <div className="space-y-1">
+                                {industry.tracks.map(track => (
+                                  <TrackWithCars key={track._id} track={track} rollingStock={rollingStock} />
+                                ))}
+                                
+                                {industry.tracks.length === 0 && (
+                                  <div className="text-sm italic text-gray-500 text-center py-2">
+                                    No tracks at this industry
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
