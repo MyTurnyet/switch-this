@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
 import { cn } from '@/lib/utils';
+import { ReactNode } from 'react';
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info';
-  size?: 'sm' | 'md' | 'lg';
+export interface BadgeProps {
+  children: ReactNode;
+  className?: string;
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'gray';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   outlined?: boolean;
 }
 
@@ -36,9 +38,13 @@ export function Badge({
     info: outlined
       ? 'bg-white text-blue-700 border border-blue-300'
       : 'bg-blue-100 text-blue-800',
+    gray: outlined
+      ? 'bg-white text-gray-700 border border-gray-300'
+      : 'bg-gray-100 text-gray-800',
   };
 
   const sizeClasses = {
+    xs: 'text-xs px-1.5 py-0.5',
     sm: 'text-xs px-2 py-0.5',
     md: 'text-sm px-2.5 py-0.5',
     lg: 'text-base px-3 py-1',
@@ -47,7 +53,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full font-medium',
+        'inline-flex items-center justify-center rounded-full font-medium whitespace-nowrap',
         variantClasses[variant],
         sizeClasses[size],
         className

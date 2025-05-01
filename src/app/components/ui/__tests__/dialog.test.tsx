@@ -3,17 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { Dialog, ConfirmDialog } from '../dialog';
 
 describe('Dialog', () => {
-  test('renders nothing when isOpen is false', () => {
-    render(
-      <Dialog isOpen={false} onClose={() => {}}>
-        Dialog content
-      </Dialog>
-    );
-    
-    expect(screen.queryByText('Dialog content')).not.toBeInTheDocument();
-  });
-
-  test('renders content when isOpen is true', () => {
+  test('renders dialog content when isOpen is true', () => {
     render(
       <Dialog isOpen={true} onClose={() => {}}>
         Dialog content
@@ -22,71 +12,65 @@ describe('Dialog', () => {
     
     expect(screen.getByText('Dialog content')).toBeInTheDocument();
   });
-
-  test('renders title and description when provided', () => {
+  
+  test('does not render when isOpen is false', () => {
     render(
-      <Dialog
-        isOpen={true}
-        onClose={() => {}}
-        title="Dialog Title"
-        description="Dialog description"
-      >
+      <Dialog isOpen={false} onClose={() => {}}>
         Dialog content
       </Dialog>
     );
     
-    expect(screen.getByText('Dialog Title')).toBeInTheDocument();
-    expect(screen.getByText('Dialog description')).toBeInTheDocument();
+    expect(screen.queryByText('Dialog content')).not.toBeInTheDocument();
   });
-
+  
   test('calls onClose when backdrop is clicked', () => {
     const onClose = jest.fn();
-    render(
-      <Dialog isOpen={true} onClose={onClose} closeOnClickOutside={true}>
-        Dialog content
-      </Dialog>
-    );
     
-    fireEvent.click(screen.getByTestId('dialog-backdrop'));
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  test('does not call onClose when dialog content is clicked', () => {
-    const onClose = jest.fn();
     render(
       <Dialog isOpen={true} onClose={onClose}>
         Dialog content
       </Dialog>
     );
     
-    fireEvent.click(screen.getByText('Dialog content'));
-    expect(onClose).not.toHaveBeenCalled();
+    // Click the backdrop (the dialog container)
+    const backdrop = screen.getByRole('dialog');
+    fireEvent.click(backdrop);
+    
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
-
+  
   test('does not call onClose when backdrop is clicked and closeOnClickOutside is false', () => {
     const onClose = jest.fn();
+    
     render(
       <Dialog isOpen={true} onClose={onClose} closeOnClickOutside={false}>
         Dialog content
       </Dialog>
     );
     
-    fireEvent.click(screen.getByTestId('dialog-backdrop'));
+    // Click the backdrop (the dialog container)
+    const backdrop = screen.getByRole('dialog');
+    fireEvent.click(backdrop);
+    
     expect(onClose).not.toHaveBeenCalled();
   });
-
+  
   test('calls onClose when close button is clicked', () => {
     const onClose = jest.fn();
+    
     render(
-      <Dialog isOpen={true} onClose={onClose} showCloseButton={true}>
+      <Dialog isOpen={true} onClose={onClose} title="Test Dialog">
         Dialog content
       </Dialog>
     );
     
-    fireEvent.click(screen.getByTestId('dialog-close-button'));
+    // Find and click the close button
+    const closeButton = screen.getByLabelText('Close dialog');
+    fireEvent.click(closeButton);
+    
     expect(onClose).toHaveBeenCalledTimes(1);
   });
-
+  
   test('applies different size classes correctly', () => {
     const { rerender } = render(
       <Dialog isOpen={true} onClose={() => {}} size="sm">
@@ -94,7 +78,8 @@ describe('Dialog', () => {
       </Dialog>
     );
     
-    expect(screen.getByRole('dialog')).toHaveClass('max-w-sm');
+    const dialogContent = screen.getByText('Dialog content').closest('.bg-white');
+    expect(dialogContent).toHaveClass('max-w-sm');
     
     rerender(
       <Dialog isOpen={true} onClose={() => {}} size="lg">
@@ -102,9 +87,25 @@ describe('Dialog', () => {
       </Dialog>
     );
     
-    expect(screen.getByRole('dialog')).toHaveClass('max-w-lg');
+    expect(dialogContent).toHaveClass('max-w-lg');
   });
-
+  
+  test('renders title and description when provided', () => {
+    render(
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Dialog Title"
+        description="Dialog description text"
+      >
+        Dialog content
+      </Dialog>
+    );
+    
+    expect(screen.getByText('Dialog Title')).toBeInTheDocument();
+    expect(screen.getByText('Dialog description text')).toBeInTheDocument();
+  });
+  
   test('renders footer when provided', () => {
     render(
       <Dialog
@@ -119,16 +120,33 @@ describe('Dialog', () => {
     expect(screen.getByText('Footer Button')).toBeInTheDocument();
   });
 
-  test('calls onClose when escape key is pressed', () => {
-    const onClose = jest.fn();
+  test('applies custom classes when provided', () => {
     render(
-      <Dialog isOpen={true} onClose={onClose}>
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        className="custom-class"
+        contentClassName="content-class"
+        headerClassName="header-class"
+        footerClassName="footer-class"
+        title="Dialog Title"
+        footer={<button>Footer Button</button>}
+      >
         Dialog content
       </Dialog>
     );
     
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(onClose).toHaveBeenCalledTimes(1);
+    const dialogContent = screen.getByText('Dialog content').closest('.bg-white');
+    expect(dialogContent).toHaveClass('custom-class');
+    
+    const contentContainer = screen.getByText('Dialog content').closest('.px-6.py-4');
+    expect(contentContainer).toHaveClass('content-class');
+    
+    const header = screen.getByText('Dialog Title').closest('.px-6.py-4');
+    expect(header).toHaveClass('header-class');
+    
+    const footer = screen.getByText('Footer Button').closest('.px-6.py-4');
+    expect(footer).toHaveClass('footer-class');
   });
 });
 

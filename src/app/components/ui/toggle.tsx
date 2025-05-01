@@ -9,10 +9,11 @@ export interface ToggleProps {
   disabled?: boolean;
   label?: string;
   size?: 'sm' | 'md' | 'lg';
-  color?: 'primary' | 'secondary' | 'success' | 'danger';
+  color?: 'primary' | 'secondary' | 'success' | 'danger' | 'gray';
   className?: string;
   labelClassName?: string;
   id?: string;
+  labelPosition?: 'left' | 'right';
 }
 
 export function Toggle({
@@ -25,11 +26,20 @@ export function Toggle({
   className,
   labelClassName,
   id,
+  labelPosition = 'right',
 }: ToggleProps) {
   const toggleId = id || `toggle-${Math.random().toString(36).substr(2, 9)}`;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.checked);
+    if (!disabled) {
+      onChange(e.target.checked);
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!disabled && e.target instanceof HTMLElement && e.target.tagName !== 'INPUT') {
+      onChange(!checked);
+    }
   };
 
   const sizeConfig = {
@@ -55,18 +65,28 @@ export function Toggle({
     secondary: 'bg-secondary-600',
     success: 'bg-green-600',
     danger: 'bg-red-600',
+    gray: 'bg-gray-600',
   };
 
   return (
     <label
       htmlFor={toggleId}
       className={cn(
-        'flex items-center cursor-pointer',
+        'inline-flex items-center',
         disabled && 'opacity-50 cursor-not-allowed',
+        !disabled && 'cursor-pointer',
         className
       )}
     >
-      <div className="relative">
+      {label && labelPosition === 'left' && (
+        <span
+          className={cn('mr-3 text-sm font-medium text-gray-700', labelClassName)}
+          data-testid="toggle-label"
+        >
+          {label}
+        </span>
+      )}
+      <div className="relative flex-shrink-0" onClick={handleClick}>
         <input
           id={toggleId}
           type="checkbox"
@@ -78,22 +98,22 @@ export function Toggle({
         />
         <div
           className={cn(
-            'block rounded-full transition-colors',
+            'block rounded-full transition-colors duration-200 ease-in-out',
             sizeConfig[size].toggle,
             checked ? colorConfig[color] : 'bg-gray-300'
           )}
         />
         <div
           className={cn(
-            'absolute top-0.5 left-0.5 bg-white rounded-full shadow transition-transform transform',
+            'absolute top-0.5 left-0.5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out transform',
             sizeConfig[size].circle,
             checked && sizeConfig[size].translateX
           )}
         />
       </div>
-      {label && (
+      {label && labelPosition === 'right' && (
         <span
-          className={cn('ml-3 text-sm font-medium', labelClassName)}
+          className={cn('ml-3 text-sm font-medium text-gray-700', labelClassName)}
           data-testid="toggle-label"
         >
           {label}
@@ -101,4 +121,6 @@ export function Toggle({
       )}
     </label>
   );
-} 
+}
+
+Toggle.displayName = 'Toggle'; 

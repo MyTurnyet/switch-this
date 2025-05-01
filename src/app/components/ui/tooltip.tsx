@@ -10,6 +10,7 @@ export interface TooltipProps {
   delay?: number;
   className?: string;
   contentClassName?: string;
+  variant?: 'dark' | 'light' | 'primary';
 }
 
 export function Tooltip({
@@ -19,122 +20,79 @@ export function Tooltip({
   delay = 300,
   className,
   contentClassName,
+  variant = 'dark',
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleMouseEnter = () => {
+  const showTip = () => {
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);
     }, delay);
   };
 
-  const handleMouseLeave = () => {
+  const hideTip = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
     }
     setIsVisible(false);
   };
 
-  // Position the tooltip
-  useEffect(() => {
-    const positionTooltip = () => {
-      const triggerElement = tooltipRef.current?.parentElement;
-      const tooltipElement = tooltipRef.current?.querySelector('[role="tooltip"]') as HTMLElement;
-      
-      if (!triggerElement || !tooltipElement || !isVisible) return;
-      
-      const triggerRect = triggerElement.getBoundingClientRect();
-      const tooltipRect = tooltipElement.getBoundingClientRect();
-      
-      // Calculate positions
-      const positions = {
-        top: {
-          top: -tooltipRect.height - 8,
-          left: (triggerRect.width - tooltipRect.width) / 2,
-        },
-        right: {
-          top: (triggerRect.height - tooltipRect.height) / 2,
-          left: triggerRect.width + 8,
-        },
-        bottom: {
-          top: triggerRect.height + 8,
-          left: (triggerRect.width - tooltipRect.width) / 2,
-        },
-        left: {
-          top: (triggerRect.height - tooltipRect.height) / 2,
-          left: -tooltipRect.width - 8,
-        },
-      };
-      
-      const pos = positions[position];
-      tooltipElement.style.top = `${pos.top}px`;
-      tooltipElement.style.left = `${pos.left}px`;
-    };
-
-    if (isVisible) {
-      // Position on show and on resize
-      positionTooltip();
-      window.addEventListener('resize', positionTooltip);
-      window.addEventListener('scroll', positionTooltip);
-    }
-    
-    return () => {
-      window.removeEventListener('resize', positionTooltip);
-      window.removeEventListener('scroll', positionTooltip);
-    };
-  }, [isVisible, position]);
-
-  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
-  const positionClasses = {
-    top: 'bottom-full mb-2',
-    right: 'left-full ml-2',
-    bottom: 'top-full mt-2',
-    left: 'right-full mr-2',
+  const positionStyles = {
+    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
+    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
+    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
+  };
+
+  const arrowPositions = {
+    top: 'bottom-[-6px] left-1/2 -translate-x-1/2 border-t-current border-x-transparent border-b-transparent',
+    right: 'left-[-6px] top-1/2 -translate-y-1/2 border-r-current border-y-transparent border-l-transparent',
+    bottom: 'top-[-6px] left-1/2 -translate-x-1/2 border-b-current border-x-transparent border-t-transparent',
+    left: 'right-[-6px] top-1/2 -translate-y-1/2 border-l-current border-y-transparent border-r-transparent',
+  };
+
+  const variantStyles = {
+    dark: 'text-white bg-gray-900 border-gray-900',
+    light: 'text-gray-900 bg-white border-gray-200 shadow-sm',
+    primary: 'text-white bg-primary-600 border-primary-600',
   };
 
   return (
-    <div
-      ref={tooltipRef}
-      className={cn('relative inline-block', className)}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onFocus={handleMouseEnter}
-      onBlur={handleMouseLeave}
-    >
+    <div className={cn('relative inline-flex', className)} onMouseEnter={showTip} onMouseLeave={hideTip}>
       {children}
-      
       {isVisible && (
         <div
-          role="tooltip"
+          ref={tooltipRef}
           className={cn(
-            'absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-md shadow-sm max-w-xs',
-            positionClasses[position],
+            'absolute z-50 px-2 py-1 text-sm rounded border max-w-xs whitespace-normal break-words',
+            positionStyles[position],
+            variantStyles[variant],
             contentClassName
           )}
+          role="tooltip"
         >
           {content}
           <div
             className={cn(
-              'absolute w-2 h-2 bg-gray-900 transform rotate-45',
-              position === 'top' && 'bottom-[-4px] left-1/2 -translate-x-1/2',
-              position === 'right' && 'left-[-4px] top-1/2 -translate-y-1/2',
-              position === 'bottom' && 'top-[-4px] left-1/2 -translate-x-1/2',
-              position === 'left' && 'right-[-4px] top-1/2 -translate-y-1/2'
+              'absolute border-[6px] border-solid',
+              arrowPositions[position],
+              variant === 'dark' ? 'border-t-gray-900' : 
+              variant === 'light' ? 'border-t-white' : 
+              'border-t-primary-600'
             )}
-          />
+          ></div>
         </div>
       )}
     </div>
   );
-} 
+}
+
+Tooltip.displayName = 'Tooltip'; 

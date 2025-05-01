@@ -12,7 +12,7 @@ export interface FormProps extends React.FormHTMLAttributes<HTMLFormElement> {
 export function Form({ children, onSubmit, className, ...props }: FormProps) {
   return (
     <form
-      className={cn('space-y-4', className)}
+      className={cn('space-y-6', className)}
       onSubmit={onSubmit}
       {...props}
     >
@@ -37,14 +37,13 @@ export function FormGroup({
   inline = false,
 }: FormGroupProps) {
   return (
-    <div className={cn(inline ? 'flex items-start' : 'space-y-2', className)}>
+    <div className={cn(
+      inline ? 'flex items-start gap-3' : 'space-y-1.5',
+      className || ''
+    )}>
       {children}
-      {hint && <p className="text-sm text-gray-500">{hint}</p>}
-      {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
+      {hint && <FormHint>{hint}</FormHint>}
+      {error && <FormError>{error}</FormError>}
     </div>
   );
 }
@@ -86,9 +85,9 @@ export function FormError({ children, className, id }: FormErrorProps) {
   if (!children) return null;
   
   return (
-    <p
+    <p 
+      className={cn('text-sm font-medium text-red-600 mt-1', className)} 
       id={id}
-      className={cn('text-sm text-red-600 mt-1', className)}
       role="alert"
     >
       {children}
@@ -106,7 +105,7 @@ export function FormHint({ children, className, id }: FormHintProps) {
   if (!children) return null;
   
   return (
-    <p id={id} className={cn('text-sm text-gray-500 mt-1', className)}>
+    <p className={cn('text-sm text-gray-500 mt-1', className)} id={id}>
       {children}
     </p>
   );
@@ -126,11 +125,11 @@ export function FormSection({
   className,
 }: FormSectionProps) {
   return (
-    <div className={cn('space-y-6 py-4', className)}>
+    <div className={cn('space-y-4 pb-6', className || '')}>
       {(title || description) && (
-        <div className="space-y-1">
+        <div className="mb-2 border-b border-gray-200 pb-3">
           {title && <h3 className="text-lg font-medium text-gray-900">{title}</h3>}
-          {description && <p className="text-sm text-gray-500">{description}</p>}
+          {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
         </div>
       )}
       <div className="space-y-4">{children}</div>
@@ -159,7 +158,7 @@ export function FormActions({
   return (
     <div
       className={cn(
-        'flex items-center pt-4 space-x-3',
+        'flex items-center pt-4 border-t border-gray-200 mt-6',
         alignClasses[align],
         className
       )}
@@ -167,4 +166,12 @@ export function FormActions({
       {children}
     </div>
   );
-} 
+}
+
+Form.displayName = 'Form';
+FormGroup.displayName = 'FormGroup';
+FormLabel.displayName = 'FormLabel';
+FormError.displayName = 'FormError';
+FormHint.displayName = 'FormHint';
+FormSection.displayName = 'FormSection';
+FormActions.displayName = 'FormActions'; 

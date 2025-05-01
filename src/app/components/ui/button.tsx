@@ -22,12 +22,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ...props 
   }, ref) => {
     const variantClasses = {
-      primary: 'bg-primary-600 hover:bg-primary-700 text-white border border-primary-600',
-      secondary: 'bg-secondary-600 hover:bg-secondary-700 text-white border border-secondary-600',
-      outline: 'bg-white hover:bg-gray-50 text-gray-800 border border-gray-300',
-      ghost: 'bg-transparent hover:bg-gray-100 text-gray-800',
-      danger: 'bg-red-600 hover:bg-red-700 text-white border border-red-600',
-      success: 'bg-green-600 hover:bg-green-700 text-white border border-green-600',
+      primary: 'bg-primary-600 hover:bg-primary-700 text-white border border-primary-600 focus:ring-primary-500',
+      secondary: 'bg-secondary-600 hover:bg-secondary-700 text-white border border-secondary-600 focus:ring-secondary-500',
+      outline: 'bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 hover:border-gray-400 focus:ring-gray-400',
+      ghost: 'bg-transparent hover:bg-gray-100 text-gray-800 hover:text-gray-900 focus:ring-gray-400',
+      danger: 'bg-red-600 hover:bg-red-700 text-white border border-red-600 focus:ring-red-500',
+      success: 'bg-green-600 hover:bg-green-700 text-white border border-green-600 focus:ring-green-500',
     };
     
     const sizeClasses = {
@@ -39,10 +39,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          'font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed',
+          'font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2',
           variantClasses[variant],
           sizeClasses[size],
           isLoading && 'opacity-70 cursor-not-allowed',
+          disabled && 'opacity-50 cursor-not-allowed hover:bg-opacity-100',
           className
         )}
         disabled={disabled || isLoading}

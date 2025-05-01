@@ -33,7 +33,7 @@ export function Breadcrumbs({
 
   return (
     <nav className={cn('flex', className)} aria-label="Breadcrumb">
-      <ol className="flex items-center space-x-2">
+      <ol className="flex items-center space-x-1">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
 
@@ -49,7 +49,7 @@ export function Breadcrumbs({
               {index > 0 && (
                 <span 
                   className={cn(
-                    'mx-2 text-gray-400',
+                    'mx-1.5 text-gray-400',
                     separatorClassName
                   )}
                   aria-hidden="true"
@@ -62,7 +62,7 @@ export function Breadcrumbs({
                 <Link 
                   href={item.href}
                   className={cn(
-                    'text-gray-500 hover:text-gray-700 flex items-center',
+                    'text-gray-600 hover:text-primary-600 transition-colors flex items-center',
                     linkClassName
                   )}
                 >
@@ -72,7 +72,7 @@ export function Breadcrumbs({
               ) : (
                 <span className={cn(
                   'flex items-center',
-                  isLast ? 'font-medium text-gray-900' : 'text-gray-500',
+                  isLast ? 'font-medium text-gray-900' : 'text-gray-600',
                   isLast && activeItemClassName
                 )}>
                   {item.icon && <span className="mr-1.5">{item.icon}</span>}
@@ -85,4 +85,6 @@ export function Breadcrumbs({
       </ol>
     </nav>
   );
-} 
+}
+
+Breadcrumbs.displayName = 'Breadcrumbs'; 

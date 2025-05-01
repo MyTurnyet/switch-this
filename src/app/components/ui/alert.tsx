@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 export interface AlertProps {
   title?: string;
   children: React.ReactNode;
-  variant?: 'info' | 'success' | 'warning' | 'error';
+  variant?: 'info' | 'success' | 'warning' | 'error' | 'primary' | 'secondary';
   className?: string;
   icon?: React.ReactNode;
   onClose?: () => void;
@@ -49,6 +49,24 @@ const variantIcons = {
       />
     </svg>
   ),
+  primary: (
+    <svg className="h-5 w-5 text-primary-400" fill="currentColor" viewBox="0 0 20 20">
+      <path
+        fillRule="evenodd"
+        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
+        clipRule="evenodd"
+      />
+    </svg>
+  ),
+  secondary: (
+    <svg className="h-5 w-5 text-secondary-400" fill="currentColor" viewBox="0 0 20 20">
+      <path
+        fillRule="evenodd"
+        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
+        clipRule="evenodd"
+      />
+    </svg>
+  ),
 };
 
 const variantStyles = {
@@ -56,6 +74,8 @@ const variantStyles = {
   success: 'bg-green-50 border-green-200',
   warning: 'bg-yellow-50 border-yellow-200',
   error: 'bg-red-50 border-red-200',
+  primary: 'bg-primary-50 border-primary-200',
+  secondary: 'bg-secondary-50 border-secondary-200',
 };
 
 const variantTextStyles = {
@@ -63,6 +83,8 @@ const variantTextStyles = {
   success: 'text-green-700',
   warning: 'text-yellow-700',
   error: 'text-red-700',
+  primary: 'text-primary-700',
+  secondary: 'text-secondary-700',
 };
 
 export function Alert({
@@ -74,24 +96,18 @@ export function Alert({
   onClose,
 }: AlertProps) {
   return (
-    <div
-      className={cn(
-        'rounded-md border p-4',
-        variantStyles[variant],
-        className
-      )}
-    >
+    <div className={cn('rounded-md border p-4', variantStyles[variant], className)}>
       <div className="flex">
         <div className="flex-shrink-0">
           {icon || variantIcons[variant]}
         </div>
-        <div className="ml-3">
+        <div className="ml-3 flex-1">
           {title && (
             <h3 className={cn('text-sm font-medium', variantTextStyles[variant])}>
               {title}
             </h3>
           )}
-          <div className={cn('text-sm', variantTextStyles[variant])}>
+          <div className={cn('text-sm', title ? 'mt-2' : '', variantTextStyles[variant])}>
             {children}
           </div>
         </div>
@@ -106,8 +122,11 @@ export function Alert({
                   variant === 'info' && 'bg-blue-50 text-blue-500 hover:bg-blue-100 focus:ring-blue-600 focus:ring-offset-blue-50',
                   variant === 'success' && 'bg-green-50 text-green-500 hover:bg-green-100 focus:ring-green-600 focus:ring-offset-green-50',
                   variant === 'warning' && 'bg-yellow-50 text-yellow-500 hover:bg-yellow-100 focus:ring-yellow-600 focus:ring-offset-yellow-50',
-                  variant === 'error' && 'bg-red-50 text-red-500 hover:bg-red-100 focus:ring-red-600 focus:ring-offset-red-50'
+                  variant === 'error' && 'bg-red-50 text-red-500 hover:bg-red-100 focus:ring-red-600 focus:ring-offset-red-50',
+                  variant === 'primary' && 'bg-primary-50 text-primary-500 hover:bg-primary-100 focus:ring-primary-600 focus:ring-offset-primary-50',
+                  variant === 'secondary' && 'bg-secondary-50 text-secondary-500 hover:bg-secondary-100 focus:ring-secondary-600 focus:ring-offset-secondary-50'
                 )}
+                aria-label="Dismiss"
               >
                 <span className="sr-only">Dismiss</span>
                 <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

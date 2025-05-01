@@ -8,12 +8,12 @@ export interface SelectOption {
   label: string;
 }
 
-export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'value'> {
+export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
   options: SelectOption[];
   label?: string;
   error?: string;
   fullWidth?: boolean;
-  value?: string;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
@@ -23,12 +23,19 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     label, 
     error, 
     fullWidth = false,
+    size = 'md',
     ...props 
   }, ref) => {
+    const sizeClasses = {
+      sm: 'py-1 text-sm',
+      md: 'py-2 text-base',
+      lg: 'py-3 text-lg',
+    };
+
     return (
       <div className={cn('flex flex-col', fullWidth && 'w-full')}>
         {label && (
-          <label className="mb-1 text-sm font-medium text-gray-700">
+          <label className="mb-1.5 text-sm font-medium text-gray-700">
             {label}
           </label>
         )}
@@ -36,9 +43,12 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           <select
             ref={ref}
             className={cn(
-              'appearance-none rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
-              error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
-              fullWidth && 'w-full',
+              'appearance-none rounded-md border px-3 w-full shadow-sm focus:outline-none focus:ring-1 pr-10',
+              sizeClasses[size],
+              error 
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500',
+              props.disabled && 'cursor-not-allowed bg-gray-50 text-gray-500',
               className
             )}
             {...props}
@@ -50,8 +60,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             ))}
           </select>
           
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
@@ -65,7 +75,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           )}
         </div>
         {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
+          <p className="mt-1.5 text-sm text-red-600">{error}</p>
         )}
       </div>
     );

@@ -11,10 +11,15 @@ export interface DialogProps {
   description?: string;
   children?: React.ReactNode;
   footer?: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   closeOnClickOutside?: boolean;
   showCloseButton?: boolean;
   className?: string;
+  contentClassName?: string;
+  headerClassName?: string;
+  footerClassName?: string;
+  titleClassName?: string;
+  descriptionClassName?: string;
 }
 
 export function Dialog({
@@ -28,92 +33,92 @@ export function Dialog({
   closeOnClickOutside = true,
   showCloseButton = true,
   className,
+  contentClassName,
+  headerClassName,
+  footerClassName,
+  titleClassName,
+  descriptionClassName,
 }: DialogProps) {
-  // Handle ESC key to close the dialog
+  // Close on ESC key
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden'; // Prevent scrolling when dialog is open
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent scrolling on body when dialog is open
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = ''; // Restore scrolling when dialog is closed
+      document.removeEventListener('keydown', handleKeyDown);
+      // Restore scrolling when dialog is closed
+      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && closeOnClickOutside) {
-      onClose();
-    }
-  };
-
+  
   const sizeClasses = {
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
+    full: 'max-w-full mx-4',
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4"
-      onClick={handleBackdropClick}
-      data-testid="dialog-backdrop"
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      onClick={closeOnClickOutside ? onClose : undefined}
+      role="dialog"
+      aria-modal="true"
     >
-      <div
+      <div 
         className={cn(
-          'bg-white rounded-lg shadow-xl overflow-hidden w-full',
+          'bg-white rounded-lg shadow-xl overflow-hidden w-full transform transition-all', 
           sizeClasses[size],
           className
         )}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? 'dialog-title' : undefined}
+        onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        {(title || showCloseButton) && (
-          <div className="px-6 py-4 border-b flex justify-between items-center">
+        {(title || description) && (
+          <div className={cn('px-6 py-4 border-b border-gray-200', headerClassName)}>
             {title && (
-              <div>
-                <h2 id="dialog-title" className="text-lg font-semibold text-gray-900">
-                  {title}
-                </h2>
-                {description && (
-                  <p className="mt-1 text-sm text-gray-500">{description}</p>
-                )}
-              </div>
+              <h3 className={cn('text-lg font-medium leading-6 text-gray-900', titleClassName)}>
+                {title}
+              </h3>
+            )}
+            {description && (
+              <p className={cn('mt-2 text-sm text-gray-600', descriptionClassName)}>
+                {description}
+              </p>
             )}
             {showCloseButton && (
               <button
-                type="button"
-                className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
                 onClick={onClose}
-                aria-label="Close"
-                data-testid="dialog-close-button"
+                aria-label="Close dialog"
               >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
           </div>
         )}
-
-        {/* Content */}
-        <div className="px-6 py-4">{children}</div>
-
-        {/* Footer */}
+        
+        <div className={cn('px-6 py-4', contentClassName)}>
+          {children}
+        </div>
+        
         {footer && (
-          <div className="px-6 py-4 border-t bg-gray-50">{footer}</div>
+          <div className={cn('px-6 py-4 bg-gray-50 border-t border-gray-200', footerClassName)}>
+            {footer}
+          </div>
         )}
       </div>
     </div>
@@ -121,9 +126,10 @@ export function Dialog({
 }
 
 export interface ConfirmDialogProps extends Omit<DialogProps, 'footer'> {
+  onConfirm: () => void;
+  onClose: () => void;
   confirmText?: string;
   cancelText?: string;
-  onConfirm: () => void;
   destructive?: boolean;
 }
 
@@ -141,7 +147,7 @@ export function ConfirmDialog({
       onClose={onClose}
       footer={
         <div className="flex justify-end space-x-3">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} size="sm">
             {cancelText}
           </Button>
           <Button
@@ -150,6 +156,7 @@ export function ConfirmDialog({
               onConfirm();
               onClose();
             }}
+            size="sm"
           >
             {confirmText}
           </Button>
@@ -157,4 +164,7 @@ export function ConfirmDialog({
       }
     />
   );
-} 
+}
+
+Dialog.displayName = 'Dialog';
+ConfirmDialog.displayName = 'ConfirmDialog'; 

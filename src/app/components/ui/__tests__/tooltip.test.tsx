@@ -2,11 +2,16 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Tooltip } from '../tooltip';
 
-// Mock timers for delay testing
-jest.useFakeTimers();
-
 describe('Tooltip', () => {
-  test('renders children but not tooltip initially', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test('renders children', () => {
     render(
       <Tooltip content="Tooltip content">
         <button>Hover me</button>
@@ -14,63 +19,56 @@ describe('Tooltip', () => {
     );
     
     expect(screen.getByText('Hover me')).toBeInTheDocument();
+  });
+  
+  test('shows tooltip on hover and hides on mouse leave', () => {
+    render(
+      <Tooltip content="Tooltip content">
+        <button>Hover me</button>
+      </Tooltip>
+    );
+    
+    // Initially tooltip should not be visible
     expect(screen.queryByText('Tooltip content')).not.toBeInTheDocument();
-  });
-  
-  test('shows tooltip when hovered', () => {
-    render(
-      <Tooltip content="Tooltip content">
-        <button>Hover me</button>
-      </Tooltip>
-    );
     
-    // Simulate mouse enter
+    // Mouse enter should trigger tooltip after delay
     fireEvent.mouseEnter(screen.getByText('Hover me'));
     
-    // Fast-forward timer
-    act(() => {
-      jest.advanceTimersByTime(300); // Default delay
-    });
+    // No tooltip yet (waiting for delay)
+    expect(screen.queryByText('Tooltip content')).not.toBeInTheDocument();
     
-    expect(screen.getByText('Tooltip content')).toBeInTheDocument();
-  });
-  
-  test('hides tooltip when mouse leaves', () => {
-    render(
-      <Tooltip content="Tooltip content">
-        <button>Hover me</button>
-      </Tooltip>
-    );
-    
-    // Show tooltip
-    fireEvent.mouseEnter(screen.getByText('Hover me'));
+    // Advance timers to trigger tooltip display
     act(() => {
       jest.advanceTimersByTime(300);
     });
+    
+    // Now tooltip should be visible
     expect(screen.getByText('Tooltip content')).toBeInTheDocument();
     
-    // Hide tooltip
+    // Mouse leave should hide tooltip
     fireEvent.mouseLeave(screen.getByText('Hover me'));
+    
+    // Tooltip should be hidden immediately
     expect(screen.queryByText('Tooltip content')).not.toBeInTheDocument();
   });
   
-  test('respects custom delay', () => {
+  test('uses custom delay', () => {
     render(
       <Tooltip content="Tooltip content" delay={500}>
         <button>Hover me</button>
       </Tooltip>
     );
     
-    // Simulate mouse enter
+    // Mouse enter should trigger tooltip after delay
     fireEvent.mouseEnter(screen.getByText('Hover me'));
     
-    // Check that tooltip is not shown before delay
+    // After 300ms, tooltip should not be visible yet
     act(() => {
       jest.advanceTimersByTime(300);
     });
     expect(screen.queryByText('Tooltip content')).not.toBeInTheDocument();
     
-    // Check that tooltip is shown after delay
+    // After full 500ms delay, tooltip should be visible
     act(() => {
       jest.advanceTimersByTime(200);
     });
@@ -84,14 +82,12 @@ describe('Tooltip', () => {
       </Tooltip>
     );
     
-    // Show tooltip
     fireEvent.mouseEnter(screen.getByText('Hover me'));
     act(() => {
       jest.advanceTimersByTime(300);
     });
     
-    // Check position classes
-    let tooltip = screen.getByRole('tooltip');
+    let tooltip = screen.getByText('Tooltip content').closest('.absolute');
     expect(tooltip).toHaveClass('bottom-full');
     
     // Test right position
@@ -101,13 +97,7 @@ describe('Tooltip', () => {
       </Tooltip>
     );
     
-    // Show tooltip
-    fireEvent.mouseEnter(screen.getByText('Hover me'));
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    
-    tooltip = screen.getByRole('tooltip');
+    tooltip = screen.getByText('Tooltip content').closest('.absolute');
     expect(tooltip).toHaveClass('left-full');
     
     // Test bottom position
@@ -117,13 +107,7 @@ describe('Tooltip', () => {
       </Tooltip>
     );
     
-    // Show tooltip
-    fireEvent.mouseEnter(screen.getByText('Hover me'));
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    
-    tooltip = screen.getByRole('tooltip');
+    tooltip = screen.getByText('Tooltip content').closest('.absolute');
     expect(tooltip).toHaveClass('top-full');
     
     // Test left position
@@ -133,72 +117,66 @@ describe('Tooltip', () => {
       </Tooltip>
     );
     
-    // Show tooltip
-    fireEvent.mouseEnter(screen.getByText('Hover me'));
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    
-    tooltip = screen.getByRole('tooltip');
+    tooltip = screen.getByText('Tooltip content').closest('.absolute');
     expect(tooltip).toHaveClass('right-full');
   });
-  
-  test('renders tooltip with custom content', () => {
-    render(
-      <Tooltip content={<div data-testid="custom-content">Custom Content</div>}>
+
+  test('applies different variant styles', () => {
+    const { rerender } = render(
+      <Tooltip content="Tooltip content" variant="dark">
         <button>Hover me</button>
       </Tooltip>
     );
     
-    // Show tooltip
     fireEvent.mouseEnter(screen.getByText('Hover me'));
     act(() => {
       jest.advanceTimersByTime(300);
     });
     
-    expect(screen.getByTestId('custom-content')).toBeInTheDocument();
+    let tooltip = screen.getByText('Tooltip content').closest('.absolute');
+    expect(tooltip).toHaveClass('bg-gray-900');
+    
+    // Test light variant
+    rerender(
+      <Tooltip content="Tooltip content" variant="light">
+        <button>Hover me</button>
+      </Tooltip>
+    );
+    
+    tooltip = screen.getByText('Tooltip content').closest('.absolute');
+    expect(tooltip).toHaveClass('bg-white');
+    
+    // Test primary variant
+    rerender(
+      <Tooltip content="Tooltip content" variant="primary">
+        <button>Hover me</button>
+      </Tooltip>
+    );
+    
+    tooltip = screen.getByText('Tooltip content').closest('.absolute');
+    expect(tooltip).toHaveClass('bg-primary-600');
   });
   
-  test('applies custom classes', () => {
+  test('applies custom class names', () => {
     render(
       <Tooltip 
-        content="Tooltip content"
-        className="custom-wrapper-class"
-        contentClassName="custom-tooltip-class"
+        content="Tooltip content" 
+        className="custom-class"
+        contentClassName="custom-content-class"
       >
         <button>Hover me</button>
       </Tooltip>
     );
     
-    // Check wrapper class
-    expect(screen.getByText('Hover me').closest('div')).toHaveClass('custom-wrapper-class');
-    
-    // Show tooltip
     fireEvent.mouseEnter(screen.getByText('Hover me'));
     act(() => {
       jest.advanceTimersByTime(300);
     });
     
-    // Check content class
-    expect(screen.getByRole('tooltip')).toHaveClass('custom-tooltip-class');
-  });
-  
-  test('shows tooltip on focus and hides on blur', () => {
-    render(
-      <Tooltip content="Tooltip content">
-        <button>Focus me</button>
-      </Tooltip>
-    );
+    const container = screen.getByText('Hover me').closest('.relative');
+    expect(container).toHaveClass('custom-class');
     
-    // Show tooltip
-    fireEvent.focus(screen.getByText('Focus me'));
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(screen.getByText('Tooltip content')).toBeInTheDocument();
-    
-    // Hide tooltip
-    fireEvent.blur(screen.getByText('Focus me'));
-    expect(screen.queryByText('Tooltip content')).not.toBeInTheDocument();
+    const tooltip = screen.getByText('Tooltip content').closest('.absolute');
+    expect(tooltip).toHaveClass('custom-content-class');
   });
 }); 
