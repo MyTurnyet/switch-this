@@ -109,8 +109,9 @@ describe('RollingStockPage', () => {
     expect(screen.getByText('FB')).toBeInTheDocument();
     expect(screen.getByText('Flatcar')).toBeInTheDocument();
 
-    // Check location text is displayed
-    expect(screen.getAllByText('Unassigned').length).toBeGreaterThan(0);
+    // Check yard locations are displayed
+    expect(screen.getAllByText('Central Yard').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Eastern Yard').length).toBeGreaterThan(0);
   });
 
   it('displays an error message when fetching fails', async () => {

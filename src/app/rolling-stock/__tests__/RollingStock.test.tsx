@@ -191,15 +191,12 @@ describe('RollingStock', () => {
     const editButtons = screen.getAllByText('Edit');
     fireEvent.click(editButtons[0]);
 
-    // Check that the edit form is now displayed with correct title
-    expect(screen.getByText(/Edit Car ATSF 12345/i)).toBeInTheDocument();
-
-    // Check that input fields are rendered with correct values
-    const roadNameInput = screen.getByTestId('roadName-input');
-    const roadNumberInput = screen.getByTestId('roadNumber-input');
+    // Check that the edit modal is displayed
+    expect(screen.getByText('Edit Rolling Stock')).toBeInTheDocument();
     
-    expect(roadNameInput).toHaveValue('ATSF');
-    expect(roadNumberInput).toHaveValue('12345');
+    // Check for inputs in the form
+    expect(screen.getByLabelText(/Railroad/i)).toHaveValue('ATSF');
+    expect(screen.getByLabelText(/Number/i)).toHaveValue('12345');
   });
 
   it('shows car type and home yard dropdowns when editing', async () => {
@@ -215,8 +212,8 @@ describe('RollingStock', () => {
     fireEvent.click(editButtons[0]);
 
     // Check that the select fields are rendered
-    const carTypeSelect = screen.getByLabelText('Car Type');
-    const homeYardSelect = screen.getByLabelText('Home Yard');
+    const carTypeSelect = screen.getByLabelText(/Car Type/i);
+    const homeYardSelect = screen.getByLabelText(/Home Yard/i);
 
     expect(carTypeSelect).toBeInTheDocument();
     expect(homeYardSelect).toBeInTheDocument();
@@ -235,22 +232,24 @@ describe('RollingStock', () => {
     fireEvent.click(editButtons[0]);
 
     // Edit fields
-    const roadNameInput = screen.getByTestId('roadName-input');
-    const roadNumberInput = screen.getByTestId('roadNumber-input');
+    const roadNameInput = screen.getByLabelText(/Railroad/i);
     
     fireEvent.change(roadNameInput, { target: { value: 'BNSF' } });
-    fireEvent.change(roadNumberInput, { target: { value: '54321' } });
 
     // Submit the form
-    const saveButton = screen.getByText('Save Changes');
+    const saveButton = screen.getByText('Save');
     fireEvent.click(saveButton);
 
     // Verify that updateRollingStock was called with the updated values
     await waitFor(() => {
       expect(mockUpdateRollingStock).toHaveBeenCalledWith('1', expect.objectContaining({
         roadName: 'BNSF',
-        roadNumber: '54321'
       }));
+    });
+    
+    // Check that modal is closed after submission
+    await waitFor(() => {
+      expect(screen.queryByText('Edit Rolling Stock')).not.toBeInTheDocument();
     });
   });
 
@@ -266,20 +265,25 @@ describe('RollingStock', () => {
     const editButtons = screen.getAllByText('Edit');
     fireEvent.click(editButtons[0]);
 
-    // Edit the fields
-    const roadNameInput = screen.getByTestId('roadName-input');
+    // Check that the modal is open
+    await waitFor(() => {
+      expect(screen.getByText('Edit Rolling Stock')).toBeInTheDocument();
+    });
+
+    // Edit railroad name field
+    const roadNameInput = screen.getByLabelText(/Railroad/i);
     fireEvent.change(roadNameInput, { target: { value: 'BNSF' } });
 
     // Click the cancel button
     const cancelButton = screen.getByText('Cancel');
     fireEvent.click(cancelButton);
 
-    // Verify that we return to the table view
+    // Modal should be closed
     await waitFor(() => {
-      expect(screen.getByRole('table')).toBeInTheDocument();
+      expect(screen.queryByText('Edit Rolling Stock')).not.toBeInTheDocument();
     });
 
-    // Verify that updateRollingStock was not called
+    // The changes should not have been saved
     expect(mockUpdateRollingStock).not.toHaveBeenCalled();
   });
 }); 

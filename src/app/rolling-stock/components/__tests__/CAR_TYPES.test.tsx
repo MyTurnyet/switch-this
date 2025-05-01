@@ -1,4 +1,4 @@
-import { CAR_TYPES } from '../components/RollingStockForm';
+import { CAR_TYPES } from '../RollingStockForm';
 
 describe('CAR_TYPES', () => {
   it('has the correct number of car types', () => {
