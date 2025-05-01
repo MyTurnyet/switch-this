@@ -58,4 +58,12 @@ export interface RollingStock extends BaseEntity {
   note: string;
   homeYard: string;
   currentLocation?: RollingStockLocation;
+}
+
+export interface Switchlist extends BaseEntity {
+  trainRouteId: string;
+  name: string;
+  createdAt: string; // ISO date string
+  status: 'CREATED' | 'IN_PROGRESS' | 'COMPLETED';
+  notes?: string;
 } 

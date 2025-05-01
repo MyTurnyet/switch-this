@@ -97,4 +97,12 @@ export class MongoDbService {
   public getLayoutStateCollection<T extends Document = Document>(): Collection<T> {
     return this.getCollection<T>(DB_COLLECTIONS.LAYOUT_STATE);
   }
+
+  /**
+   * Get the switchlists collection
+   * @returns The switchlists collection
+   */
+  public getSwitchlistsCollection<T extends Document = Document>(): Collection<T> {
+    return this.getCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
+  }
 } 

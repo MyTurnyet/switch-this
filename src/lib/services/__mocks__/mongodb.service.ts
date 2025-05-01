@@ -59,4 +59,8 @@ export class MongoDbService {
   public getLayoutStateCollection<T = any>(): Collection<T> {
     return this.getCollection<T>(DB_COLLECTIONS.LAYOUT_STATE);
   }
+
+  public getSwitchlistsCollection<T = any>(): Collection<T> {
+    return this.getCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
+  }
 } 
