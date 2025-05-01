@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useRef, useEffect } from 'react';
 
 const Header = () => {
   const pathname = usePathname();
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const getLinkClass = (path: string) => {
     const baseClass = "font-medium transition-colors";
@@ -12,6 +15,20 @@ const Header = () => {
       ? `${baseClass} text-primary-600` 
       : `${baseClass} text-gray-600 hover:text-primary-600`;
   };
+
+  // Close the dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setAdminMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -43,23 +60,55 @@ const Header = () => {
               Layout State
             </Link>
             <Link 
-              href="/industries" 
-              className={getLinkClass('/industries')}
+              href="/switchlists" 
+              className={getLinkClass('/switchlists')}
             >
-              Industries
+              Switchlists
             </Link>
-            <Link 
-              href="/rolling-stock" 
-              className={getLinkClass('/rolling-stock')}
-            >
-              Rolling Stock
-            </Link>
-            <Link 
-              href="/train-routes" 
-              className={getLinkClass('/train-routes')}
-            >
-              Train Routes
-            </Link>
+            
+            {/* Admin dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setAdminMenuOpen(!adminMenuOpen)}
+                className={`${getLinkClass('/admin')} flex items-center`}
+                aria-expanded={adminMenuOpen}
+                aria-haspopup="true"
+              >
+                Admin
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className={`ml-1 h-4 w-4 transition-transform ${adminMenuOpen ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {adminMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                  <Link 
+                    href="/industries" 
+                    className={`block px-4 py-2 text-sm ${getLinkClass('/industries').replace('text-primary-600', 'text-primary-600 bg-gray-100').replace('text-gray-600', 'text-gray-700')}`}
+                  >
+                    Industries
+                  </Link>
+                  <Link 
+                    href="/rolling-stock" 
+                    className={`block px-4 py-2 text-sm ${getLinkClass('/rolling-stock').replace('text-primary-600', 'text-primary-600 bg-gray-100').replace('text-gray-600', 'text-gray-700')}`}
+                  >
+                    Rolling Stock
+                  </Link>
+                  <Link 
+                    href="/train-routes" 
+                    className={`block px-4 py-2 text-sm ${getLinkClass('/train-routes').replace('text-primary-600', 'text-primary-600 bg-gray-100').replace('text-gray-600', 'text-gray-700')}`}
+                  >
+                    Train Routes
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>

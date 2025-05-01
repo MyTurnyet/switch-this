@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import Header from '../Header';
 
 describe('Header', () => {
@@ -9,7 +9,7 @@ describe('Header', () => {
     expect(logo).toHaveAttribute('href', '/');
   });
 
-  it('renders all navigation links', () => {
+  it('renders main navigation links', () => {
     render(<Header />);
     
     const homeLink = screen.getByText('Home');
@@ -24,6 +24,28 @@ describe('Header', () => {
     expect(layoutStateLink).toBeInTheDocument();
     expect(layoutStateLink).toHaveAttribute('href', '/layout-state');
     
+    const switchlistsLink = screen.getByText('Switchlists');
+    expect(switchlistsLink).toBeInTheDocument();
+    expect(switchlistsLink).toHaveAttribute('href', '/switchlists');
+    
+    // Check for Admin button
+    const adminButton = screen.getByText('Admin');
+    expect(adminButton).toBeInTheDocument();
+  });
+
+  it('shows admin dropdown links when admin is clicked', () => {
+    render(<Header />);
+    
+    // Admin dropdown should initially be hidden
+    expect(screen.queryByText('Industries')).not.toBeInTheDocument();
+    expect(screen.queryByText('Rolling Stock')).not.toBeInTheDocument();
+    expect(screen.queryByText('Train Routes')).not.toBeInTheDocument();
+    
+    // Click admin button
+    const adminButton = screen.getByText('Admin');
+    fireEvent.click(adminButton);
+    
+    // Now admin dropdown links should be visible
     const industriesLink = screen.getByText('Industries');
     expect(industriesLink).toBeInTheDocument();
     expect(industriesLink).toHaveAttribute('href', '/industries');
@@ -40,7 +62,7 @@ describe('Header', () => {
   it('applies correct styling to navigation links', () => {
     render(<Header />);
     
-    // Get all links except the logo
+    // Get all main navigation links except the logo
     const navigationLinks = screen.getAllByRole('link').filter(link => 
       link.textContent !== 'Switch This'
     );
@@ -51,5 +73,22 @@ describe('Header', () => {
       expect(link).toHaveClass('font-medium');
       expect(link).toHaveClass('transition-colors');
     });
+  });
+
+  it('closes the dropdown when clicking outside', () => {
+    render(<Header />);
+    
+    // Click admin button to open dropdown
+    const adminButton = screen.getByText('Admin');
+    fireEvent.click(adminButton);
+    
+    // Verify dropdown is open
+    expect(screen.getByText('Industries')).toBeInTheDocument();
+    
+    // Click outside (on the document body)
+    fireEvent.mouseDown(document.body);
+    
+    // Dropdown should be closed
+    expect(screen.queryByText('Industries')).not.toBeInTheDocument();
   });
 }); 
