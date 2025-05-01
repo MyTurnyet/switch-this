@@ -1,4 +1,4 @@
-import { Industry as SharedIndustry } from '@/shared/types/models';
+import { Industry as SharedIndustry, Track as SharedTrack } from '@/shared/types/models';
 import { Industry, IndustryType, Track } from '@/app/shared/types/models';
 
 // Function to convert from shared model to app model
@@ -27,7 +27,7 @@ function convertToAppIndustry(industry: SharedIndustry): Industry {
 function convertToSharedIndustry(industry: Partial<Industry>): Partial<SharedIndustry> {
   const result: Partial<SharedIndustry> = {
     name: industry.name,
-    industryType: industry.industryType as unknown as 'FREIGHT' | 'YARD' | 'PASSENGER',
+    industryType: industry.industryType,
   };
   
   // Include tracks when present in the update data
@@ -36,8 +36,11 @@ function convertToSharedIndustry(industry: Partial<Industry>): Partial<SharedInd
       _id: track._id,
       name: track.name,
       maxCars: track.maxCars || track.capacity || 0, // Ensure we have a maxCars value
-      placedCars: track.placedCars || []
-    }));
+      placedCars: track.placedCars || [],
+      length: track.length || 0,
+      capacity: track.capacity || 0,
+      ownerId: track.ownerId
+    } as unknown as SharedTrack));
   }
   
   // Include optional fields when present
