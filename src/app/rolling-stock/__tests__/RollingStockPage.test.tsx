@@ -5,6 +5,17 @@ import '@testing-library/jest-dom';
 import RollingStockPage from '@/app/rolling-stock/page';
 import { services } from '@/app/shared/services/clientServices';
 import { RollingStock, Industry, IndustryType } from '@/app/shared/types/models';
+import { ToastProvider } from '@/app/components/ui';
+
+// Create a wrapper component that includes the ToastProvider
+const TestWrapper = ({ children }: { children: React.ReactNode }) => {
+  return <ToastProvider>{children}</ToastProvider>;
+};
+
+// Custom render function that wraps the component with ToastProvider
+const customRender = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper });
+};
 
 // Mock the services
 jest.mock('@/app/shared/services/clientServices', () => ({
@@ -24,43 +35,19 @@ describe('RollingStockPage', () => {
   });
 
   it('renders the page with a title', async () => {
-    // Setup a simple resolved value to avoid test errors
+    // Mock empty data
     (services.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue([]);
     (services.industryService.getAllIndustries as jest.Mock).mockResolvedValue([]);
+
+    customRender(<RollingStockPage />);
     
-    render(<RollingStockPage />);
-    
-    // Wait for the title to appear after loading state finishes
-    await waitFor(() => {
-      expect(screen.getByText('Rolling Stock')).toBeInTheDocument();
-    });
+    // Verify the title is present
+    expect(screen.getByText('Rolling Stock')).toBeInTheDocument();
+    expect(screen.getByText('Manage your fleet of cars and locomotives')).toBeInTheDocument();
   });
 
   it('fetches and displays rolling stock data', async () => {
     // Mock data
-    const mockYards: Industry[] = [
-      {
-        _id: 'yard1',
-        name: 'Central Yard',
-        industryType: IndustryType.YARD,
-        tracks: [],
-        locationId: 'loc1',
-        blockName: 'Block A',
-        ownerId: 'owner1',
-        description: ''
-      },
-      {
-        _id: 'yard2',
-        name: 'Eastern Yard',
-        industryType: IndustryType.YARD,
-        tracks: [],
-        locationId: 'loc2',
-        blockName: 'Block B',
-        ownerId: 'owner2',
-        description: ''
-      }
-    ];
-
     const mockRollingStock: RollingStock[] = [
       {
         _id: '1',
@@ -69,7 +56,7 @@ describe('RollingStockPage', () => {
         aarType: 'XM',
         description: 'Boxcar',
         color: 'RED',
-        note: 'Test note',
+        note: '',
         homeYard: 'yard1',
         ownerId: 'owner1',
       },
@@ -81,16 +68,38 @@ describe('RollingStockPage', () => {
         description: 'Flatcar',
         color: 'BLUE',
         note: '',
-        homeYard: 'yard2',
-        ownerId: 'owner2',
-      },
+        homeYard: 'yard1',
+        ownerId: 'owner1',
+      }
     ];
-
-    // Setup the mock to return our test data
+    
+    const mockIndustries: Industry[] = [
+      {
+        _id: 'yard1',
+        name: 'Central Yard',
+        locationId: 'loc1',
+        blockName: 'Block A',
+        description: 'Main classification yard',
+        industryType: IndustryType.YARD,
+        tracks: [],
+        ownerId: 'owner1',
+      },
+      {
+        _id: 'yard2',
+        name: 'Eastern Yard',
+        locationId: 'loc2',
+        blockName: 'Block B',
+        description: 'Secondary yard',
+        industryType: IndustryType.YARD,
+        tracks: [],
+        ownerId: 'owner1',
+      }
+    ];
+    
     (services.rollingStockService.getAllRollingStock as jest.Mock).mockResolvedValue(mockRollingStock);
-    (services.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockYards);
+    (services.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockIndustries);
 
-    render(<RollingStockPage />);
+    customRender(<RollingStockPage />);
 
     // Should show loading initially
     expect(screen.getByText(/Loading/i)).toBeInTheDocument();
@@ -120,7 +129,7 @@ describe('RollingStockPage', () => {
       new Error('Failed to fetch rolling stock')
     );
 
-    render(<RollingStockPage />);
+    customRender(<RollingStockPage />);
 
     // Wait for error message to appear
     await waitFor(() => {

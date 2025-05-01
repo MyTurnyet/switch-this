@@ -3,6 +3,17 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import EditRollingStockModal from '../EditRollingStockModal';
 import { RollingStock, Industry, IndustryType } from '@/app/shared/types/models';
+import { ToastProvider } from '@/app/components/ui';
+
+// Create a wrapper component that includes the ToastProvider
+const TestWrapper = ({ children }: { children: React.ReactNode }) => {
+  return <ToastProvider>{children}</ToastProvider>;
+};
+
+// Custom render function that wraps the component with ToastProvider
+const customRender = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper });
+};
 
 // Mock the RollingStockForm component
 jest.mock('../RollingStockForm', () => {
@@ -45,100 +56,167 @@ jest.mock('../RollingStockForm', () => {
 });
 
 describe('EditRollingStockModal', () => {
-  const mockRollingStock: RollingStock = {
-    _id: 'test-id',
-    roadName: 'TEST',
+  const rollingStock: RollingStock = {
+    _id: 'car1',
+    roadName: 'ATSF',
     roadNumber: '12345',
     aarType: 'XM',
     description: 'Boxcar',
     color: 'red',
-    note: '',
+    note: 'Test note',
     homeYard: 'yard1',
-    ownerId: 'owner1',
+    ownerId: 'owner1'
   };
-
-  const mockIndustries: Industry[] = [
-    { 
-      _id: 'yard1', 
-      name: 'Test Yard',
+  
+  const industries: Industry[] = [
+    {
+      _id: 'yard1',
+      name: 'Central Yard',
       locationId: 'loc1',
       blockName: 'Block A',
-      industryType: IndustryType.YARD,
-      tracks: [],
+      description: 'Main classification yard',
+      industryType: 'YARD' as IndustryType,
+      tracks: [{ 
+        name: 'Track 1', 
+        capacity: 10,
+        length: 100,
+        maxCars: 10,
+        placedCars: [],
+        _id: 'track1',
+        ownerId: 'owner1'
+      }],
       ownerId: 'owner1',
-      description: ''
     },
-    { 
-      _id: 'yard2', 
-      name: 'Test Yard 2',
+    {
+      _id: 'ind1',
+      name: 'Acme Factory',
       locationId: 'loc2',
       blockName: 'Block B',
-      industryType: IndustryType.YARD,
-      tracks: [],
-      ownerId: 'owner2',
-      description: ''
+      description: 'Manufacturing plant',
+      industryType: 'FACTORY' as IndustryType,
+      tracks: [{ 
+        name: 'Loading Dock', 
+        capacity: 2,
+        length: 50,
+        maxCars: 2,
+        placedCars: [],
+        _id: 'track2',
+        ownerId: 'owner1'
+      }],
+      ownerId: 'owner1',
     },
   ];
+  
+  const mockSave = jest.fn().mockResolvedValue(undefined);
+  const mockCancel = jest.fn();
 
-  const mockProps = {
-    rollingStock: mockRollingStock,
-    industries: mockIndustries,
-    onSave: jest.fn().mockImplementation(() => Promise.resolve()),
-    onCancel: jest.fn(),
-    isOpen: true,
-  };
-
-  afterEach(() => {
+  beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('renders the modal when isOpen is true', () => {
-    render(<EditRollingStockModal {...mockProps} />);
+    customRender(
+      <EditRollingStockModal
+        rollingStock={rollingStock}
+        industries={industries}
+        onSave={mockSave}
+        onCancel={mockCancel}
+        isOpen={true}
+      />
+    );
     
-    // Check that the form is rendered
     expect(screen.getByTestId('rolling-stock-form')).toBeInTheDocument();
+    expect(screen.getByText('isNew: false')).toBeInTheDocument();
+    expect(screen.getByText('rollingStock: provided')).toBeInTheDocument();
+    expect(screen.getByText('industries count: 2')).toBeInTheDocument();
   });
 
   it('does not render anything when isOpen is false', () => {
-    render(<EditRollingStockModal {...mockProps} isOpen={false} />);
+    customRender(
+      <EditRollingStockModal
+        rollingStock={rollingStock}
+        industries={industries}
+        onSave={mockSave}
+        onCancel={mockCancel}
+        isOpen={false}
+      />
+    );
     
-    // Check that the form is not rendered
     expect(screen.queryByTestId('rolling-stock-form')).not.toBeInTheDocument();
   });
 
   it('passes correct props to RollingStockForm', () => {
-    render(<EditRollingStockModal {...mockProps} />);
+    customRender(
+      <EditRollingStockModal
+        rollingStock={rollingStock}
+        industries={industries}
+        onSave={mockSave}
+        onCancel={mockCancel}
+        isOpen={true}
+      />
+    );
     
-    // Check the props are passed correctly
     expect(screen.getByText('isNew: false')).toBeInTheDocument();
     expect(screen.getByText('rollingStock: provided')).toBeInTheDocument();
     expect(screen.getByText('industries count: 2')).toBeInTheDocument();
   });
 
   it('passes isNew as true when rollingStock is null', () => {
-    render(<EditRollingStockModal {...mockProps} rollingStock={null} />);
+    customRender(
+      <EditRollingStockModal
+        rollingStock={null}
+        industries={industries}
+        onSave={mockSave}
+        onCancel={mockCancel}
+        isOpen={true}
+      />
+    );
     
-    // Check isNew is true
     expect(screen.getByText('isNew: true')).toBeInTheDocument();
+    expect(screen.getByText('rollingStock: not provided')).toBeInTheDocument();
   });
 
   it('calls onSave when save button is clicked', () => {
-    render(<EditRollingStockModal {...mockProps} />);
+    customRender(
+      <EditRollingStockModal
+        rollingStock={rollingStock}
+        industries={industries}
+        onSave={mockSave}
+        onCancel={mockCancel}
+        isOpen={true}
+      />
+    );
     
-    // Click save button
-    screen.getByText('Save').click();
+    const saveButton = screen.getByText('Save');
+    saveButton.click();
     
-    // Check onSave was called
-    expect(mockProps.onSave).toHaveBeenCalled();
+    expect(mockSave).toHaveBeenCalledWith({
+      _id: 'test-id',
+      roadName: 'TEST',
+      roadNumber: '12345',
+      aarType: 'XM',
+      description: 'Boxcar',
+      color: 'red',
+      note: '',
+      homeYard: 'yard1',
+      ownerId: 'owner1'
+    });
   });
 
   it('calls onCancel when cancel button is clicked', () => {
-    render(<EditRollingStockModal {...mockProps} />);
+    customRender(
+      <EditRollingStockModal
+        rollingStock={rollingStock}
+        industries={industries}
+        onSave={mockSave}
+        onCancel={mockCancel}
+        isOpen={true}
+      />
+    );
     
-    // Click cancel button
-    screen.getByText('Cancel').click();
+    const cancelButton = screen.getByText('Cancel');
+    cancelButton.click();
     
-    // Check onCancel was called
-    expect(mockProps.onCancel).toHaveBeenCalled();
+    expect(mockCancel).toHaveBeenCalled();
   });
 }); 

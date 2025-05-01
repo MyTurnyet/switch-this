@@ -4,6 +4,17 @@ import '@testing-library/jest-dom';
 import RollingStock from '../RollingStock';
 import { ClientServices, RollingStockService, IndustryService } from '@/app/shared/services/clientServices';
 import { RollingStock as RollingStockType, Industry, IndustryType } from '@/app/shared/types/models';
+import { ToastProvider } from '@/app/components/ui';
+
+// Create a wrapper component that includes the ToastProvider
+const TestWrapper = ({ children }: { children: React.ReactNode }) => {
+  return <ToastProvider>{children}</ToastProvider>;
+};
+
+// Custom render function that wraps the component with ToastProvider
+const customRender = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper });
+};
 
 describe('RollingStock', () => {
   // Create properly typed mocks
@@ -122,14 +133,14 @@ describe('RollingStock', () => {
   it('renders loading state initially', () => {
     mockGetAllRollingStock.mockImplementation(() => new Promise(() => {})); // Never resolves
     mockGetAllIndustries.mockImplementation(() => new Promise(() => {})); // Never resolves
-    render(<RollingStock services={mockServices} />);
+    customRender(<RollingStock services={mockServices} />);
     
     // With our new component, loading state shows "Loading..."
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('displays rolling stock data when loaded', async () => {
-    render(<RollingStock services={mockServices} />);
+    customRender(<RollingStock services={mockServices} />);
 
     // Wait for the data table to be rendered
     await waitFor(() => {
@@ -161,7 +172,7 @@ describe('RollingStock', () => {
 
   it('displays error message when fetch fails', async () => {
     mockGetAllRollingStock.mockRejectedValue(new Error('Failed to fetch'));
-    render(<RollingStock services={mockServices} />);
+    customRender(<RollingStock services={mockServices} />);
 
     await waitFor(() => {
       expect(screen.getByText(/Failed to load rolling stock/i)).toBeInTheDocument();
@@ -172,7 +183,7 @@ describe('RollingStock', () => {
     mockGetAllRollingStock.mockResolvedValue([]);
     mockGetAllIndustries.mockResolvedValue([]);
 
-    render(<RollingStock services={mockServices} />);
+    customRender(<RollingStock services={mockServices} />);
 
     await waitFor(() => {
       expect(screen.getByText('No data available')).toBeInTheDocument();
@@ -180,7 +191,7 @@ describe('RollingStock', () => {
   });
 
   it('opens edit form when edit button is clicked', async () => {
-    render(<RollingStock services={mockServices} />);
+    customRender(<RollingStock services={mockServices} />);
 
     // Wait for the table to render
     await waitFor(() => {
@@ -200,7 +211,7 @@ describe('RollingStock', () => {
   });
 
   it('shows car type and home yard dropdowns when editing', async () => {
-    render(<RollingStock services={mockServices} />);
+    customRender(<RollingStock services={mockServices} />);
 
     // Wait for the table to render
     await waitFor(() => {
@@ -220,7 +231,7 @@ describe('RollingStock', () => {
   });
 
   it('saves changes when form is submitted', async () => {
-    render(<RollingStock services={mockServices} />);
+    customRender(<RollingStock services={mockServices} />);
 
     // Wait for the table to render
     await waitFor(() => {
@@ -254,7 +265,7 @@ describe('RollingStock', () => {
   });
 
   it('cancels editing when cancel button is clicked', async () => {
-    render(<RollingStock services={mockServices} />);
+    customRender(<RollingStock services={mockServices} />);
 
     // Wait for the table to render
     await waitFor(() => {
