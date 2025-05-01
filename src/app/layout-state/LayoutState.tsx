@@ -25,6 +25,44 @@ const getIndustryTypeStyle = (type: string): string => {
   }
 };
 
+const getLocationTypeStyle = (locationType?: string): string => {
+  switch (locationType) {
+    case 'ON_LAYOUT':
+      return 'bg-emerald-50 border-emerald-200';
+    case 'OFF_LAYOUT':
+      return 'bg-amber-50 border-amber-200';
+    case 'FIDDLE_YARD':
+      return 'bg-violet-50 border-violet-200';
+    default:
+      return 'bg-gray-50 border-gray-200';
+  }
+};
+
+const getLocationTypeIndicator = (locationType?: string) => {
+  switch (locationType) {
+    case 'ON_LAYOUT':
+      return (
+        <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded bg-emerald-100 text-emerald-800">
+          ON LAYOUT
+        </span>
+      );
+    case 'OFF_LAYOUT':
+      return (
+        <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded bg-amber-100 text-amber-800">
+          OFF LAYOUT
+        </span>
+      );
+    case 'FIDDLE_YARD':
+      return (
+        <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded bg-violet-100 text-violet-800">
+          FIDDLE YARD
+        </span>
+      );
+    default:
+      return null;
+  }
+};
+
 const getTrackCapacityStyle = (current: number, max: number): string => {
   const ratio = current / max;
   if (ratio >= 1) return 'text-red-600';
@@ -259,43 +297,50 @@ export default function LayoutState({ services }: LayoutStateProps) {
                   </div>
                   
                   <div className="space-y-8 mt-4">
-                    {Object.entries(blockGroup.locations).map(([locationId, locationData]) => (
-                      <div key={locationId} className="space-y-2">
-                        <h3 className="text-xl font-semibold text-gray-800">
-                          {locationData.locationName}
-                        </h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {locationData.industries.map(industry => (
-                            <div
-                              key={industry._id}
-                              className={`p-4 rounded-lg border ${getIndustryTypeStyle(industry.industryType)}`}
-                            >
-                              <div className="flex justify-between items-start mb-3">
-                                <h4 className="text-lg font-semibold text-gray-900">
-                                  {industry.name}
-                                </h4>
-                                <span className="text-sm font-medium px-2 py-0.5 rounded-full text-gray-700 bg-gray-100">
-                                  {industry.industryType}
-                                </span>
-                              </div>
-                              
-                              <div className="space-y-1">
-                                {industry.tracks.map(track => (
-                                  <TrackWithCars key={track._id} track={track} rollingStock={rollingStock} />
-                                ))}
+                    {Object.entries(blockGroup.locations).map(([locationId, locationData]) => {
+                      // Find the location to get its type
+                      const location = locations.find(loc => loc._id === locationId);
+                      const locationType = location?.locationType;
+                      
+                      return (
+                        <div key={locationId} className="space-y-2">
+                          <h3 className={`text-xl font-semibold text-gray-800 flex items-center p-2 rounded ${getLocationTypeStyle(locationType)}`}>
+                            {locationData.locationName}
+                            {getLocationTypeIndicator(locationType)}
+                          </h3>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {locationData.industries.map(industry => (
+                              <div
+                                key={industry._id}
+                                className={`p-4 rounded-lg border ${getIndustryTypeStyle(industry.industryType)}`}
+                              >
+                                <div className="flex justify-between items-start mb-3">
+                                  <h4 className="text-lg font-semibold text-gray-900">
+                                    {industry.name}
+                                  </h4>
+                                  <span className="text-sm font-medium px-2 py-0.5 rounded-full text-gray-700 bg-gray-100">
+                                    {industry.industryType}
+                                  </span>
+                                </div>
                                 
-                                {industry.tracks.length === 0 && (
-                                  <div className="text-sm italic text-gray-500 text-center py-2">
-                                    No tracks at this industry
-                                  </div>
-                                )}
+                                <div className="space-y-1">
+                                  {industry.tracks.map(track => (
+                                    <TrackWithCars key={track._id} track={track} rollingStock={rollingStock} />
+                                  ))}
+                                  
+                                  {industry.tracks.length === 0 && (
+                                    <div className="text-sm italic text-gray-500 text-center py-2">
+                                      No tracks at this industry
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
