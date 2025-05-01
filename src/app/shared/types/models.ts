@@ -11,6 +11,13 @@ export enum IndustryType {
   PASSENGER = 'PASSENGER'
 }
 
+// Enum for location types
+export enum LocationType {
+  ON_LAYOUT = 'ON_LAYOUT',
+  OFF_LAYOUT = 'OFF_LAYOUT',
+  FIDDLE_YARD = 'FIDDLE_YARD'
+}
+
 export interface Track extends BaseEntity {
   name: string;
   length: number;
@@ -24,6 +31,7 @@ export interface Location extends BaseEntity {
   stationName: string;
   block: string;
   description?: string;
+  locationType: LocationType;
 }
 
 export interface Industry extends BaseEntity {
@@ -50,6 +58,19 @@ export interface RollingStockLocation {
   trackId: string;
 }
 
+export interface CarDestination {
+  immediateDestination: {
+    locationId: string;  // This will be the fiddle yard for off-layout destinations
+    industryId: string;  // Yard industry in fiddle yard
+    trackId: string;     // Specific track in the yard
+  };
+  finalDestination?: {
+    locationId: string;  // The actual final destination (e.g., Chicago)
+    industryId: string;  // Industry in the final destination
+    trackId?: string;    // Optional specific track
+  };
+}
+
 export interface RollingStock extends BaseEntity {
   roadName: string;
   roadNumber: string;
@@ -59,6 +80,7 @@ export interface RollingStock extends BaseEntity {
   note: string;
   homeYard: string;
   currentLocation?: RollingStockLocation;
+  destination?: CarDestination;
 }
 
 export interface Switchlist extends BaseEntity {

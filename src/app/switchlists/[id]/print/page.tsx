@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { SwitchlistService } from '@/app/shared/services/SwitchlistService';
 import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { RollingStockService } from '@/app/shared/services/RollingStockService';
+import { LocationService } from '@/app/shared/services/LocationService';
 import { Switchlist, TrainRoute, RollingStock } from '@/app/shared/types/models';
+import { Location } from '@/shared/types/models';
 
 export default function SwitchlistPrintPage({ params }: { params: { id: string } }) {
   const [switchlist, setSwitchlist] = useState<Switchlist | null>(null);
   const [trainRoute, setTrainRoute] = useState<TrainRoute | null>(null);
   const [rollingStock, setRollingStock] = useState<RollingStock[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate] = useState<string>(new Date().toLocaleDateString());
@@ -18,6 +21,7 @@ export default function SwitchlistPrintPage({ params }: { params: { id: string }
   const switchlistService = new SwitchlistService();
   const trainRouteService = new TrainRouteService();
   const rollingStockService = new RollingStockService();
+  const locationService = new LocationService();
   
   useEffect(() => {
     const fetchData = async () => {
@@ -31,11 +35,21 @@ export default function SwitchlistPrintPage({ params }: { params: { id: string }
         const trainRouteData = await trainRouteService.getTrainRouteById(switchlistData.trainRouteId);
         setTrainRoute(trainRouteData);
         
-        // Get sample rolling stock for demo
-        // In a real implementation, this would fetch only the rolling stock assigned to this switchlist
-        const rollingStockData = await rollingStockService.getAllRollingStock();
-        setRollingStock(rollingStockData.slice(0, 10)); // Limit to 10 for demo
+        // Get all locations for name lookups
+        const locationsData = await locationService.getAllLocations();
+        setLocations(locationsData);
         
+        // Get all rolling stock
+        const rollingStockData = await rollingStockService.getAllRollingStock();
+        
+        // In a real implementation, we would fetch assigned rolling stock from the backend
+        // For now, we'll just simulate with 5 random cars from the available stock
+        const sampleSize = Math.min(5, rollingStockData.length);
+        const randomCars = [...rollingStockData]
+          .sort(() => 0.5 - Math.random())
+          .slice(0, sampleSize);
+        
+        setRollingStock(randomCars);
         setError(null);
       } catch (err) {
         console.error('Error fetching switchlist data:', err);
@@ -58,6 +72,13 @@ export default function SwitchlistPrintPage({ params }: { params: { id: string }
       month: 'short',
       day: 'numeric'
     });
+  };
+  
+  // Get location name from ID
+  const getLocationName = (locationId?: string) => {
+    if (!locationId) return 'Unknown';
+    const location = locations.find(loc => loc._id === locationId);
+    return location ? location.stationName : 'Unknown';
   };
   
   if (loading) {
@@ -165,7 +186,16 @@ export default function SwitchlistPrintPage({ params }: { params: { id: string }
                     <td className="px-2 py-3 font-medium border-r border-gray-300">{car.roadName} {car.roadNumber}</td>
                     <td className="px-2 py-3 border-r border-gray-300">{car.aarType}</td>
                     <td className="px-2 py-3 border-r border-gray-300">Yard Track {Math.floor(Math.random() * 5) + 1}</td>
-                    <td className="px-2 py-3 border-r border-gray-300">Industry Track {Math.floor(Math.random() * 10) + 1}</td>
+                    <td className="px-2 py-3 border-r border-gray-300">
+                      {car.destination?.finalDestination ? (
+                        <>
+                          <div>{getLocationName(car.destination.finalDestination.locationId)}</div>
+                          <div className="text-xs text-gray-500">via Fiddle Yard</div>
+                        </>
+                      ) : (
+                        `Industry Track ${Math.floor(Math.random() * 10) + 1}`
+                      )}
+                    </td>
                     <td className="py-3 text-center">
                       {/* Empty checkbox for print view - square border that can be checked manually */}
                       <div className="inline-block h-5 w-5 border-2 border-gray-700"></div>

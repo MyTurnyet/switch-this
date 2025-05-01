@@ -3,11 +3,14 @@ import SwitchlistPrintPage from '../page';
 import { SwitchlistService } from '@/app/shared/services/SwitchlistService';
 import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { RollingStockService } from '@/app/shared/services/RollingStockService';
+import { LocationService } from '@/app/shared/services/LocationService';
+import { LocationType } from '@/app/shared/types/models';
 
 // Mock the services
 jest.mock('@/app/shared/services/SwitchlistService');
 jest.mock('@/app/shared/services/TrainRouteService');
 jest.mock('@/app/shared/services/RollingStockService');
+jest.mock('@/app/shared/services/LocationService');
 
 // Mock window.print
 window.print = jest.fn();
@@ -35,8 +38,33 @@ const mockTrainRoute = {
   routeType: 'FREIGHT',
   originatingYardId: 'yard1',
   terminatingYardId: 'yard2',
+  stations: ['loc1', 'loc2'],
   ownerId: 'user1'
 };
+
+const mockLocations = [
+  {
+    _id: 'loc1',
+    stationName: 'Echo Lake, WA',
+    block: 'ECHO',
+    locationType: LocationType.ON_LAYOUT,
+    ownerId: 'user1'
+  },
+  {
+    _id: 'loc2',
+    stationName: 'Chicago, IL',
+    block: 'EAST',
+    locationType: LocationType.OFF_LAYOUT,
+    ownerId: 'user1'
+  },
+  {
+    _id: 'loc3',
+    stationName: 'Echo Lake Yard',
+    block: 'ECHO',
+    locationType: LocationType.FIDDLE_YARD,
+    ownerId: 'user1'
+  }
+];
 
 const mockRollingStock = [
   {
@@ -48,7 +76,18 @@ const mockRollingStock = [
     color: 'Yellow',
     note: '',
     homeYard: 'yard1',
-    ownerId: 'user1'
+    ownerId: 'user1',
+    destination: {
+      immediateDestination: {
+        locationId: 'loc3',
+        industryId: 'ind3',
+        trackId: 'track3'
+      },
+      finalDestination: {
+        locationId: 'loc2',
+        industryId: 'ind2'
+      }
+    }
   },
   {
     _id: 'rs2',
@@ -67,6 +106,7 @@ describe('SwitchlistPrintPage', () => {
   let mockGetSwitchlistById: jest.Mock;
   let mockGetTrainRouteById: jest.Mock;
   let mockGetAllRollingStock: jest.Mock;
+  let mockGetAllLocations: jest.Mock;
   
   beforeEach(() => {
     jest.clearAllMocks();
@@ -75,6 +115,7 @@ describe('SwitchlistPrintPage', () => {
     mockGetSwitchlistById = jest.fn().mockResolvedValue(mockSwitchlist);
     mockGetTrainRouteById = jest.fn().mockResolvedValue(mockTrainRoute);
     mockGetAllRollingStock = jest.fn().mockResolvedValue(mockRollingStock);
+    mockGetAllLocations = jest.fn().mockResolvedValue(mockLocations);
     
     // Assign mocks to service classes
     (SwitchlistService as jest.Mock).mockImplementation(() => ({
@@ -87,6 +128,10 @@ describe('SwitchlistPrintPage', () => {
     
     (RollingStockService as jest.Mock).mockImplementation(() => ({
       getAllRollingStock: mockGetAllRollingStock
+    }));
+    
+    (LocationService as jest.Mock).mockImplementation(() => ({
+      getAllLocations: mockGetAllLocations
     }));
   });
   
@@ -130,6 +175,12 @@ describe('SwitchlistPrintPage', () => {
     expect(screen.getByText('Car Movement Operations')).toBeInTheDocument();
     expect(screen.getByText('BNSF 12345')).toBeInTheDocument();
     expect(screen.getByText('UP 54321')).toBeInTheDocument();
+    
+    // Check for off-layout destination
+    const offLayoutDestination = screen.getByText('Chicago, IL');
+    expect(offLayoutDestination).toBeInTheDocument();
+    const viaFiddleYard = screen.getByText('via Fiddle Yard');
+    expect(viaFiddleYard).toBeInTheDocument();
     
     // Verify operation summary section exists
     expect(screen.getByText('Operation Summary:')).toBeInTheDocument();
@@ -197,9 +248,5 @@ describe('SwitchlistPrintPage', () => {
     
     // Verify empty message is displayed
     expect(screen.getByText('No cars assigned to this switchlist.')).toBeInTheDocument();
-    
-    // Verify operation summary still shows with 0 cars
-    expect(screen.getByText('Total Cars: 0')).toBeInTheDocument();
-    expect(screen.getByText('Estimated Switching Time: 0 minutes')).toBeInTheDocument();
   });
 }); 

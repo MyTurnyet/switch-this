@@ -13,6 +13,18 @@ interface RollingStock {
     industryId: string;
     trackId: string;
   };
+  destination?: {
+    immediateDestination: {
+      locationId: string;
+      industryId: string;
+      trackId: string;
+    };
+    finalDestination?: {
+      locationId: string;
+      industryId: string;
+      trackId?: string;
+    };
+  };
   [key: string]: any;
 }
 
