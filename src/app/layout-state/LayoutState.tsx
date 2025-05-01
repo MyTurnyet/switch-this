@@ -6,6 +6,7 @@ import { groupIndustriesByBlockAndLocation } from './utils/groupIndustries';
 import { initializeLayoutState, syncRollingStockLocations } from './utils/layoutStateManager';
 import type { Location, Industry, RollingStock, Track } from '@/app/shared/types/models';
 import type { ClientServices } from '../shared/services/clientServices';
+import RollingStockList from './components/RollingStockList';
 
 interface LayoutStateProps {
   services: ClientServices;
@@ -304,6 +305,11 @@ export default function LayoutState({ services }: LayoutStateProps) {
                   No blocks or industries found
                 </div>
               )}
+              
+              <div className="pt-8 border-t-2 border-gray-300">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">All Rolling Stock</h2>
+                <RollingStockList rollingStock={rollingStock} industries={industries} />
+              </div>
             </div>
           )}
         </div>
