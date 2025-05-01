@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import IndustriesPage from '../page';
 import * as services from '@/app/shared/services';
 import { groupIndustriesByLocationAndBlock } from '@/app/layout-state/utils/groupIndustries';
-import { IndustryType } from '@/app/shared/types/models';
+import { IndustryType, LocationType, Industry } from '@/app/shared/types/models';
 import { IndustryService } from '@/app/shared/services/IndustryService';
 
 // Mock the services
@@ -79,7 +79,15 @@ jest.mock('@/app/shared/services/IndustryService', () => {
 
 // Mock the components to simplify testing
 jest.mock('@/app/components/EditIndustryForm', () => ({
-  EditIndustryForm: ({ industry, onSave, onCancel }) => (
+  EditIndustryForm: ({ 
+    industry, 
+    onSave, 
+    onCancel 
+  }: { 
+    industry: Industry; 
+    onSave: (industry: Industry) => void; 
+    onCancel: () => void;
+  }) => (
     <div data-testid="edit-industry-form">
       <button onClick={() => onSave(industry)}>Save</button>
       <button onClick={onCancel}>Cancel</button>
@@ -88,7 +96,13 @@ jest.mock('@/app/components/EditIndustryForm', () => ({
 }));
 
 jest.mock('@/app/components/AddIndustryForm', () => ({
-  AddIndustryForm: ({ onSave, onCancel }) => (
+  AddIndustryForm: ({ 
+    onSave, 
+    onCancel 
+  }: { 
+    onSave: (industry: Industry) => void; 
+    onCancel: () => void;
+  }) => (
     <div data-testid="add-industry-form">
       <button onClick={() => onSave({
         _id: 'new-industry-id',
@@ -109,8 +123,9 @@ jest.mock('@/app/components/AddIndustryForm', () => ({
 
 describe('Industries Page', () => {
   const mockLocations = [
-    { _id: '1', stationName: 'Station A', block: 'Block 1', ownerId: 'owner1' },
-    { _id: '2', stationName: 'Station B', block: 'Block 2', ownerId: 'owner1' }
+    { _id: '1', stationName: 'Station A', block: 'Block 1', ownerId: 'owner1', locationType: LocationType.ON_LAYOUT },
+    { _id: '2', stationName: 'Station B', block: 'Block 2', ownerId: 'owner1', locationType: LocationType.FIDDLE_YARD },
+    { _id: '3', stationName: 'Station C', block: 'Block 3', ownerId: 'owner1', locationType: LocationType.OFF_LAYOUT }
   ];
 
   const mockApiIndustries = [
@@ -171,6 +186,30 @@ describe('Industries Page', () => {
             ownerId: 'owner1',
             description: '' 
           }
+        ],
+        'Block Z': [
+          { 
+            _id: '4', 
+            name: 'Industry 4', 
+            locationId: '1', 
+            blockName: 'Block Z',
+            industryType: IndustryType.FREIGHT, 
+            tracks: [], 
+            ownerId: 'owner1',
+            description: '' 
+          },
+        ],
+        'Block A': [
+          { 
+            _id: '5', 
+            name: 'Industry 5', 
+            locationId: '1', 
+            blockName: 'Block A',
+            industryType: IndustryType.FREIGHT, 
+            tracks: [], 
+            ownerId: 'owner1',
+            description: '' 
+          },
         ]
       }
     },
@@ -184,6 +223,23 @@ describe('Industries Page', () => {
             locationId: '2', 
             blockName: 'Block 2',
             industryType: IndustryType.PASSENGER, 
+            tracks: [], 
+            ownerId: 'owner1',
+            description: '' 
+          }
+        ]
+      }
+    },
+    '3': {
+      locationName: 'Station C',
+      blocks: {
+        'Block 3': [
+          { 
+            _id: '6', 
+            name: 'Industry 6', 
+            locationId: '3', 
+            blockName: 'Block 3',
+            industryType: IndustryType.FREIGHT, 
             tracks: [], 
             ownerId: 'owner1',
             description: '' 
@@ -319,5 +375,33 @@ describe('Industries Page', () => {
     await waitFor(() => {
       expect(screen.getByText('Industries by Location and Block')).toBeInTheDocument();
     });
+  });
+
+  it('should display location type indicators after loading', async () => {
+    render(<IndustriesPage />);
+
+    // Wait for loading to finish
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+
+    // Check for location type badges
+    expect(screen.getByText('ON LAYOUT')).toBeInTheDocument();
+    expect(screen.getByText('FIDDLE YARD')).toBeInTheDocument();
+    expect(screen.getByText('OFF LAYOUT')).toBeInTheDocument();
+  });
+
+  it('should display block names within each location', async () => {
+    render(<IndustriesPage />);
+
+    // Wait for loading to finish
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+
+    // Check that blocks exist without requiring specific order
+    expect(screen.getByText(/Block: Block A/)).toBeInTheDocument();
+    expect(screen.getByText(/Block: Block 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Block: Block Z/)).toBeInTheDocument();
   });
 }); 

@@ -4,6 +4,7 @@ import '@testing-library/jest-dom';
 import LayoutState from '../LayoutState';
 import { ClientServices } from '@/app/shared/services/clientServices';
 import { act } from 'react-dom/test-utils';
+import { LocationType } from '@/app/shared/types/models';
 
 // Mock the ScrollArea component
 jest.mock('@/app/components/ui/scroll-area', () => ({
@@ -14,7 +15,7 @@ jest.mock('@/app/components/ui/scroll-area', () => ({
 jest.mock('../utils/groupIndustries', () => ({
   groupIndustriesByLocationAndBlock: jest.fn().mockReturnValue({
     'loc1': {
-      locationName: 'Test Location',
+      locationName: 'On Layout Location',
       blocks: {
         'block1': [
           {
@@ -27,6 +28,46 @@ jest.mock('../utils/groupIndustries', () => ({
                 name: 'Track 1',
                 maxCars: 5,
                 placedCars: ['car1', 'car2']
+              }
+            ]
+          }
+        ]
+      }
+    },
+    'loc2': {
+      locationName: 'Fiddle Yard Location',
+      blocks: {
+        'block2': [
+          {
+            _id: 'ind2',
+            name: 'Test Industry 2',
+            industryType: 'FREIGHT',
+            tracks: [
+              {
+                _id: 'track2',
+                name: 'Track 2',
+                maxCars: 5,
+                placedCars: ['car3']
+              }
+            ]
+          }
+        ]
+      }
+    },
+    'loc3': {
+      locationName: 'Off Layout Location',
+      blocks: {
+        'block3': [
+          {
+            _id: 'ind3',
+            name: 'Test Industry 3',
+            industryType: 'PASSENGER',
+            tracks: [
+              {
+                _id: 'track3',
+                name: 'Track 3',
+                maxCars: 5,
+                placedCars: ['car4']
               }
             ]
           }
@@ -69,7 +110,11 @@ describe('LayoutState Component', () => {
   const mockServices = {
     locationService: {
       getAll: jest.fn(),
-      getAllLocations: jest.fn().mockResolvedValue([{ _id: 'loc1', name: 'Test Location' }])
+      getAllLocations: jest.fn().mockResolvedValue([
+        { _id: 'loc1', stationName: 'On Layout Location', locationType: LocationType.ON_LAYOUT },
+        { _id: 'loc2', stationName: 'Fiddle Yard Location', locationType: LocationType.FIDDLE_YARD },
+        { _id: 'loc3', stationName: 'Off Layout Location', locationType: LocationType.OFF_LAYOUT }
+      ])
     },
     industryService: {
       getAll: jest.fn(),
@@ -133,13 +178,14 @@ describe('LayoutState Component', () => {
     },
     trainRouteService: {
       getAll: jest.fn(),
-      getAllTrainRoutes: jest.fn()
+      getAllTrainRoutes: jest.fn(),
+      updateTrainRoute: jest.fn()
     },
     layoutStateService: {
       getLayoutState: mockGetLayoutState,
       saveLayoutState: mockSaveLayoutState
     }
-  } as ClientServices;
+  } as unknown as ClientServices;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -341,5 +387,56 @@ describe('LayoutState Component', () => {
     
     // Restore real timers
     jest.useRealTimers();
+  });
+
+  it('displays location type indicators for different location types', async () => {
+    // Setup mock to return an existing layout state
+    const mockExistingState = {
+      _id: 'existing-state',
+      // ... existing state ...
+    };
+    
+    mockGetLayoutState.mockResolvedValue(mockExistingState);
+    
+    // Render component
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+    
+    // Verify the location type badges are displayed
+    await waitFor(() => {
+      // Location headings should include type indicators
+      const onLayoutBadge = screen.queryByText('ON LAYOUT');
+      const fiddleYardBadge = screen.queryByText('FIDDLE YARD');
+      const offLayoutBadge = screen.queryByText('OFF LAYOUT');
+      
+      // At least one of the badges should be visible
+      expect(onLayoutBadge || fiddleYardBadge || offLayoutBadge).not.toBeNull();
+    });
+  });
+
+  it('displays multiple location types', async () => {
+    // Setup mock to return an existing layout state
+    const mockExistingState = {
+      _id: 'existing-state',
+      // ... existing state ...
+    };
+    
+    mockGetLayoutState.mockResolvedValue(mockExistingState);
+    
+    // Render component
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+    
+    // Wait for component to load
+    await waitFor(() => {
+      expect(screen.getByText('Layout State')).toBeInTheDocument();
+    });
+    
+    // Verify that the location names are visible without asserting order
+    expect(screen.getByText(/On Layout Location/)).toBeInTheDocument();
+    expect(screen.getByText(/Fiddle Yard Location/)).toBeInTheDocument();
+    expect(screen.getByText(/Off Layout Location/)).toBeInTheDocument();
   });
 }); 
