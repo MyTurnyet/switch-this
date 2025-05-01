@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EditIndustryForm } from '../EditIndustryForm';
 import { Industry, IndustryType, Track } from '@/app/shared/types/models';
@@ -185,6 +186,118 @@ describe('EditIndustryForm', () => {
     // Verify the changes
     expect(trackNameInput).toHaveValue('Updated Track');
     expect(trackCapacityInput).toHaveValue(4);
+  });
+  
+  it('allows updating accepted car types for a track', async () => {
+    // Set up mock implementation before rendering
+    const mockUpdateIndustry = jest.fn().mockResolvedValue({
+      _id: '123',
+      name: 'Test Industry',
+      industryType: IndustryType.FREIGHT,
+      tracks: [
+        {
+          _id: 'track1',
+          name: 'Track 1',
+          maxCars: 3,
+          capacity: 3,
+          length: 0,
+          placedCars: [],
+          acceptedCarTypes: ['GS'], // Only GS accepted
+          ownerId: '789'
+        }
+      ]
+    });
+    
+    (IndustryService as jest.Mock).mockImplementation(() => ({
+      updateIndustry: mockUpdateIndustry
+    }));
+    
+    render(
+      <EditIndustryForm 
+        industry={mockIndustry} 
+        onSave={mockOnSave} 
+        onCancel={mockOnCancel} 
+      />
+    );
+    
+    // Initially, the track has XM, FB, and TA car types
+    
+    // Find and click "Clear All" to clear existing car types
+    fireEvent.click(screen.getByTestId('clear-all-0'));
+    
+    // Now select a specific car type - use the checkbox
+    const gsCheckbox = screen.getByTestId('track-car-type-checkbox-0-GS');
+    fireEvent.click(gsCheckbox);
+    
+    // Car type badges should show the updated selection
+    expect(screen.getByTestId('track-0-type-GS')).toBeInTheDocument();
+    
+    // Submit the form
+    fireEvent.click(screen.getByText('Save Changes'));
+    
+    // Wait for the async operation to complete
+    await waitFor(() => {
+      expect(mockUpdateIndustry).toHaveBeenCalled();
+      expect(mockOnSave).toHaveBeenCalled();
+    });
+  });
+  
+  it('allows "Select All" and "Clear All" for car types', () => {
+    render(
+      <EditIndustryForm 
+        industry={mockIndustry} 
+        onSave={mockOnSave} 
+        onCancel={mockOnCancel} 
+      />
+    );
+    
+    // Click "Clear All" to clear car types
+    fireEvent.click(screen.getByTestId('clear-all-0'));
+    
+    // Should show the "no car types selected" message
+    expect(screen.getByTestId('track-0-no-types')).toBeInTheDocument();
+    
+    // Now click "Select All" to select all car types
+    fireEvent.click(screen.getByTestId('select-all-0'));
+    
+    // Check some car types to verify all are selected
+    expect(screen.getByTestId('track-0-type-XM')).toBeInTheDocument();
+    expect(screen.getByTestId('track-0-type-FB')).toBeInTheDocument();
+    expect(screen.getByTestId('track-0-type-TA')).toBeInTheDocument();
+  });
+  
+  it('allows selecting car types when adding a new track', () => {
+    render(
+      <EditIndustryForm 
+        industry={mockIndustry} 
+        onSave={mockOnSave} 
+        onCancel={mockOnCancel} 
+      />
+    );
+    
+    // Clear new track car types and select only one
+    fireEvent.click(screen.getByTestId('new-track-clear-all'));
+    
+    // Select a specific car type for the new track
+    const xmCheckbox = screen.getByTestId('new-track-car-type-XM');
+    fireEvent.click(xmCheckbox);
+    
+    // Verify that XM is shown as selected in the new track section
+    expect(screen.getByTestId('new-track-type-XM')).toBeInTheDocument();
+    
+    // Enter new track information
+    fireEvent.change(screen.getByTestId('new-track-name'), { target: { value: 'Boxcar Track' } });
+    fireEvent.change(screen.getByTestId('new-track-capacity'), { target: { value: '5' } });
+    
+    // Click add button
+    fireEvent.click(screen.getByTestId('add-track-button'));
+    
+    // Verify new track was added with only XM car type
+    const addedTrack = screen.getByTestId('track-name-1');
+    expect(addedTrack).toHaveValue('Boxcar Track');
+    
+    // The newly added track should show the XM badge for the second track (index 1)
+    expect(screen.getByTestId('track-1-type-XM')).toBeInTheDocument();
   });
   
   it('allows removing a track', () => {
