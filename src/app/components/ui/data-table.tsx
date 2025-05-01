@@ -4,6 +4,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from './loading-spinner';
 import { Alert } from './alert';
+import { ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 export interface Column<T> {
   key: string;
@@ -11,7 +12,11 @@ export interface Column<T> {
   accessor?: (item: T) => React.ReactNode;
   className?: string;
   headerClassName?: string;
+  sortable?: boolean;
+  sortKey?: string; // Optional custom key to use for sorting (if different from 'key')
 }
+
+export type SortDirection = 'asc' | 'desc' | null;
 
 export interface DataTableProps<T extends Record<string, unknown>> {
   columns: Column<T>[];
@@ -28,6 +33,9 @@ export interface DataTableProps<T extends Record<string, unknown>> {
   dense?: boolean;
   hover?: boolean;
   stickyHeader?: boolean;
+  onSort?: (sortKey: string, direction: SortDirection) => void;
+  sortColumn?: string;
+  sortDirection?: SortDirection;
 }
 
 export function DataTable<T extends Record<string, unknown>>({
@@ -45,7 +53,47 @@ export function DataTable<T extends Record<string, unknown>>({
   dense = false,
   hover = true,
   stickyHeader = false,
+  onSort,
+  sortColumn,
+  sortDirection,
 }: DataTableProps<T>) {
+  const handleSort = (column: Column<T>) => {
+    if (!column.sortable || !onSort) return;
+    
+    const key = column.sortKey || column.key;
+    let direction: SortDirection = 'asc';
+    
+    if (sortColumn === key) {
+      if (sortDirection === 'asc') {
+        direction = 'desc';
+      } else if (sortDirection === 'desc') {
+        direction = null;
+      }
+    }
+    
+    onSort(key, direction);
+  };
+
+  const renderSortIcon = (column: Column<T>) => {
+    if (!column.sortable) return null;
+    
+    const key = column.sortKey || column.key;
+    
+    if (sortColumn !== key) {
+      return <ChevronsUpDown className="ml-1 h-4 w-4 inline" />;
+    }
+    
+    if (sortDirection === 'asc') {
+      return <ChevronUp className="ml-1 h-4 w-4 inline" />;
+    }
+    
+    if (sortDirection === 'desc') {
+      return <ChevronDown className="ml-1 h-4 w-4 inline" />;
+    }
+    
+    return <ChevronsUpDown className="ml-1 h-4 w-4 inline" />;
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -90,10 +138,15 @@ export function DataTable<T extends Record<string, unknown>>({
                 className={cn(
                   dense ? 'px-3 py-2' : 'px-6 py-3',
                   'text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
+                  column.sortable && 'cursor-pointer hover:bg-gray-100',
                   column.headerClassName
                 )}
+                onClick={() => column.sortable && handleSort(column)}
               >
-                {column.header}
+                <div className="flex items-center">
+                  {column.header}
+                  {renderSortIcon(column)}
+                </div>
               </th>
             ))}
           </tr>

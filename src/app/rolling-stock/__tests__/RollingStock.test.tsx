@@ -228,7 +228,7 @@ describe('RollingStock', () => {
     customRender(<RollingStock services={mockServices} />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to load rolling stock/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Failed to load rolling stock/i)[0]).toBeInTheDocument();
     });
   });
 
@@ -251,7 +251,11 @@ describe('RollingStock', () => {
       expect(screen.getByRole('table')).toBeInTheDocument();
     });
 
-    // Click the edit button for the first car
+    // First, click the actions button to open the dropdown
+    const actionButtons = screen.getAllByText('Actions');
+    fireEvent.click(actionButtons[0]);
+
+    // Then, click the edit option in the dropdown
     const editButtons = screen.getAllByText('Edit');
     fireEvent.click(editButtons[0]);
 
@@ -271,7 +275,11 @@ describe('RollingStock', () => {
       expect(screen.getByRole('table')).toBeInTheDocument();
     });
 
-    // Click the edit button for the first car
+    // First, click the actions button to open the dropdown
+    const actionButtons = screen.getAllByText('Actions');
+    fireEvent.click(actionButtons[0]);
+
+    // Then, click the edit option in the dropdown
     const editButtons = screen.getAllByText('Edit');
     fireEvent.click(editButtons[0]);
 
@@ -291,7 +299,11 @@ describe('RollingStock', () => {
       expect(screen.getByRole('table')).toBeInTheDocument();
     });
 
-    // Click the edit button for the first car
+    // First, click the actions button to open the dropdown
+    const actionButtons = screen.getAllByText('Actions');
+    fireEvent.click(actionButtons[0]);
+
+    // Then, click the edit option in the dropdown
     const editButtons = screen.getAllByText('Edit');
     fireEvent.click(editButtons[0]);
 
@@ -325,7 +337,11 @@ describe('RollingStock', () => {
       expect(screen.getByRole('table')).toBeInTheDocument();
     });
 
-    // Click the edit button for the first car
+    // First, click the actions button to open the dropdown
+    const actionButtons = screen.getAllByText('Actions');
+    fireEvent.click(actionButtons[0]);
+
+    // Then, click the edit option in the dropdown
     const editButtons = screen.getAllByText('Edit');
     fireEvent.click(editButtons[0]);
 
@@ -349,5 +365,118 @@ describe('RollingStock', () => {
 
     // The changes should not have been saved
     expect(mockUpdateRollingStock).not.toHaveBeenCalled();
+  });
+
+  it('deletes rolling stock when delete button is clicked', async () => {
+    customRender(<RollingStock services={mockServices} />);
+
+    // Wait for the table to render
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    // Get initial row count
+    const initialRows = screen.getAllByRole('row');
+    const initialRowCount = initialRows.length;
+
+    // First, click the actions button to open the dropdown
+    const actionButtons = screen.getAllByText('Actions');
+    fireEvent.click(actionButtons[0]);
+
+    // Then, click the delete option in the dropdown
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[0]);
+
+    // Verify that the row was removed from the table
+    await waitFor(() => {
+      const updatedRows = screen.getAllByRole('row');
+      expect(updatedRows.length).toBe(initialRowCount - 1);
+    });
+  });
+
+  it('sorts rolling stock by Road name when column header is clicked', async () => {
+    customRender(<RollingStock services={mockServices} />);
+
+    // Wait for the table to render
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    // Find the Road column header and click it
+    const roadHeader = screen.getByText('Road');
+    fireEvent.click(roadHeader);
+
+    // First row should now be ATSF (alphabetically first)
+    const rows = screen.getAllByRole('row');
+    // First row is the header, so check from the second row
+    const firstDataRow = rows[1];
+    expect(firstDataRow).toHaveTextContent('ATSF');
+
+    // Click again to sort in descending order
+    fireEvent.click(roadHeader);
+    
+    // First row should now be UP (alphabetically last)
+    const updatedRows = screen.getAllByRole('row');
+    const firstUpdatedDataRow = updatedRows[1];
+    expect(firstUpdatedDataRow).toHaveTextContent('UP');
+  });
+
+  it('sorts rolling stock by Type when column header is clicked', async () => {
+    customRender(<RollingStock services={mockServices} />);
+
+    // Wait for the table to render
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    // Find the Type column header and click it
+    const typeHeader = screen.getByText('Type');
+    fireEvent.click(typeHeader);
+
+    // Check the sorting order - FBC should come first alphabetically
+    const rows = screen.getAllByRole('row');
+    // First row is the header, so check from the second row
+    const firstDataRow = rows[1];
+    expect(firstDataRow).toHaveTextContent('FBC');
+  });
+
+  it('sorts rolling stock by Home Yard when column header is clicked', async () => {
+    customRender(<RollingStock services={mockServices} />);
+
+    // Wait for the table to render
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    // Find the Home Yard column header and click it
+    const homeYardHeader = screen.getByText('Home Yard');
+    fireEvent.click(homeYardHeader);
+
+    // The sorting should be based on yard names
+    const rows = screen.getAllByRole('row');
+    // First row is the header, so check from the second row
+    const firstDataRow = rows[1];
+    
+    // Central Yard should come first alphabetically
+    expect(firstDataRow).toHaveTextContent('Central Yard');
+  });
+
+  it('does not open edit form when row is clicked', async () => {
+    customRender(<RollingStock services={mockServices} />);
+
+    // Wait for the table to render
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    // Get all rows (excluding the header row)
+    const rows = screen.getAllByRole('row');
+    const firstDataRow = rows[1]; // First row after header
+
+    // Click the row
+    fireEvent.click(firstDataRow);
+
+    // Verify edit modal is not opened
+    expect(screen.queryByText('Edit Rolling Stock')).not.toBeInTheDocument();
   });
 }); 

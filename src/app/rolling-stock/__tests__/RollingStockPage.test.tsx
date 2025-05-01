@@ -133,7 +133,7 @@ describe('RollingStockPage', () => {
 
     // Wait for error message to appear
     await waitFor(() => {
-      expect(screen.getByText(/Failed to load rolling stock/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Failed to load rolling stock/i)[0]).toBeInTheDocument();
     });
   });
 }); 

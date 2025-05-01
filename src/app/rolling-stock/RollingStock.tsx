@@ -15,6 +15,7 @@ import {
   useToast
 } from '@/app/components/ui';
 import { Column } from '@/app/components/ui/data-table';
+import { SortDirection } from '@/app/components/ui/data-table';
 import EditRollingStockModal from './components/EditRollingStockModal';
 
 type RollingStockProps = {
@@ -50,6 +51,10 @@ function RollingStockContent({ services }: RollingStockProps) {
   const itemsPerPage = 10;
   const [paginatedRollingStock, setPaginatedRollingStock] = useState<RollingStockType[]>([]);
   
+  // Sorting
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -84,10 +89,63 @@ function RollingStockContent({ services }: RollingStockProps) {
   
   // Update paginated rolling stock when page changes or data changes
   useEffect(() => {
+    // Sort the data if sort is active
+    let sortedData = [...rollingStock];
+    
+    if (sortColumn && sortDirection) {
+      sortedData.sort((a, b) => {
+        let valueA: string | number | undefined;
+        let valueB: string | number | undefined;
+        
+        switch (sortColumn) {
+          case 'roadName':
+            valueA = a.roadName;
+            valueB = b.roadName;
+            break;
+          case 'aarType':
+            valueA = a.aarType;
+            valueB = b.aarType;
+            break;
+          case 'currentLocation':
+            valueA = a.currentLocation 
+              ? getIndustryName(a.currentLocation) 
+              : getIndustryName(a.homeYard);
+            valueB = b.currentLocation 
+              ? getIndustryName(b.currentLocation) 
+              : getIndustryName(b.homeYard);
+            break;
+          case 'homeYard':
+            valueA = getIndustryName(a.homeYard);
+            valueB = getIndustryName(b.homeYard);
+            break;
+          default:
+            valueA = a[sortColumn as keyof RollingStockType] as string | number | undefined;
+            valueB = b[sortColumn as keyof RollingStockType] as string | number | undefined;
+        }
+        
+        // Handle string comparison
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          return sortDirection === 'asc' 
+            ? valueA.localeCompare(valueB)
+            : valueB.localeCompare(valueA);
+        }
+        
+        // Handle number comparison
+        if (typeof valueA === 'number' && typeof valueB === 'number') {
+          return sortDirection === 'asc' 
+            ? valueA - valueB
+            : valueB - valueA;
+        }
+        
+        // Default comparison
+        return 0;
+      });
+    }
+    
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    setPaginatedRollingStock(rollingStock.slice(startIndex, endIndex));
-  }, [currentPage, rollingStock]);
+    setPaginatedRollingStock(sortedData.slice(startIndex, endIndex));
+  }, [currentPage, rollingStock, sortColumn, sortDirection, industryMap]);
 
   const getIndustryName = (industryId: string | RollingStockLocation | undefined | null): string => {
     if (!industryId) return 'Unassigned';
@@ -182,6 +240,11 @@ function RollingStockContent({ services }: RollingStockProps) {
     setCurrentPage(page);
   };
 
+  const handleSort = (key: string, direction: SortDirection) => {
+    setSortColumn(key);
+    setSortDirection(direction);
+  };
+
   // Function to render the appropriate badge for the car type
   const renderCarTypeBadge = (aarType: string) => {
     return (
@@ -206,6 +269,7 @@ function RollingStockContent({ services }: RollingStockProps) {
     {
       key: 'roadName',
       header: 'Road',
+      sortable: true,
       accessor: (item: Record<string, unknown>) => {
         const car = item as unknown as RollingStockType;
         return (
@@ -223,6 +287,7 @@ function RollingStockContent({ services }: RollingStockProps) {
     {
       key: 'aarType',
       header: 'Type',
+      sortable: true,
       accessor: (item: Record<string, unknown>) => {
         const car = item as unknown as RollingStockType;
         return renderCarTypeBadge(car.aarType);
@@ -235,6 +300,7 @@ function RollingStockContent({ services }: RollingStockProps) {
     {
       key: 'currentLocation',
       header: 'Current Location',
+      sortable: true,
       accessor: (item: Record<string, unknown>) => {
         const car = item as unknown as RollingStockType;
         return car.currentLocation 
@@ -245,6 +311,7 @@ function RollingStockContent({ services }: RollingStockProps) {
     {
       key: 'homeYard',
       header: 'Home Yard',
+      sortable: true,
       accessor: (item: Record<string, unknown>) => {
         const car = item as unknown as RollingStockType;
         return getIndustryName(car.homeYard);
@@ -256,21 +323,23 @@ function RollingStockContent({ services }: RollingStockProps) {
       accessor: (item: Record<string, unknown>) => {
         const car = item as unknown as RollingStockType;
         return (
-          <Dropdown 
-            trigger={
-              <Button size="sm" variant="secondary">
-                Actions
-              </Button>
-            }
-            align="right"
-          >
-            <DropdownItem onClick={() => handleEdit(car)}>
-              Edit
-            </DropdownItem>
-            <DropdownItem onClick={() => handleDelete(car)}>
-              Delete
-            </DropdownItem>
-          </Dropdown>
+          <div onClick={(e) => e.stopPropagation()}>
+            <Dropdown 
+              trigger={
+                <Button size="sm" variant="secondary">
+                  Actions
+                </Button>
+              }
+              align="right"
+            >
+              <DropdownItem onClick={() => handleEdit(car)}>
+                Edit
+              </DropdownItem>
+              <DropdownItem onClick={() => handleDelete(car)}>
+                Delete
+              </DropdownItem>
+            </Dropdown>
+          </div>
         );
       }
     }
@@ -297,6 +366,11 @@ function RollingStockContent({ services }: RollingStockProps) {
         columns={columns}
         data={paginatedRollingStock as unknown as Record<string, unknown>[]}
         keyExtractor={(item) => (item as unknown as RollingStockType)._id}
+        isLoading={loading}
+        error={error || undefined}
+        sortColumn={sortColumn || undefined}
+        sortDirection={sortDirection}
+        onSort={handleSort}
         zebra
         bordered
         hover
