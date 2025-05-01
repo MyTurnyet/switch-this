@@ -17,6 +17,7 @@ export interface Track extends BaseEntity {
   capacity: number;
   maxCars: number;
   placedCars: string[];
+  acceptedCarTypes: string[]; // Array of AAR car types this track accepts
 }
 
 export interface Location extends BaseEntity {

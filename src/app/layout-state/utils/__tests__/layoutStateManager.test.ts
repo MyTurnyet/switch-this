@@ -1,5 +1,5 @@
 import { initializeLayoutState, findLeastOccupiedTrack, placeCarAtTrack } from '../layoutStateManager';
-import { Industry, RollingStock, Track } from '@/app/shared/types/models';
+import { Industry, IndustryType, RollingStock, Track } from '@/app/shared/types/models';
 
 describe('layoutStateManager', () => {
   const mockYards: Industry[] = [
@@ -141,50 +141,293 @@ describe('layoutStateManager', () => {
   ];
 
   describe('findLeastOccupiedTrack', () => {
-    it('should find the track with the least cars', () => {
-      const result = findLeastOccupiedTrack(mockYards[0].tracks);
-      expect(result._id).toBe('track1');
+    it('should return the track with the fewest cars', () => {
+      const tracks: Track[] = [
+        {
+          _id: 'track-1',
+          name: 'Track 1',
+          length: 100,
+          capacity: 5,
+          maxCars: 5,
+          placedCars: ['car-1', 'car-2', 'car-3'],
+          acceptedCarTypes: ['XM', 'FB'],
+          ownerId: 'owner-1'
+        },
+        {
+          _id: 'track-2',
+          name: 'Track 2',
+          length: 100,
+          capacity: 5,
+          maxCars: 5,
+          placedCars: ['car-4'],
+          acceptedCarTypes: ['XM', 'FB'],
+          ownerId: 'owner-1'
+        },
+        {
+          _id: 'track-3',
+          name: 'Track 3',
+          length: 100,
+          capacity: 5,
+          maxCars: 5,
+          placedCars: ['car-5', 'car-6'],
+          acceptedCarTypes: ['XM', 'FB'],
+          ownerId: 'owner-1'
+        }
+      ];
+
+      // Find the least occupied track
+      const leastOccupied = findLeastOccupiedTrack(tracks);
+
+      // Verify it's the one with only one car
+      expect(leastOccupied._id).toBe('track-2');
+      expect(leastOccupied.placedCars.length).toBe(1);
     });
 
-    it('should handle empty tracks array', () => {
-      expect(() => findLeastOccupiedTrack([])).toThrow('No tracks available');
+    it('should throw an error when no tracks are available', () => {
+      expect(() => {
+        findLeastOccupiedTrack([]);
+      }).toThrow('No tracks available');
     });
   });
 
   describe('placeCarAtTrack', () => {
-    it('should place a car at the specified track', () => {
-      const industry = { ...mockYards[0] };
-      const car = mockRollingStock[0];
-      
-      const updatedIndustry = placeCarAtTrack(industry, 'track1', car);
-      
-      expect(updatedIndustry.tracks[0].placedCars).toContain('car1');
-      // Original industry should not be modified
-      expect(mockYards[0].tracks[0].placedCars).not.toContain('car1');
-    });
-
-    it('should throw an error if the track is at capacity', () => {
-      const industry = {
-        ...mockYards[0],
-        tracks: [
-          {
-            _id: 'track1',
-            name: 'Track 1',
-            length: 100,
-            capacity: 1,
-            maxCars: 1,
-            placedCars: ['car3']
-          }
-        ]
+    it('should add the car to the track and return updated industry', () => {
+      const track: Track = {
+        _id: 'track-1',
+        name: 'Test Track',
+        length: 100,
+        capacity: 3,
+        maxCars: 3,
+        placedCars: [],
+        acceptedCarTypes: ['XM', 'FB'],
+        ownerId: 'owner-1'
       };
-      
-      expect(() => placeCarAtTrack(industry, 'track1', mockRollingStock[0]))
-        .toThrow('Track is at maximum capacity');
+
+      const industry: Industry = {
+        _id: 'industry-1',
+        name: 'Test Industry',
+        industryType: IndustryType.YARD,
+        locationId: 'location-1',
+        blockName: 'Block A',
+        tracks: [track],
+        ownerId: 'owner-1'
+      };
+
+      const car: RollingStock = {
+        _id: 'car-1',
+        roadName: 'Test',
+        roadNumber: '123',
+        aarType: 'XM',
+        description: 'Box Car',
+        color: 'black',
+        note: '',
+        homeYard: 'industry-1',
+        ownerId: 'owner-1'
+      };
+
+      // Place the car at the track
+      const updatedIndustry = placeCarAtTrack(industry, 'track-1', car);
+
+      // Verify the car was added
+      expect(updatedIndustry.tracks[0].placedCars).toContain('car-1');
+      expect(updatedIndustry.tracks[0].placedCars.length).toBe(1);
     });
 
-    it('should throw an error if the track is not found', () => {
-      expect(() => placeCarAtTrack(mockYards[0], 'nonexistent', mockRollingStock[0]))
-        .toThrow('Track not found');
+    it('should throw an error when track is at capacity', () => {
+      const track: Track = {
+        _id: 'track-1',
+        name: 'Test Track',
+        length: 100,
+        capacity: 2,
+        maxCars: 2,
+        placedCars: ['car-1', 'car-2'],
+        acceptedCarTypes: ['XM', 'FB'],
+        ownerId: 'owner-1'
+      };
+
+      const industry: Industry = {
+        _id: 'industry-1',
+        name: 'Test Industry',
+        industryType: IndustryType.FREIGHT,
+        locationId: 'location-1',
+        blockName: 'Block A',
+        tracks: [track],
+        ownerId: 'owner-1'
+      };
+
+      const car: RollingStock = {
+        _id: 'car-3',
+        roadName: 'Test',
+        roadNumber: '123',
+        aarType: 'XM',
+        description: 'Box Car',
+        color: 'black',
+        note: '',
+        homeYard: 'industry-1',
+        ownerId: 'owner-1'
+      };
+
+      // Verify that the function throws an error
+      expect(() => {
+        placeCarAtTrack(industry, 'track-1', car);
+      }).toThrow('Track is at maximum capacity');
+    });
+
+    it('should throw an error when track is not found', () => {
+      const industry: Industry = {
+        _id: 'industry-1',
+        name: 'Test Industry',
+        industryType: IndustryType.FREIGHT,
+        locationId: 'location-1',
+        blockName: 'Block A',
+        tracks: [],
+        ownerId: 'owner-1'
+      };
+
+      const car: RollingStock = {
+        _id: 'car-1',
+        roadName: 'Test',
+        roadNumber: '123',
+        aarType: 'XM',
+        description: 'Box Car',
+        color: 'black',
+        note: '',
+        homeYard: 'industry-1',
+        ownerId: 'owner-1'
+      };
+
+      // Verify that the function throws an error
+      expect(() => {
+        placeCarAtTrack(industry, 'track-1', car);
+      }).toThrow('Track not found');
+    });
+
+    it('should throw an error when placing a car with an unaccepted type', () => {
+      // Setup a track that only accepts XM and FB car types
+      const track: Track = {
+        _id: 'track-1',
+        name: 'Test Track',
+        length: 100,
+        capacity: 3,
+        maxCars: 3,
+        placedCars: [],
+        acceptedCarTypes: ['XM', 'FB'],
+        ownerId: 'owner-1'
+      };
+
+      const industry: Industry = {
+        _id: 'industry-1',
+        name: 'Test Industry',
+        industryType: IndustryType.FREIGHT,
+        locationId: 'location-1',
+        blockName: 'Block A',
+        tracks: [track],
+        ownerId: 'owner-1'
+      };
+
+      // Setup a car with an unaccepted type
+      const car: RollingStock = {
+        _id: 'car-1',
+        roadName: 'Test',
+        roadNumber: '123',
+        aarType: 'TA', // Tank car, not in accepted types
+        description: 'Tank Car',
+        color: 'black',
+        note: '',
+        homeYard: 'industry-1',
+        ownerId: 'owner-1'
+      };
+
+      // Verify that the function throws an error
+      expect(() => {
+        placeCarAtTrack(industry, 'track-1', car);
+      }).toThrow('Track Test Track does not accept car type TA');
+    });
+
+    it('should not throw an error when placing a car with an accepted type', () => {
+      // Setup a track that only accepts XM and FB car types
+      const track: Track = {
+        _id: 'track-1',
+        name: 'Test Track',
+        length: 100,
+        capacity: 3,
+        maxCars: 3,
+        placedCars: [],
+        acceptedCarTypes: ['XM', 'FB'],
+        ownerId: 'owner-1'
+      };
+
+      const industry: Industry = {
+        _id: 'industry-1',
+        name: 'Test Industry',
+        industryType: IndustryType.FREIGHT,
+        locationId: 'location-1',
+        blockName: 'Block A',
+        tracks: [track],
+        ownerId: 'owner-1'
+      };
+
+      // Setup a car with an accepted type
+      const car: RollingStock = {
+        _id: 'car-1',
+        roadName: 'Test',
+        roadNumber: '123',
+        aarType: 'XM', // Boxcar, in accepted types
+        description: 'Boxcar',
+        color: 'black',
+        note: '',
+        homeYard: 'industry-1',
+        ownerId: 'owner-1'
+      };
+
+      // This should not throw an error
+      const updatedIndustry = placeCarAtTrack(industry, 'track-1', car);
+      
+      // Verify the car was placed
+      expect(updatedIndustry.tracks[0].placedCars).toContain('car-1');
+    });
+
+    it('should accept any car type when acceptedCarTypes is undefined', () => {
+      // Setup a track without acceptedCarTypes defined
+      const track: Track = {
+        _id: 'track-1',
+        name: 'Test Track',
+        length: 100,
+        capacity: 3,
+        maxCars: 3,
+        placedCars: [],
+        acceptedCarTypes: [], // Empty array
+        ownerId: 'owner-1'
+      };
+
+      const industry: Industry = {
+        _id: 'industry-1',
+        name: 'Test Industry',
+        industryType: IndustryType.FREIGHT,
+        locationId: 'location-1',
+        blockName: 'Block A',
+        tracks: [track],
+        ownerId: 'owner-1'
+      };
+
+      // Setup any car
+      const car: RollingStock = {
+        _id: 'car-1',
+        roadName: 'Test',
+        roadNumber: '123',
+        aarType: 'TA', // Any type
+        description: 'Tank Car',
+        color: 'black',
+        note: '',
+        homeYard: 'industry-1',
+        ownerId: 'owner-1'
+      };
+
+      // This should not throw an error
+      const updatedIndustry = placeCarAtTrack(industry, 'track-1', car);
+      
+      // Verify the car was placed
+      expect(updatedIndustry.tracks[0].placedCars).toContain('car-1');
     });
   });
 

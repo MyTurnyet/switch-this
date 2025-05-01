@@ -2,13 +2,28 @@ import { Industry, RollingStock, Track } from '@/app/shared/types/models';
 
 /**
  * Finds the track with the fewest cars in a list of tracks
+ * that can accept the specified car type
  */
-export function findLeastOccupiedTrack(tracks: Track[]): Track {
+export function findLeastOccupiedTrack(tracks: Track[], car?: RollingStock): Track {
   if (tracks.length === 0) {
     throw new Error('No tracks available');
   }
 
-  return tracks.reduce((leastOccupied, current) => 
+  // Filter tracks by car type if a car is specified
+  let eligibleTracks = tracks;
+  if (car) {
+    eligibleTracks = tracks.filter(track => 
+      !track.acceptedCarTypes || // If acceptedCarTypes is not defined, accept all
+      track.acceptedCarTypes.length === 0 || // If empty array, accept all
+      track.acceptedCarTypes.includes(car.aarType) // Check if car type is in accepted types
+    );
+
+    if (eligibleTracks.length === 0) {
+      throw new Error(`No tracks available that accept car type ${car.aarType}`);
+    }
+  }
+
+  return eligibleTracks.reduce((leastOccupied, current) => 
     leastOccupied.placedCars.length <= current.placedCars.length 
       ? leastOccupied 
       : current
@@ -31,6 +46,13 @@ export function placeCarAtTrack(
 
   if (track.placedCars.length >= track.maxCars) {
     throw new Error('Track is at maximum capacity');
+  }
+
+  // Check if the track accepts this car type
+  if (track.acceptedCarTypes && track.acceptedCarTypes.length > 0) {
+    if (!track.acceptedCarTypes.includes(car.aarType)) {
+      throw new Error(`Track ${track.name} does not accept car type ${car.aarType}`);
+    }
   }
 
   // Create a new track object with the car added
@@ -105,7 +127,7 @@ export function initializeLayoutState(
       }
       
       // Find the least occupied track in the home yard
-      const leastOccupiedTrack = findLeastOccupiedTrack(updatedYard.tracks);
+      const leastOccupiedTrack = findLeastOccupiedTrack(updatedYard.tracks, car);
       
       // Place the car on the track
       const yardWithCarAdded = placeCarAtTrack(updatedYard, leastOccupiedTrack._id, car);

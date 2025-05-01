@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Industry, IndustryType, Track } from '@/app/shared/types/models';
 import { IndustryService } from '@/app/shared/services/IndustryService';
 import { v4 as uuidv4 } from 'uuid';
+import { CAR_TYPES } from '@/app/rolling-stock/components/RollingStockForm';
 
 interface EditIndustryFormProps {
   industry: Industry;
@@ -83,6 +84,7 @@ export function EditIndustryForm({ industry, onSave, onCancel }: EditIndustryFor
       capacity: newTrackCapacity,
       length: 0,
       placedCars: [],
+      acceptedCarTypes: CAR_TYPES.map(type => type.aarType), // Default to accepting all car types
       ownerId: industry.ownerId
     };
 
@@ -92,7 +94,7 @@ export function EditIndustryForm({ industry, onSave, onCancel }: EditIndustryFor
     setError(null); // Clear any error messages
   };
 
-  const updateTrack = (index: number, field: keyof Track, value: string | number) => {
+  const updateTrack = (index: number, field: keyof Track, value: string | number | string[]) => {
     const updatedTracks = [...tracks];
     updatedTracks[index] = {
       ...updatedTracks[index],
@@ -155,6 +157,7 @@ export function EditIndustryForm({ industry, onSave, onCancel }: EditIndustryFor
             onChange={(e) => setIndustryType(e.target.value as IndustryType)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
             disabled={isSubmitting}
+            data-testid="industryType"
           >
             <option value={IndustryType.FREIGHT}>Freight</option>
             <option value={IndustryType.YARD}>Yard</option>
@@ -213,6 +216,36 @@ export function EditIndustryForm({ industry, onSave, onCancel }: EditIndustryFor
                           data-testid={`track-capacity-${index}`}
                         />
                       </div>
+                    </div>
+                    
+                    {/* Car Type Selection */}
+                    <div className="mt-2">
+                      <label htmlFor={`track-car-types-${index}`} className="block text-sm font-medium text-gray-700">
+                        Accepted Car Types
+                      </label>
+                      <select
+                        id={`track-car-types-${index}`}
+                        multiple
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2"
+                        value={track.acceptedCarTypes || []}
+                        onChange={(e) => {
+                          const selectedOptions = Array.from(
+                            e.target.selectedOptions, 
+                            option => option.value
+                          );
+                          updateTrack(index, 'acceptedCarTypes', selectedOptions);
+                        }}
+                        data-testid={`track-car-types-${index}`}
+                      >
+                        {CAR_TYPES.map(carType => (
+                          <option key={carType.aarType} value={carType.aarType}>
+                            {carType.aarType} - {carType.description}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Hold Ctrl/Cmd to select multiple. All types selected by default.
+                      </p>
                     </div>
                     
                     {/* Show cars if any are placed on this track */}

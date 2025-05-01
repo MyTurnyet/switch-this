@@ -46,6 +46,7 @@ describe('EditIndustryForm', () => {
     capacity: 3,
     length: 0,
     placedCars: [],
+    acceptedCarTypes: ['XM', 'FB', 'TA'],
     ownerId: '789'
   };
   
@@ -78,7 +79,7 @@ describe('EditIndustryForm', () => {
     
     expect(screen.getByText('Edit Industry')).toBeInTheDocument();
     expect(screen.getByLabelText(/Name \*/)).toHaveValue('Test Industry');
-    expect(screen.getByLabelText(/Type/)).toHaveValue('FREIGHT');
+    expect(screen.getByLabelText('Type')).toHaveValue('FREIGHT');
     expect(screen.getByLabelText(/Description/)).toHaveValue('Test description');
     
     // Check track section
@@ -207,8 +208,14 @@ describe('EditIndustryForm', () => {
   it('prevents removing track with cars on it', () => {
     // Create a mock industry with a track that has cars on it
     const mockTrackWithCars: Track = {
-      ...mockTrack,
-      placedCars: ['car1', 'car2']
+      _id: 'track2',
+      name: 'Track 2',
+      maxCars: 5,
+      capacity: 5,
+      length: 0,
+      placedCars: ['car1', 'car2'],
+      acceptedCarTypes: ['XM', 'FB', 'TA'],
+      ownerId: '789'
     };
     
     const mockIndustryWithCarsOnTrack: Industry = {
@@ -273,7 +280,8 @@ describe('EditIndustryForm', () => {
     
     // Update form fields
     fireEvent.change(screen.getByLabelText(/Name \*/), { target: { value: 'Updated Industry' } });
-    fireEvent.change(screen.getByLabelText(/Type/), { target: { value: 'YARD' } });
+    const typeSelect = screen.getByTestId('industryType') || screen.getByLabelText('Type');
+    fireEvent.change(typeSelect, { target: { value: 'YARD' } });
     fireEvent.change(screen.getByLabelText(/Description/), { target: { value: 'Updated description' } });
     
     // Update track using testids

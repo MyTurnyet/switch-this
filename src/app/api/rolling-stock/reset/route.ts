@@ -15,7 +15,11 @@ type Track = {
   _id: string | ObjectId;
   name: string;
   length: number;
+  maxCars: number;
+  capacity: number;
   placedCars: string[];
+  acceptedCarTypes?: string[];
+  ownerId?: string;
 };
 
 export async function POST() {
@@ -72,7 +76,7 @@ async function clearAllPlacedCars(industriesCollection: Collection, allIndustrie
 }
 
 function buildIndustryTracksMap(allIndustries: Industry[]) {
-  const industryTracks = new Map<string, { trackId: string; carCount: number }[]>();
+  const industryTracks = new Map<string, { trackId: string; carCount: number; acceptedCarTypes?: string[] }[]>();
   
   const homeIndustries = filterHomeIndustries(allIndustries);
   const homeIndustriesCount = homeIndustries.length;
@@ -101,13 +105,14 @@ function ensureStringId(id: string | ObjectId): string {
 function mapIndustryTracks(tracks: Track[]) {
   return tracks.map(track => ({
     trackId: ensureStringId(track._id),
-    carCount: 0
+    carCount: 0,
+    acceptedCarTypes: track.acceptedCarTypes
   }));
 }
 
 async function assignCarsToHomeTracks(
   allRollingStock: RollingStock[],
-  industryTracks: Map<string, { trackId: string; carCount: number }[]>,
+  industryTracks: Map<string, { trackId: string; carCount: number; acceptedCarTypes?: string[] }[]>,
   rollingStockCollection: Collection,
   industriesCollection: Collection,
   mongoService: MongoService
@@ -117,7 +122,7 @@ async function assignCarsToHomeTracks(
     const industryTracksList = industryTracks.get(homeIndustryId);
     
     if (industryTracksList) {
-      const leastOccupiedTrack = findLeastOccupiedTrack(industryTracksList);
+      const leastOccupiedTrack = findLeastOccupiedTrack(industryTracksList, car.aarType);
 
       console.log(`Assigning car ${car.roadName} ${car.roadNumber} (ID: ${car._id}) to industry ID: ${homeIndustryId}, track ID: ${leastOccupiedTrack.trackId}`);
 
@@ -144,8 +149,24 @@ async function assignCarsToHomeTracks(
   }
 }
 
-function findLeastOccupiedTrack(tracksList: { trackId: string; carCount: number }[]) {
-  return tracksList.reduce((prev, current) => 
+function findLeastOccupiedTrack(tracksList: { trackId: string; carCount: number; acceptedCarTypes?: string[] }[], carType: string) {
+  // Filter tracks to those that accept this car type (or have no restrictions)
+  const eligibleTracks = tracksList.filter(track => 
+    !track.acceptedCarTypes || // If undefined, accept all
+    track.acceptedCarTypes.length === 0 || // If empty array, accept all
+    track.acceptedCarTypes.includes(carType) // Check if car type is accepted
+  );
+
+  if (eligibleTracks.length === 0) {
+    // If no eligible tracks, fall back to any track
+    console.warn(`No tracks found that accept car type ${carType}. Falling back to any track.`);
+    return tracksList.reduce((prev, current) => 
+      prev.carCount < current.carCount ? prev : current
+    );
+  }
+
+  // Return the eligible track with the least cars
+  return eligibleTracks.reduce((prev, current) => 
     prev.carCount < current.carCount ? prev : current
   );
 }

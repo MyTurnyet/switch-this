@@ -55,6 +55,13 @@ export class LayoutState {
       }
     }
 
+    // Check if the track accepts this car type
+    if (track.acceptedCarTypes && track.acceptedCarTypes.length > 0) {
+      if (!track.acceptedCarTypes.includes(car.aarType)) {
+        throw new Error(`Track ${track.name} does not accept car type ${car.aarType}`);
+      }
+    }
+
     // Create a new track object with a new placedCars array
     const updatedTrack = {
       ...track,
