@@ -95,9 +95,6 @@ export function Pagination({
               key={index}
               variant={page === currentPage ? "primary" : "outline"}
               size="sm"
-              className={cn(
-                page === currentPage ? "bg-primary" : ""
-              )}
               onClick={() => onPageChange(page)}
               aria-current={page === currentPage ? "page" : undefined}
               aria-label={`Page ${page}`}
