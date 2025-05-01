@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
-import { groupIndustriesByLocationAndBlock } from './utils/groupIndustries';
+import { groupIndustriesByBlockAndLocation } from './utils/groupIndustries';
 import { initializeLayoutState, syncRollingStockLocations } from './utils/layoutStateManager';
 import type { Location, Industry, RollingStock, Track } from '@/app/shared/types/models';
 import type { ClientServices } from '../shared/services/clientServices';
-import RollingStockList from './components/RollingStockList';
 
 interface LayoutStateProps {
   services: ClientServices;
@@ -172,7 +171,7 @@ export default function LayoutState({ services }: LayoutStateProps) {
     loadInitialState();
   }, [loadInitialState]);
 
-  const groupedIndustries = groupIndustriesByLocationAndBlock(industries, locations);
+  const groupedByBlock = groupIndustriesByBlockAndLocation(industries, locations);
 
   return (
     <div className="container mx-auto p-4">
@@ -201,79 +200,90 @@ export default function LayoutState({ services }: LayoutStateProps) {
                 className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"
               />
             </div>
-          ) :
-            <>
-              <div className="space-y-8">
-                {Object.entries(groupedIndustries).map(([locationId, locationGroup]) => (
-                  <div key={locationId} className="space-y-4">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {locationGroup.locationName}
-                    </h2>
-                    {Object.entries(locationGroup.blocks).map(([blockName, blockIndustries]) => (
-                      <div key={blockName} className="space-y-4">
-                        <h3 className="text-xl font-semibold text-gray-800">
-                          Block {blockName}
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {blockIndustries.map(industry => (
-                            <div
-                              key={industry._id}
-                              className={`p-4 rounded-lg border ${getIndustryTypeStyle(industry.industryType)}`}
-                            >
-                              <div className="flex justify-between items-start mb-4">
-                                <h4 className="text-lg font-semibold text-gray-900">
-                                  {industry.name}
-                                </h4>
-                                <span className="text-sm text-gray-500">
-                                  {industry.industryType}
-                                </span>
-                              </div>
+          ) : (
+            <div className="space-y-12">
+              {Object.entries(groupedByBlock).map(([blockName, blockGroup]) => (
+                <div key={blockName} className="space-y-6 pb-8 border-b border-gray-200">
+                  <h2 className="text-2xl font-bold text-gray-900 bg-gray-100 p-3 rounded-lg">
+                    Block: {blockName}
+                  </h2>
+                  
+                  {Object.entries(blockGroup.locations).map(([locationId, locationData]) => (
+                    <div key={locationId} className="space-y-4 pl-4 border-l-4 border-gray-300">
+                      <h3 className="text-xl font-semibold text-gray-800 flex items-center">
+                        <span className="w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
+                        {locationData.locationName}
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-5">
+                        {locationData.industries.map(industry => (
+                          <div
+                            key={industry._id}
+                            className={`p-4 rounded-lg border ${getIndustryTypeStyle(industry.industryType)}`}
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <h4 className="text-lg font-semibold text-gray-900">
+                                {industry.name}
+                              </h4>
+                              <span className="text-sm font-medium px-2 py-0.5 bg-gray-100 rounded-full text-gray-700">
+                                {industry.industryType}
+                              </span>
+                            </div>
+                            
+                            {industry.tracks.length > 0 ? (
                               <div className="space-y-3">
                                 {industry.tracks.map(track => {
                                   const carsOnTrack = getCarsOnTrack(track, rollingStock);
                                   return (
-                                    <div key={track._id} className="space-y-2">
-                                      <div className="flex justify-between items-center">
-                                        <span className="font-medium text-gray-700">
+                                    <div key={track._id} className="border border-gray-200 rounded-md p-2">
+                                      <div className="flex justify-between items-center bg-gray-50 p-1.5 rounded-t-sm">
+                                        <span className="font-medium text-gray-800">
                                           {track.name}
                                         </span>
                                         <span className={`text-sm font-medium ${getTrackCapacityStyle(carsOnTrack.length, track.maxCars)}`}>
-                                          ({carsOnTrack.length}/{track.maxCars} cars)
+                                          {carsOnTrack.length}/{track.maxCars} cars
                                         </span>
                                       </div>
-                                      {carsOnTrack.length > 0 && (
-                                        <div className="pl-4 border-l-2 border-gray-200 space-y-1">
+                                      
+                                      {carsOnTrack.length > 0 ? (
+                                        <div className="mt-2 space-y-1.5">
                                           {carsOnTrack.map(car => (
-                                            <div key={car._id} className="text-sm">
-                                              {car.roadName} {car.roadNumber} ({car.aarType})
+                                            <div key={car._id} className="flex items-center pl-2 py-1 text-sm text-gray-700 bg-gray-50 rounded">
+                                              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                              <span className="font-medium">{car.roadName} {car.roadNumber}</span>
+                                              <span className="ml-1 text-xs text-gray-500">({car.aarType})</span>
                                             </div>
                                           ))}
+                                        </div>
+                                      ) : (
+                                        <div className="py-2 text-sm text-gray-500 italic text-center">
+                                          No cars on this track
                                         </div>
                                       )}
                                     </div>
                                   );
                                 })}
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ) : (
+                              <div className="py-3 text-sm text-gray-500 italic">
+                                No tracks at this industry
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
               
-              <div className="mt-10">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  Rolling Stock
-                </h2>
-                <RollingStockList 
-                  rollingStock={rollingStock} 
-                  industries={industries} 
-                />
-              </div>
-            </>
-          }
+              {Object.keys(groupedByBlock).length === 0 && (
+                <div className="text-center text-gray-500 py-10">
+                  No blocks or industries found
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </ScrollArea>
     </div>

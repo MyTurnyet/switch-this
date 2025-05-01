@@ -34,6 +34,31 @@ jest.mock('../utils/groupIndustries', () => ({
       }
     }
   }),
+  groupIndustriesByBlockAndLocation: jest.fn().mockReturnValue({
+    'block1': {
+      blockName: 'block1',
+      locations: {
+        'loc1': {
+          locationName: 'Test Location',
+          industries: [
+            {
+              _id: 'ind1',
+              name: 'Test Industry',
+              industryType: 'YARD',
+              tracks: [
+                {
+                  _id: 'track1',
+                  name: 'Track 1',
+                  maxCars: 5,
+                  placedCars: ['car1', 'car2']
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  })
 }));
 
 describe('LayoutState Component', () => {
