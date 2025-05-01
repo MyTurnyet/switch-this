@@ -250,7 +250,9 @@ export default function IndustriesPage() {
                   {getLocationTypeIndicator(locationType)}
                 </h2>
                 
-                {Object.entries(locationGroup.blocks).map(([blockName, blockIndustries]) => (
+                {Object.entries(locationGroup.blocks)
+                  .sort(([blockNameA], [blockNameB]) => blockNameA.localeCompare(blockNameB))
+                  .map(([blockName, blockIndustries]) => (
                   <div key={blockName} className="space-y-4">
                     <h3 className="text-xl font-semibold text-gray-800">
                       Block: {blockName}
