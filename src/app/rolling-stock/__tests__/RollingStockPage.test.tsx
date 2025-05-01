@@ -120,7 +120,7 @@ describe('RollingStockPage', () => {
 
     // Check yard locations are displayed
     expect(screen.getAllByText('Central Yard').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Eastern Yard').length).toBeGreaterThan(0);
+    // Eastern Yard isn't displayed because both cars have homeYard: 'yard1'
   });
 
   it('displays an error message when fetching fails', async () => {

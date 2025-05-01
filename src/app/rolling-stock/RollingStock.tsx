@@ -7,7 +7,12 @@ import {
   PageContainer, 
   DataTable, 
   Button, 
-  Badge
+  Badge,
+  Dropdown,
+  DropdownItem,
+  Pagination,
+  ToastProvider,
+  useToast
 } from '@/app/components/ui';
 import { Column } from '@/app/components/ui/data-table';
 import EditRollingStockModal from './components/EditRollingStockModal';
@@ -22,6 +27,16 @@ type IndustryMap = {
 };
 
 export default function RollingStock({ services }: RollingStockProps) {
+  // Wrap the entire component in ToastProvider to fix test errors
+  return (
+    <ToastProvider>
+      <RollingStockContent services={services} />
+    </ToastProvider>
+  );
+}
+
+// Extract the main component content into a separate component
+function RollingStockContent({ services }: RollingStockProps) {
   const [rollingStock, setRollingStock] = useState<RollingStockType[]>([]);
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [industryMap, setIndustryMap] = useState<IndustryMap>({});
@@ -29,6 +44,13 @@ export default function RollingStock({ services }: RollingStockProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedRollingStock, setSelectedRollingStock] = useState<RollingStockType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [paginatedRollingStock, setPaginatedRollingStock] = useState<RollingStockType[]>([]);
+  
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,6 +81,13 @@ export default function RollingStock({ services }: RollingStockProps) {
 
     fetchData();
   }, [services.rollingStockService, services.industryService]);
+  
+  // Update paginated rolling stock when page changes or data changes
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setPaginatedRollingStock(rollingStock.slice(startIndex, endIndex));
+  }, [currentPage, rollingStock]);
 
   const getIndustryName = (industryId: string | RollingStockLocation | undefined | null): string => {
     if (!industryId) return 'Unassigned';
@@ -88,23 +117,69 @@ export default function RollingStock({ services }: RollingStockProps) {
         setRollingStock(prev => 
           prev.map(car => car._id === selectedRollingStock._id ? {...updatedCar, _id: selectedRollingStock._id} : car)
         );
+        
+        toast({
+          title: 'Success',
+          description: `${updatedCar.roadName} ${updatedCar.roadNumber} has been updated.`,
+          variant: 'success'
+        });
       } else {
         // Create new rolling stock (assuming API will be implemented)
         // await services.rollingStockService.createRollingStock(updatedCar);
         
         // For now, just log the data that would be created
         console.log('Would create new rolling stock:', updatedCar);
+        
+        toast({
+          title: 'Success',
+          description: `${updatedCar.roadName} ${updatedCar.roadNumber} has been created.`,
+          variant: 'success'
+        });
       }
       
       setIsModalOpen(false);
     } catch (error) {
       console.error('Failed to save rolling stock:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save rolling stock. Please try again later.',
+        variant: 'error'
+      });
       throw new Error('Failed to save rolling stock. Please try again later.');
+    }
+  };
+
+  const handleDelete = async (car: RollingStockType) => {
+    try {
+      // For now, just log that we would delete the rolling stock
+      // The actual API method doesn't exist yet
+      console.log('Would delete rolling stock:', car);
+      
+      // Update local state as if it was deleted
+      setRollingStock(prev => prev.filter(c => c._id !== car._id));
+      
+      toast({
+        title: 'Success',
+        description: `${car.roadName} ${car.roadNumber} has been deleted.`,
+        variant: 'success'
+      });
+    } catch (error) {
+      console.error('Failed to delete rolling stock:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete rolling stock. Please try again later.',
+        variant: 'error'
+      });
     }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+  };
+  
+  // Handle page change for pagination
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   // Function to render the appropriate badge for the car type
@@ -181,13 +256,21 @@ export default function RollingStock({ services }: RollingStockProps) {
       accessor: (item: Record<string, unknown>) => {
         const car = item as unknown as RollingStockType;
         return (
-          <Button 
-            size="sm" 
-            variant="secondary"
-            onClick={() => handleEdit(car)}
+          <Dropdown 
+            trigger={
+              <Button size="sm" variant="secondary">
+                Actions
+              </Button>
+            }
+            align="right"
           >
-            Edit
-          </Button>
+            <DropdownItem onClick={() => handleEdit(car)}>
+              Edit
+            </DropdownItem>
+            <DropdownItem onClick={() => handleDelete(car)}>
+              Delete
+            </DropdownItem>
+          </Dropdown>
         );
       }
     }
@@ -212,12 +295,24 @@ export default function RollingStock({ services }: RollingStockProps) {
     >
       <DataTable
         columns={columns}
-        data={rollingStock as unknown as Record<string, unknown>[]}
+        data={paginatedRollingStock as unknown as Record<string, unknown>[]}
         keyExtractor={(item) => (item as unknown as RollingStockType)._id}
         zebra
         bordered
         hover
       />
+      
+      {/* Pagination */}
+      {rollingStock.length > itemsPerPage && (
+        <div className="mt-6">
+          <Pagination
+            totalItems={rollingStock.length}
+            itemsPerPage={itemsPerPage}
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
       
       <EditRollingStockModal
         rollingStock={selectedRollingStock}

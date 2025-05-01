@@ -16,6 +16,59 @@ const customRender = (ui: React.ReactElement) => {
   return render(ui, { wrapper: TestWrapper });
 };
 
+// Mock the EditRollingStockModal component
+jest.mock('../components/EditRollingStockModal', () => {
+  return jest.fn(({ rollingStock, onSave, onCancel, isOpen }) => {
+    if (!isOpen) return null;
+    
+    return (
+      <div data-testid="edit-modal">
+        <h2>Edit Rolling Stock</h2>
+        <div>
+          <label>
+            Railroad
+            <input 
+              defaultValue={rollingStock?.roadName || ''} 
+              data-testid="road-name-input"
+              aria-label="Railroad"
+            />
+          </label>
+          <label>
+            Number
+            <input 
+              defaultValue={rollingStock?.roadNumber || ''} 
+              data-testid="road-number-input"
+              aria-label="Number"
+            />
+          </label>
+          <label>
+            Car Type
+            <select aria-label="Car Type">
+              <option value={rollingStock?.aarType || ''}>{rollingStock?.aarType || ''}</option>
+            </select>
+          </label>
+          <label>
+            Home Yard
+            <select aria-label="Home Yard">
+              <option value={rollingStock?.homeYard || ''}>{rollingStock?.homeYard || ''}</option>
+            </select>
+          </label>
+        </div>
+        <button onClick={() => onCancel()}>Cancel</button>
+        <button 
+          onClick={() => onSave({
+            ...rollingStock,
+            roadName: 'BNSF',
+          })}
+          data-testid="save-button"
+        >
+          Save
+        </button>
+      </div>
+    );
+  });
+});
+
 describe('RollingStock', () => {
   // Create properly typed mocks
   const mockGetAllRollingStock = jest.fn<Promise<RollingStockType[]>, []>();
