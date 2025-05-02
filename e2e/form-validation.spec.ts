@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test.describe('Form Validations', () => {
   test('should attempt to validate required fields on forms if available', async ({ page }) => {

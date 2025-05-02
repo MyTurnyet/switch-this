@@ -39,6 +39,20 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:ci
       
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      
+      - name: Run Playwright tests
+        run: npm run test:e2e
+      
+      - name: Archive Playwright results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+      
       - name: Generate coverage report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
