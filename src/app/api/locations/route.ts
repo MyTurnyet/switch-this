@@ -2,6 +2,19 @@ import { NextResponse } from 'next/server';
 import { getMongoDbService } from '@/lib/services/mongodb.provider';
 import { LocationType } from '@/app/shared/types/models';
 
+// Helper to create a response with CORS headers
+function createResponseWithCors(body: unknown, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
+  });
+}
+
 export async function GET() {
   const mongoService = getMongoDbService();
 
@@ -17,8 +30,6 @@ export async function GET() {
         // Set default location types
         if (location.stationName.includes('Yard')) {
           location.locationType = LocationType.FIDDLE_YARD;
-        } else if (['Chicago', 'Portland', 'Vancouver', 'Edmonton', 'Spokane'].includes(location.stationName.split(',')[0])) {
-          location.locationType = LocationType.OFF_LAYOUT;
         } else {
           location.locationType = LocationType.ON_LAYOUT;
         }
@@ -26,12 +37,12 @@ export async function GET() {
       return location;
     });
     
-    return NextResponse.json(enhancedLocations);
+    return createResponseWithCors(enhancedLocations);
   } catch (error) {
     console.error('Error fetching locations:', error);
-    return NextResponse.json(
+    return createResponseWithCors(
       { error: 'Failed to fetch locations' },
-      { status: 500 }
+      500
     );
   } finally {
     await mongoService.close();
@@ -46,61 +57,56 @@ export async function POST(request: Request) {
     
     // Validate required fields
     if (!data.stationName) {
-      return NextResponse.json(
-        { error: 'Station name is required' },
-        { status: 400 }
-      );
+      return createResponseWithCors({ error: 'Station name is required' }, 400);
     }
     
     if (!data.block) {
-      return NextResponse.json(
-        { error: 'Block is required' },
-        { status: 400 }
-      );
+      return createResponseWithCors({ error: 'Block is required' }, 400);
     }
     
     if (!Object.values(LocationType).includes(data.locationType)) {
-      return NextResponse.json(
-        { error: 'Valid location type is required' },
-        { status: 400 }
-      );
+      return createResponseWithCors({ error: 'Valid location type is required' }, 400);
     }
     
-    // Ensure ownerId is provided
+    // Set default ownerId if missing
     if (!data.ownerId) {
-      data.ownerId = 'default-owner';  // Provide a default ownerId if not specified
+      data.ownerId = 'system';
+    }
+    
+    // Remove _id from incoming data to avoid insertion errors
+    if (data._id) {
+      delete data._id;
     }
     
     await mongoService.connect();
     const collection = mongoService.getLocationsCollection();
     
-    // Prepare the document for insertion (removing any existing _id)
-    const documentToInsert = { ...data };
-    if (documentToInsert._id) {
-      delete documentToInsert._id;
-    }
+    const result = await collection.insertOne(data);
     
-    const result = await collection.insertOne(documentToInsert);
+    // Fetch the newly created location for the response
+    const insertedLocation = await collection.findOne({ _id: result.insertedId });
     
-    if (!result.acknowledged) {
-      throw new Error('Failed to insert document');
-    }
-    
-    // Fetch the newly created document
-    const newLocation = await collection.findOne({ _id: result.insertedId });
-    
-    if (!newLocation) {
-      throw new Error('Failed to retrieve newly created location');
-    }
-    
-    return NextResponse.json(newLocation, { status: 201 });
+    return createResponseWithCors(insertedLocation);
   } catch (error) {
     console.error('Error creating location:', error);
-    return NextResponse.json(
+    return createResponseWithCors(
       { error: error instanceof Error ? error.message : 'Failed to create location' },
-      { status: 500 }
+      500
     );
   } finally {
     await mongoService.close();
   }
+}
+
+// Add OPTIONS method for preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400' // 24 hours
+    }
+  });
 } 

@@ -8,19 +8,46 @@ import { MongoDbService } from '@/lib/services/mongodb.service';
 function createNotFoundResponse() {
   return NextResponse.json(
     { error: 'Location not found' },
-    { status: 404 }
+    { 
+      status: 404,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    }
   );
 }
 
 function createInvalidInputResponse(message: string) {
   return NextResponse.json(
     { error: message },
-    { status: 400 }
+    { 
+      status: 400,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    }
   );
 }
 
 function createSuccessResponse() {
-  return NextResponse.json({ success: true }, { status: 200, headers: { 'Content-Type': 'application/json' } });
+  return NextResponse.json(
+    { success: true }, 
+    { 
+      status: 200, 
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      } 
+    }
+  );
 }
 
 async function findLocationById(collection: Collection, id: string, mongoService: MongoDbService) {
@@ -160,7 +187,15 @@ export async function DELETE(
           error: 'Cannot delete location: it is being used by industries',
           referencedCount: referencedIndustries
         },
-        { status: 409 } // Conflict
+        { 
+          status: 409, // Conflict
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+          }
+        }
       );
     }
     
@@ -177,9 +212,30 @@ export async function DELETE(
     console.error('Error deleting location:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to delete location' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      }
     );
   } finally {
     await mongoService.close();
   }
+}
+
+// Add an OPTIONS method handler to handle preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400' // 24 hours
+    }
+  });
 } 
