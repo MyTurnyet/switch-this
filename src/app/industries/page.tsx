@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { services } from '@/app/shared/services/clientServices';
 import { Industry, LocationType, Location } from '@/app/shared/types/models';
 import { groupIndustriesByLocationAndBlock, GroupedIndustries } from '@/app/layout-state/utils/groupIndustries';
-import { Card, CardHeader, CardContent, PageContainer, Badge, ConfirmDialog, Button } from '@/app/components/ui';
+import { Card, CardHeader, CardContent, PageContainer, Badge, ConfirmDialog, Button, ToastProvider } from '@/app/components/ui';
 import { AddIndustryForm } from '@/app/components/AddIndustryForm';
 import EditIndustryModal from '@/app/industries/components/EditIndustryModal';
 
@@ -278,12 +278,14 @@ export default function IndustriesPage() {
   // Special case handling
   if (isAddingIndustry) {
     return (
-      <PageContainer title="Add New Industry">
-        <AddIndustryForm 
-          onSave={handleSaveNewIndustry} 
-          onCancel={handleCancelAdd} 
-        />
-      </PageContainer>
+      <ToastProvider>
+        <PageContainer title="Add New Industry">
+          <AddIndustryForm 
+            onSave={handleSaveNewIndustry} 
+            onCancel={handleCancelAdd} 
+          />
+        </PageContainer>
+      </ToastProvider>
     );
   }
 
@@ -339,48 +341,50 @@ export default function IndustriesPage() {
   };
 
   return (
-    <PageContainer title="Industries">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-        <div className="mb-4 sm:mb-0">
-          <h1 className="text-3xl font-bold text-gray-900">Industries</h1>
+    <ToastProvider>
+      <PageContainer title="Industries">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-3xl font-bold text-gray-900">Industries</h1>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={() => setIsAddingIndustry(true)}
+            >
+              Add New Industry
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Button 
-            onClick={() => setIsAddingIndustry(true)}
-          >
-            Add New Industry
-          </Button>
-        </div>
-      </div>
 
-      {/* Add this hidden element to make tests pass */}
-      <div hidden data-testid="page-title">Industries by Location and Block</div>
+        {/* Add this hidden element to make tests pass */}
+        <div hidden data-testid="page-title">Industries by Location and Block</div>
 
-      {/* Edit Industry Modal */}
-      <EditIndustryModal
-        industry={editingIndustry}
-        isOpen={isEditModalOpen}
-        onSave={handleSaveIndustry}
-        onCancel={handleCancelEdit}
-      />
-      
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="Delete Industry"
-        description={`Are you sure you want to delete ${industryToDelete?.name}? This action cannot be undone.`}
-        confirmText="Delete"
-        destructive
-      />
-      
-      {loadingIndicator}
-      {error ? (
-        <div className="bg-red-50 p-4 rounded text-red-700">{error}</div>
-      ) : !loading && (
-        renderIndustries()
-      )}
-    </PageContainer>
+        {/* Edit Industry Modal */}
+        <EditIndustryModal
+          industry={editingIndustry}
+          isOpen={isEditModalOpen}
+          onSave={handleSaveIndustry}
+          onCancel={handleCancelEdit}
+        />
+        
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Industry"
+          description={`Are you sure you want to delete ${industryToDelete?.name}? This action cannot be undone.`}
+          confirmText="Delete"
+          destructive
+        />
+        
+        {loadingIndicator}
+        {error ? (
+          <div className="bg-red-50 p-4 rounded text-red-700">{error}</div>
+        ) : !loading && (
+          renderIndustries()
+        )}
+      </PageContainer>
+    </ToastProvider>
   );
 } 
