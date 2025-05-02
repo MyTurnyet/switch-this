@@ -1,6 +1,7 @@
 # Switch This: Model Railroad Switchlist Generator
 
 [![Run Tests](https://github.com/MyTurnyet/switch-this/actions/workflows/run-tests.yml/badge.svg)](https://github.com/MyTurnyet/switch-this/actions/workflows/run-tests.yml)
+[![Code Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/MyTurnyet/switch-this/coverage-summary/coverage.json&label=coverage&query=$.total.lines.pct&suffix=%&color=brightgreen)](https://github.com/MyTurnyet/switch-this/actions/workflows/run-tests.yml)
 
 A modern web application for generating and managing switchlists for model railroad operations, built with Next.js, TypeScript, and a rich UI.
 

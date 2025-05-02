@@ -29,6 +29,8 @@ const customJestConfig = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/index.{js,jsx,ts,tsx}',
   ],
+  coverageReporters: ['text', 'lcov', 'cobertura', 'html'],
+  coverageDirectory: '<rootDir>/coverage'
 }
 
 module.exports = createJestConfig(customJestConfig) 
