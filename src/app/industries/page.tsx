@@ -5,14 +5,15 @@ import { services } from '@/app/shared/services/clientServices';
 import { Industry, LocationType, Location } from '@/app/shared/types/models';
 import { groupIndustriesByLocationAndBlock, GroupedIndustries } from '@/app/layout-state/utils/groupIndustries';
 import { Card, CardHeader, CardContent, PageContainer, Badge, ConfirmDialog } from '@/app/components/ui';
-import { EditIndustryForm } from '@/app/components/EditIndustryForm';
 import { AddIndustryForm } from '@/app/components/AddIndustryForm';
+import EditIndustryModal from '@/app/industries/components/EditIndustryModal';
 
 export default function IndustriesPage() {
   const [groupedIndustries, setGroupedIndustries] = useState<GroupedIndustries>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingIndustry, setEditingIndustry] = useState<Industry | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddingIndustry, setIsAddingIndustry] = useState(false);
   const [industryToDelete, setIndustryToDelete] = useState<Industry | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -44,6 +45,7 @@ export default function IndustriesPage() {
 
   const handleIndustryClick = (industry: Industry) => {
     setEditingIndustry(industry);
+    setIsEditModalOpen(true);
   };
 
   const handleSaveIndustry = async (updatedIndustry: Industry) => {
@@ -65,6 +67,7 @@ export default function IndustriesPage() {
       }
       
       setGroupedIndustries(newGroupedIndustries);
+      setIsEditModalOpen(false);
       setEditingIndustry(null);
     } catch (err) {
       console.error('Error updating industry in UI:', err);
@@ -110,6 +113,7 @@ export default function IndustriesPage() {
   };
 
   const handleCancelEdit = () => {
+    setIsEditModalOpen(false);
     setEditingIndustry(null);
   };
 
@@ -238,18 +242,6 @@ export default function IndustriesPage() {
     setIndustryToDelete(null);
   };
 
-  if (editingIndustry) {
-    return (
-      <PageContainer title="Edit Industry">
-        <EditIndustryForm 
-          industry={editingIndustry} 
-          onSave={handleSaveIndustry} 
-          onCancel={handleCancelEdit} 
-        />
-      </PageContainer>
-    );
-  }
-
   if (isAddingIndustry) {
     return (
       <PageContainer title="Add New Industry">
@@ -261,96 +253,109 @@ export default function IndustriesPage() {
     );
   }
 
-  const actions = [
-    {
-      label: 'Add New Industry',
-      onClick: handleAddNewIndustry,
-      variant: 'success' as const,
-    }
-  ];
-
   return (
     <PageContainer 
-      title="Industries by Location and Block" 
-      isLoading={loading}
-      error={error || undefined}
-      actions={actions}
+      title="Industries" 
+      actions={[
+        { label: 'Add New Industry', onClick: handleAddNewIndustry }
+      ]}
     >
-      {isDeleteDialogOpen && industryToDelete && (
-        <ConfirmDialog
-          title="Delete Industry"
-          description={`Are you sure you want to delete "${industryToDelete.name}"? This action cannot be undone.`}
-          confirmText="Delete"
-          cancelText="Cancel"
-          destructive={true}
-          isOpen={isDeleteDialogOpen}
-          onConfirm={handleDeleteConfirm}
-          onClose={handleDeleteCancel}
-        />
-      )}
+      {/* Edit Industry Modal */}
+      <EditIndustryModal
+        industry={editingIndustry}
+        isOpen={isEditModalOpen}
+        onSave={handleSaveIndustry}
+        onCancel={handleCancelEdit}
+      />
       
-      {Object.keys(groupedIndustries).length === 0 && !loading ? (
-        <div className="text-xl text-gray-500">No industries found.</div>
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Industry"
+        description={`Are you sure you want to delete ${industryToDelete?.name}? This action cannot be undone.`}
+        confirmText="Delete"
+        destructive
+      />
+      
+      {loading ? (
+        <div className="flex justify-center items-center h-48">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      ) : Object.keys(groupedIndustries).length === 0 ? (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-500">No industries added yet</h3>
+          <p className="mt-2 text-sm text-gray-400">Get started by adding a new industry</p>
+          <button
+            onClick={handleAddNewIndustry}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Add Industry
+          </button>
+        </div>
       ) : (
-        <div className="space-y-12">
+        <div className="space-y-6">
           {sortLocationsByType(groupedIndustries, locations).map(([locationId, locationGroup]) => {
-            const location = locations.find(loc => loc._id === locationId);
-            const locationType = location?.locationType;
+            const location = locations.find(l => l._id === locationId);
             
             return (
-              <div key={locationId} className="space-y-6">
-                <h2 className={`text-2xl font-bold text-gray-900 border-b pb-2 flex items-center p-2 rounded ${getLocationTypeStyle(locationType)}`}>
-                  {locationGroup.locationName}
-                  {getLocationTypeIndicator(locationType)}
-                </h2>
-                
-                {Object.entries(locationGroup.blocks)
-                  .sort(([blockNameA], [blockNameB]) => blockNameA.localeCompare(blockNameB))
-                  .map(([blockName, blockIndustries]) => (
-                  <div key={blockName} className="space-y-4">
-                    <h3 className="text-xl font-semibold text-gray-800">
-                      Block: {blockName}
+              <Card key={locationId}>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <h3 className="text-lg font-medium">
+                      {locationGroup.locationName}
                     </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {blockIndustries.map(industry => (
-                        <div key={industry?._id || `industry-${Math.random()}`} className="cursor-pointer" onClick={() => handleIndustryClick(industry)}>
-                          <Card className="hover:shadow-md transition-shadow">
-                            <CardHeader>
-                              <div className="flex justify-between items-start">
-                                <div className="font-bold text-lg">{industry?.name || "Unnamed Industry"}</div>
-                                <div className="flex items-center space-x-2">
-                                  <Badge variant={getIndustryTypeStyle(industry?.industryType || "")}>
-                                    {industry?.industryType || "Unknown"}
-                                  </Badge>
-                                  <button 
-                                    onClick={(e) => handleDeleteClick(e, industry)}
-                                    className="text-red-500 hover:text-red-700 focus:outline-none"
-                                    aria-label={`Delete ${industry?.name || "industry"}`}
-                                    data-testid={`delete-industry-${industry?._id || "unknown"}`}
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-2">
-                                <p><span className="font-medium">Tracks: </span>{industry?.tracks?.length || 0}</p>
-                                {industry?.description && (
-                                  <p><span className="font-medium">Description: </span>{industry.description}</p>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      ))}
-                    </div>
+                    {location && getLocationTypeIndicator(location.locationType)}
                   </div>
-                ))}
-              </div>
+                </CardHeader>
+                <CardContent>
+                  {Object.entries(locationGroup.blocks).map(([blockName, industries]) => (
+                    <div key={blockName} className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-500 mb-2">{blockName}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {industries.map((industry) => (
+                          <div 
+                            key={industry._id} 
+                            className="border rounded p-3 hover:bg-gray-50 cursor-pointer"
+                            onClick={() => handleIndustryClick(industry)}
+                          >
+                            <div className="flex justify-between">
+                              <div>
+                                <h5 className="font-medium">{industry.name}</h5>
+                                <Badge className={`mt-1 ${getIndustryTypeStyle(industry.industryType)}`}>
+                                  {industry.industryType}
+                                </Badge>
+                              </div>
+                              <button
+                                onClick={(e) => handleDeleteClick(e, industry)}
+                                className="text-gray-400 hover:text-red-500"
+                                title="Delete Industry"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                </svg>
+                              </button>
+                            </div>
+                            {industry.description && (
+                              <p className="text-sm text-gray-600 mt-2">{industry.description}</p>
+                            )}
+                            {industry.tracks && industry.tracks.length > 0 && (
+                              <div className="mt-2">
+                                <span className="text-xs text-gray-500">Tracks: {industry.tracks.length}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             );
           })}
         </div>
