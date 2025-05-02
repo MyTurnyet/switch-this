@@ -1,9 +1,8 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import LayoutState from '../LayoutState';
 import { ClientServices } from '@/app/shared/services/clientServices';
-import { act } from 'react-dom/test-utils';
 import { LocationType } from '@/app/shared/types/models';
 
 // Mock the ScrollArea component
