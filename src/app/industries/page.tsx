@@ -314,20 +314,20 @@ export default function IndustriesPage() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {blockIndustries.map(industry => (
-                        <div key={industry._id} className="cursor-pointer" onClick={() => handleIndustryClick(industry)}>
+                        <div key={industry?._id || `industry-${Math.random()}`} className="cursor-pointer" onClick={() => handleIndustryClick(industry)}>
                           <Card className="hover:shadow-md transition-shadow">
                             <CardHeader>
                               <div className="flex justify-between items-start">
-                                <div className="font-bold text-lg">{industry.name}</div>
+                                <div className="font-bold text-lg">{industry?.name || "Unnamed Industry"}</div>
                                 <div className="flex items-center space-x-2">
-                                  <Badge variant={getIndustryTypeStyle(industry.industryType)}>
-                                    {industry.industryType}
+                                  <Badge variant={getIndustryTypeStyle(industry?.industryType || "")}>
+                                    {industry?.industryType || "Unknown"}
                                   </Badge>
                                   <button 
                                     onClick={(e) => handleDeleteClick(e, industry)}
                                     className="text-red-500 hover:text-red-700 focus:outline-none"
-                                    aria-label={`Delete ${industry.name}`}
-                                    data-testid={`delete-industry-${industry._id}`}
+                                    aria-label={`Delete ${industry?.name || "industry"}`}
+                                    data-testid={`delete-industry-${industry?._id || "unknown"}`}
                                   >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -338,8 +338,8 @@ export default function IndustriesPage() {
                             </CardHeader>
                             <CardContent>
                               <div className="space-y-2">
-                                <p><span className="font-medium">Tracks: </span>{industry.tracks.length}</p>
-                                {industry.description && (
+                                <p><span className="font-medium">Tracks: </span>{industry?.tracks?.length || 0}</p>
+                                {industry?.description && (
                                   <p><span className="font-medium">Description: </span>{industry.description}</p>
                                 )}
                               </div>
