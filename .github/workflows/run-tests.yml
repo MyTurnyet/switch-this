@@ -77,14 +77,18 @@ jobs:
           LINE_PCT=$(awk "BEGIN {printf \"%.2f\", $LINE_RATE * 100}")
           BRANCH_PCT=$(awk "BEGIN {printf \"%.2f\", $BRANCH_RATE * 100}")
           
+          # Calculate actual covered values (without leading zeros)
+          LINE_COVERED=$(awk "BEGIN {printf \"%.0f\", $LINE_RATE * 1000}")
+          BRANCH_COVERED=$(awk "BEGIN {printf \"%.0f\", $BRANCH_RATE * 500}")
+          
           # Create JSON file
           cat > coverage-summary/coverage.json << EOF
           {
             "total": {
-              "lines": { "total": 1000, "covered": ${LINE_RATE/./}, "skipped": 0, "pct": ${LINE_PCT} },
-              "statements": { "total": 1000, "covered": ${LINE_RATE/./}, "skipped": 0, "pct": ${LINE_PCT} },
-              "functions": { "total": 500, "covered": ${LINE_RATE/./}, "skipped": 0, "pct": ${LINE_PCT} },
-              "branches": { "total": 500, "covered": ${BRANCH_RATE/./}, "skipped": 0, "pct": ${BRANCH_PCT} }
+              "lines": { "total": 1000, "covered": $LINE_COVERED, "skipped": 0, "pct": $LINE_PCT },
+              "statements": { "total": 1000, "covered": $LINE_COVERED, "skipped": 0, "pct": $LINE_PCT },
+              "functions": { "total": 500, "covered": $LINE_COVERED, "skipped": 0, "pct": $LINE_PCT },
+              "branches": { "total": 500, "covered": $BRANCH_COVERED, "skipped": 0, "pct": $BRANCH_PCT }
             }
           }
           EOF
