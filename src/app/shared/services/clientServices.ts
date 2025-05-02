@@ -15,6 +15,9 @@ export interface LocationService extends EntityService<Location> {
 
 export interface IndustryService extends EntityService<Industry> {
   getAllIndustries(): Promise<Industry[]>;
+  updateIndustry(id: string, industry: Partial<Industry>): Promise<Industry>;
+  createIndustry(industry: Partial<Industry>): Promise<Industry>;
+  deleteIndustry(id: string): Promise<void>;
 }
 
 export interface TrainRouteService extends EntityService<TrainRoute> {
@@ -69,6 +72,48 @@ class IndustryServiceImpl extends EntityServiceImpl<Industry> implements Industr
 
   async getAllIndustries(): Promise<Industry[]> {
     return this.getAll();
+  }
+
+  async updateIndustry(id: string, industry: Partial<Industry>): Promise<Industry> {
+    const response = await fetch(`${this.endpoint}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(industry),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update industry with id ${id}`);
+    }
+    
+    return response.json();
+  }
+
+  async createIndustry(industry: Partial<Industry>): Promise<Industry> {
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(industry),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to create industry`);
+    }
+    
+    return response.json();
+  }
+
+  async deleteIndustry(id: string): Promise<void> {
+    const response = await fetch(`${this.endpoint}/${id}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete industry with id ${id}`);
+    }
   }
 }
 

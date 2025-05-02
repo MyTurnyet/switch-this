@@ -144,4 +144,20 @@ export class IndustryService {
       throw error;
     }
   }
+
+  async deleteIndustry(id: string): Promise<void> {
+    try {
+      const response = await fetch(`/api/industries/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to delete industry with id ${id}`);
+      }
+    } catch (error) {
+      console.error(`Error deleting industry with id ${id}:`, error);
+      throw error;
+    }
+  }
 } 

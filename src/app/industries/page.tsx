@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { services } from '@/app/shared/services';
+import { services } from '@/app/shared/services/clientServices';
 import { Industry, LocationType, Location } from '@/app/shared/types/models';
 import { groupIndustriesByLocationAndBlock, GroupedIndustries } from '@/app/layout-state/utils/groupIndustries';
-import { Card, CardHeader, CardContent, PageContainer, Badge } from '@/app/components/ui';
+import { Card, CardHeader, CardContent, PageContainer, Badge, ConfirmDialog } from '@/app/components/ui';
 import { EditIndustryForm } from '@/app/components/EditIndustryForm';
 import { AddIndustryForm } from '@/app/components/AddIndustryForm';
-import { IndustryService } from '@/app/shared/services/IndustryService';
 
 export default function IndustriesPage() {
   const [groupedIndustries, setGroupedIndustries] = useState<GroupedIndustries>({});
@@ -15,8 +14,9 @@ export default function IndustriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingIndustry, setEditingIndustry] = useState<Industry | null>(null);
   const [isAddingIndustry, setIsAddingIndustry] = useState(false);
+  const [industryToDelete, setIndustryToDelete] = useState<Industry | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
-  const industryService = new IndustryService();
 
   useEffect(() => {
     async function fetchData() {
@@ -24,12 +24,11 @@ export default function IndustriesPage() {
         setLoading(true);
         const [locationsData, industriesData] = await Promise.all([
           services.locationService.getAllLocations(),
-          industryService.getAllIndustries() // Use the updated service with type conversion
+          services.industryService.getAllIndustries()
         ]);
         
         setLocations(locationsData);
         
-        // Use the data that's already converted by the service
         const grouped = groupIndustriesByLocationAndBlock(industriesData, locationsData);
         setGroupedIndustries(grouped);
         setLoading(false);
@@ -49,18 +48,17 @@ export default function IndustriesPage() {
 
   const handleSaveIndustry = async (updatedIndustry: Industry) => {
     try {
-      // Update the grouped industries with the updated industry
+      await services.industryService.updateIndustry(updatedIndustry._id, updatedIndustry);
+      
       const newGroupedIndustries = { ...groupedIndustries };
       const locationGroup = newGroupedIndustries[updatedIndustry.locationId];
       
       if (locationGroup) {
-        // Find the block that contains this industry
         Object.keys(locationGroup.blocks).forEach(blockName => {
           const blockIndustries = locationGroup.blocks[blockName];
           const industryIndex = blockIndustries.findIndex(ind => ind._id === updatedIndustry._id);
           
           if (industryIndex !== -1) {
-            // Replace the industry with the updated one
             blockIndustries[industryIndex] = updatedIndustry;
           }
         });
@@ -70,7 +68,6 @@ export default function IndustriesPage() {
       setEditingIndustry(null);
     } catch (err) {
       console.error('Error updating industry in UI:', err);
-      // Optionally show an error message
     }
   };
 
@@ -80,20 +77,18 @@ export default function IndustriesPage() {
 
   const handleSaveNewIndustry = async (newIndustry: Industry) => {
     try {
-      // Add the new industry to the grouped industries
+      const savedIndustry = await services.industryService.createIndustry(newIndustry);
+      
       const newGroupedIndustries = { ...groupedIndustries };
       const locationGroup = newGroupedIndustries[newIndustry.locationId];
       
       if (locationGroup) {
-        // Check if the block exists
         if (!locationGroup.blocks[newIndustry.blockName]) {
           locationGroup.blocks[newIndustry.blockName] = [];
         }
         
-        // Add the new industry to the block
-        locationGroup.blocks[newIndustry.blockName].push(newIndustry);
+        locationGroup.blocks[newIndustry.blockName].push(savedIndustry);
       } else {
-        // If the location doesn't exist in our current grouped data, fetch the data again
         const locationsData = await services.locationService.getAllLocations();
         const location = locationsData.find(loc => loc._id === newIndustry.locationId);
         
@@ -101,7 +96,7 @@ export default function IndustriesPage() {
           newGroupedIndustries[newIndustry.locationId] = {
             locationName: location.stationName,
             blocks: {
-              [newIndustry.blockName]: [newIndustry]
+              [newIndustry.blockName]: [savedIndustry]
             }
           };
         }
@@ -111,7 +106,6 @@ export default function IndustriesPage() {
       setIsAddingIndustry(false);
     } catch (err) {
       console.error('Error adding new industry to UI:', err);
-      // Optionally show an error message
     }
   };
 
@@ -174,14 +168,12 @@ export default function IndustriesPage() {
     }
   };
 
-  // Add this function to sort locations by type
   const sortLocationsByType = (groupedIndustries: GroupedIndustries, locationsList: Location[]) => {
-    // Define the priority order
     const typePriority: Record<string, number> = {
       'ON_LAYOUT': 1,
       'FIDDLE_YARD': 2,
       'OFF_LAYOUT': 3,
-      'undefined': 4 // For any locations without a type
+      'undefined': 4
     };
     
     return Object.entries(groupedIndustries).sort((a, b) => {
@@ -191,9 +183,59 @@ export default function IndustriesPage() {
       const typeA = locationA?.locationType || 'undefined';
       const typeB = locationB?.locationType || 'undefined';
       
-      // Sort by type priority first
       return typePriority[typeA as keyof typeof typePriority] - typePriority[typeB as keyof typeof typePriority];
     });
+  };
+
+  const handleDeleteClick = (event: React.MouseEvent, industry: Industry) => {
+    event.stopPropagation();
+    setIndustryToDelete(industry);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!industryToDelete) return;
+    
+    try {
+      setLoading(true);
+      await services.industryService.deleteIndustry(industryToDelete._id);
+      
+      const newGroupedIndustries = { ...groupedIndustries };
+      const locationGroup = newGroupedIndustries[industryToDelete.locationId];
+      
+      if (locationGroup) {
+        Object.keys(locationGroup.blocks).forEach(blockName => {
+          const blockIndustries = locationGroup.blocks[blockName];
+          const industryIndex = blockIndustries.findIndex(ind => ind._id === industryToDelete._id);
+          
+          if (industryIndex !== -1) {
+            blockIndustries.splice(industryIndex, 1);
+            
+            if (blockIndustries.length === 0) {
+              delete locationGroup.blocks[blockName];
+            }
+          }
+        });
+        
+        if (Object.keys(locationGroup.blocks).length === 0) {
+          delete newGroupedIndustries[industryToDelete.locationId];
+        }
+      }
+      
+      setGroupedIndustries(newGroupedIndustries);
+      setIsDeleteDialogOpen(false);
+      setIndustryToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete industry:', err);
+      setError('Failed to delete industry. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setIsDeleteDialogOpen(false);
+    setIndustryToDelete(null);
   };
 
   if (editingIndustry) {
@@ -234,12 +276,24 @@ export default function IndustriesPage() {
       error={error || undefined}
       actions={actions}
     >
+      {isDeleteDialogOpen && industryToDelete && (
+        <ConfirmDialog
+          title="Delete Industry"
+          description={`Are you sure you want to delete "${industryToDelete.name}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          destructive={true}
+          isOpen={isDeleteDialogOpen}
+          onConfirm={handleDeleteConfirm}
+          onClose={handleDeleteCancel}
+        />
+      )}
+      
       {Object.keys(groupedIndustries).length === 0 && !loading ? (
         <div className="text-xl text-gray-500">No industries found.</div>
       ) : (
         <div className="space-y-12">
           {sortLocationsByType(groupedIndustries, locations).map(([locationId, locationGroup]) => {
-            // Find the location to get its type
             const location = locations.find(loc => loc._id === locationId);
             const locationType = location?.locationType;
             
@@ -265,9 +319,21 @@ export default function IndustriesPage() {
                             <CardHeader>
                               <div className="flex justify-between items-start">
                                 <div className="font-bold text-lg">{industry.name}</div>
-                                <Badge variant={getIndustryTypeStyle(industry.industryType)}>
-                                  {industry.industryType}
-                                </Badge>
+                                <div className="flex items-center space-x-2">
+                                  <Badge variant={getIndustryTypeStyle(industry.industryType)}>
+                                    {industry.industryType}
+                                  </Badge>
+                                  <button 
+                                    onClick={(e) => handleDeleteClick(e, industry)}
+                                    className="text-red-500 hover:text-red-700 focus:outline-none"
+                                    aria-label={`Delete ${industry.name}`}
+                                    data-testid={`delete-industry-${industry._id}`}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
                               </div>
                             </CardHeader>
                             <CardContent>
