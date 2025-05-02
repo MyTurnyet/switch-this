@@ -66,17 +66,38 @@ export async function POST(request: Request) {
       );
     }
     
+    // Ensure ownerId is provided
+    if (!data.ownerId) {
+      data.ownerId = 'default-owner';  // Provide a default ownerId if not specified
+    }
+    
     await mongoService.connect();
     const collection = mongoService.getLocationsCollection();
     
-    const result = await collection.insertOne(data);
+    // Prepare the document for insertion (removing any existing _id)
+    const documentToInsert = { ...data };
+    if (documentToInsert._id) {
+      delete documentToInsert._id;
+    }
+    
+    const result = await collection.insertOne(documentToInsert);
+    
+    if (!result.acknowledged) {
+      throw new Error('Failed to insert document');
+    }
+    
+    // Fetch the newly created document
     const newLocation = await collection.findOne({ _id: result.insertedId });
+    
+    if (!newLocation) {
+      throw new Error('Failed to retrieve newly created location');
+    }
     
     return NextResponse.json(newLocation, { status: 201 });
   } catch (error) {
     console.error('Error creating location:', error);
     return NextResponse.json(
-      { error: 'Failed to create location' },
+      { error: error instanceof Error ? error.message : 'Failed to create location' },
       { status: 500 }
     );
   } finally {

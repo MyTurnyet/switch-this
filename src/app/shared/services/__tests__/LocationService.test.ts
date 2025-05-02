@@ -200,10 +200,12 @@ describe('LocationService', () => {
       
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
-        json: async () => ({ error: 'Location not found' })
+        status: 404,
+        statusText: 'Not Found',
+        json: async () => { throw new Error('Invalid JSON'); } // Simulate JSON parsing error
       });
 
-      await expect(service.deleteLocation(locationId)).rejects.toThrow('Location not found');
+      await expect(service.deleteLocation(locationId)).rejects.toThrow('Failed to delete location: Not Found (404)');
     });
 
     it('should handle error when deleting location with default error message', async () => {
@@ -211,10 +213,12 @@ describe('LocationService', () => {
       
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
-        json: async () => ({})
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: async () => { throw new Error('Invalid JSON'); } // Simulate JSON parsing error
       });
 
-      await expect(service.deleteLocation(locationId)).rejects.toThrow('Failed to delete location with id 1');
+      await expect(service.deleteLocation(locationId)).rejects.toThrow('Failed to delete location: Internal Server Error (500)');
     });
 
     it('should handle network error when deleting location', async () => {

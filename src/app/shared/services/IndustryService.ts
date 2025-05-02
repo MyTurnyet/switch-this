@@ -28,6 +28,9 @@ function convertToSharedIndustry(industry: Partial<Industry>): Partial<SharedInd
   const result: Partial<SharedIndustry> = {
     name: industry.name,
     industryType: industry.industryType,
+    locationId: industry.locationId,
+    blockName: industry.blockName,
+    ownerId: industry.ownerId,
   };
   
   // Include tracks when present in the update data
@@ -46,21 +49,6 @@ function convertToSharedIndustry(industry: Partial<Industry>): Partial<SharedInd
   // Include optional fields when present
   if (industry.description !== undefined) {
     result.description = industry.description;
-  }
-  
-  // Include locationId if present
-  if (industry.locationId !== undefined) {
-    result.locationId = industry.locationId;
-  }
-  
-  // Include blockName if present
-  if (industry.blockName !== undefined) {
-    result.blockName = industry.blockName;
-  }
-  
-  // Include ownerId if present
-  if (industry.ownerId !== undefined) {
-    result.ownerId = industry.ownerId;
   }
   
   return result;

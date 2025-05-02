@@ -53,9 +53,15 @@ export class MongoDbService {
    * Convert string ID to ObjectId
    * @param id String ID to convert
    * @returns MongoDB ObjectId
+   * @throws Error if the ID is invalid
    */
   public toObjectId(id: string): ObjectId {
-    return new ObjectId(id);
+    try {
+      return new ObjectId(id);
+    } catch (error) {
+      console.error(`Invalid ObjectId format: ${id}`);
+      throw new Error(`Invalid ObjectId format: ${id}`);
+    }
   }
 
   /**

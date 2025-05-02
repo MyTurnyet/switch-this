@@ -33,6 +33,7 @@ describe('Location ID API', () => {
     close: jest.Mock;
     getLocationsCollection: jest.Mock;
     toObjectId: jest.Mock;
+    getIndustriesCollection: jest.Mock;
   };
 
   let mockMongoService: MockMongoService;
@@ -64,7 +65,8 @@ describe('Location ID API', () => {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
       getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
-      toObjectId: jest.fn().mockImplementation((id) => id) // Simple pass-through for tests
+      toObjectId: jest.fn().mockImplementation((id) => id), // Simple pass-through for tests
+      getIndustriesCollection: jest.fn().mockReturnValue({ countDocuments: jest.fn().mockResolvedValue(0) })
     };
 
     (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
@@ -243,6 +245,24 @@ describe('Location ID API', () => {
   });
 
   describe('DELETE', () => {
+    let mockIndustriesCollection: { countDocuments: jest.Mock };
+    
+    beforeEach(() => {
+      // Set up the mock industries collection
+      mockIndustriesCollection = {
+        countDocuments: jest.fn().mockResolvedValue(0) // By default, no industries reference the location
+      };
+      
+      // Add the getIndustriesCollection method to the mock service
+      mockMongoService.getIndustriesCollection = jest.fn().mockReturnValue(mockIndustriesCollection);
+      
+      // Set up the successful case for finding a location
+      mockCollection.findOne.mockResolvedValue({ ...mockLocation });
+      
+      // Set up the successful case for deleting a location
+      mockCollection.deleteOne.mockResolvedValue({ deletedCount: 1 });
+    });
+    
     it('should delete a location successfully', async () => {
       const request = {} as Request;
       const params = { id: 'loc1' };
@@ -251,16 +271,23 @@ describe('Location ID API', () => {
 
       // Verify that the MongoDB service methods were called correctly
       expect(mockMongoService.connect).toHaveBeenCalled();
-      expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: 'loc1' });
+      expect(mockCollection.findOne).toHaveBeenCalled(); // Check if location exists
+      expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled(); // Check references
+      expect(mockIndustriesCollection.countDocuments).toHaveBeenCalled(); // Count references
+      expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: expect.anything() });
       expect(mockMongoService.close).toHaveBeenCalled();
 
       // Verify that NextResponse.json was called with success response
-      expect(NextResponse.json).toHaveBeenCalledWith({ success: true });
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { success: true },
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
     });
 
     it('should return 404 when location to delete is not found', async () => {
-      mockCollection.deleteOne.mockResolvedValue({ deletedCount: 0 });
-
+      // No location found
+      mockCollection.findOne.mockResolvedValue(null);
+      
       const request = {} as Request;
       const params = { id: 'nonexistent-id' };
 
@@ -270,6 +297,27 @@ describe('Location ID API', () => {
         { error: 'Location not found' },
         { status: 404 }
       );
+    });
+    
+    it('should return 409 when location is referenced by industries', async () => {
+      // Set up industries referencing this location
+      mockIndustriesCollection.countDocuments.mockResolvedValue(2); // 2 industries reference this location
+      
+      const request = {} as Request;
+      const params = { id: 'loc1' };
+
+      await DELETE(request, { params });
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { 
+          error: 'Cannot delete location: it is being used by industries',
+          referencedCount: 2
+        },
+        { status: 409 }
+      );
+      
+      // The location should not be deleted
+      expect(mockCollection.deleteOne).not.toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
@@ -281,7 +329,7 @@ describe('Location ID API', () => {
       await DELETE(request, { params });
 
       expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to delete location' },
+        { error: 'Connection error' },
         { status: 500 }
       );
     });

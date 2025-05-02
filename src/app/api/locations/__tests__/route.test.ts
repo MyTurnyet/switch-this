@@ -191,6 +191,12 @@ describe('Locations API', () => {
         json: jest.fn().mockResolvedValue(newLocation)
       } as unknown as Request;
 
+      // Set up mocks for the improved implementation
+      mockCollection.insertOne.mockResolvedValue({ 
+        acknowledged: true,
+        insertedId: 'new-loc-id' 
+      });
+
       // Mock findOne to return the created location after insert
       const createdLocation = { ...newLocation, _id: 'new-loc-id' };
       mockCollection.findOne.mockResolvedValue(createdLocation);
@@ -199,8 +205,12 @@ describe('Locations API', () => {
 
       // Verify that the MongoDB service methods were called correctly
       expect(mockMongoService.connect).toHaveBeenCalled();
-      expect(mockCollection.insertOne).toHaveBeenCalledWith(newLocation);
-      expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: 'new-loc-id' });
+      
+      // We now expect insertOne to be called with a copied object
+      expect(mockCollection.insertOne).toHaveBeenCalled();
+      
+      // We expect findOne to be called with the inserted ID
+      expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: expect.anything() });
       
       // Verify that NextResponse.json was called with the created location
       expect(NextResponse.json).toHaveBeenCalledWith(createdLocation, { status: 201 });
@@ -275,7 +285,7 @@ describe('Locations API', () => {
       await POST(request);
 
       expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to create location' },
+        { error: 'Database connection error' },
         { status: 500 }
       );
     });

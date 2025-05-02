@@ -20,7 +20,7 @@ function createInvalidInputResponse(message: string) {
 }
 
 function createSuccessResponse() {
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true }, { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
 async function findLocationById(collection: Collection, id: string, mongoService: MongoDbService) {
@@ -120,13 +120,55 @@ export async function DELETE(
   const mongoService = getMongoDbService();
 
   try {
+    // Validate the id parameter
+    if (!params.id || params.id.trim() === '') {
+      return NextResponse.json(
+        { error: 'Invalid location ID' },
+        { status: 400 }
+      );
+    }
+
+    // Check for references to this location before deletion
     await mongoService.connect();
-    const collection = mongoService.getLocationsCollection();
     
-    const locationId = mongoService.toObjectId(params.id);
+    // First check if the location exists
+    const collection = mongoService.getLocationsCollection();
+    let locationId;
+    
+    try {
+      locationId = mongoService.toObjectId(params.id);
+    } catch (error) {
+      console.error('Invalid ObjectId format:', error);
+      return NextResponse.json(
+        { error: 'Invalid location ID format' },
+        { status: 400 }
+      );
+    }
+    
+    const location = await collection.findOne({ _id: locationId });
+    if (!location) {
+      return createNotFoundResponse();
+    }
+    
+    // Check if any industries reference this location
+    const industriesCollection = mongoService.getIndustriesCollection();
+    const referencedIndustries = await industriesCollection.countDocuments({ locationId: params.id });
+    
+    if (referencedIndustries > 0) {
+      return NextResponse.json(
+        { 
+          error: 'Cannot delete location: it is being used by industries',
+          referencedCount: referencedIndustries
+        },
+        { status: 409 } // Conflict
+      );
+    }
+    
+    // If no references found, proceed with deletion
     const result = await collection.deleteOne({ _id: locationId });
     
     if (result.deletedCount === 0) {
+      console.error('No document deleted despite existing check passing');
       return createNotFoundResponse();
     }
     
@@ -134,7 +176,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting location:', error);
     return NextResponse.json(
-      { error: 'Failed to delete location' },
+      { error: error instanceof Error ? error.message : 'Failed to delete location' },
       { status: 500 }
     );
   } finally {

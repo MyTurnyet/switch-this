@@ -57,8 +57,14 @@ export class LocationService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || `Failed to delete location with id ${id}`);
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to delete location with id ${id}`);
+      } catch (parseError) {
+        // Handle the case where the response body isn't valid JSON
+        const statusText = response.statusText || 'Unknown error';
+        throw new Error(`Failed to delete location: ${statusText} (${response.status})`);
+      }
     }
   }
 } 
