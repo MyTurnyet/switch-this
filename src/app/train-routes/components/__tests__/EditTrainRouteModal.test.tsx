@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import EditTrainRouteModal from '../EditTrainRouteModal';
-import { TrainRoute, Location, Industry, IndustryType } from '@/app/shared/types/models';
+import { TrainRoute, Location, Industry, IndustryType, LocationType } from '@/app/shared/types/models';
 
 // Mock the TrainRouteForm component
 jest.mock('../TrainRouteForm', () => {
@@ -40,8 +40,8 @@ describe('EditTrainRouteModal', () => {
   };
 
   const mockLocations: Location[] = [
-    { _id: '201', stationName: 'Station A', block: 'A', ownerId: 'owner1' },
-    { _id: '202', stationName: 'Station B', block: 'B', ownerId: 'owner1' }
+    { _id: '201', stationName: 'Station A', block: 'A', ownerId: 'owner1', locationType: LocationType.ON_LAYOUT },
+    { _id: '202', stationName: 'Station B', block: 'B', ownerId: 'owner1', locationType: LocationType.ON_LAYOUT }
   ];
 
   const mockIndustries: Industry[] = [
