@@ -14,7 +14,7 @@ function createNotFoundResponse() {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
       }
     }
   );
@@ -29,7 +29,7 @@ function createInvalidInputResponse(message: string) {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
       }
     }
   );
@@ -44,7 +44,7 @@ function createSuccessResponse() {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
       } 
     }
   );
@@ -193,7 +193,7 @@ export async function DELETE(
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
           }
         }
       );
@@ -218,13 +218,41 @@ export async function DELETE(
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
         }
       }
     );
   } finally {
     await mongoService.close();
   }
+}
+
+// POST to handle method overrides (for DELETE operations)
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  // Check if this is a method override for DELETE
+  const methodOverride = request.headers.get('X-HTTP-Method-Override');
+  
+  if (methodOverride === 'DELETE') {
+    // If this is a DELETE override, call the DELETE handler
+    return DELETE(request, { params });
+  }
+  
+  // Otherwise, return method not allowed
+  return NextResponse.json(
+    { error: 'Method not allowed' },
+    { 
+      status: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+      }
+    }
+  );
 }
 
 // Add an OPTIONS method handler to handle preflight requests
@@ -234,7 +262,7 @@ export async function OPTIONS() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With',
       'Access-Control-Max-Age': '86400' // 24 hours
     }
   });

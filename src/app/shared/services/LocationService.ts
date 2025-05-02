@@ -53,11 +53,12 @@ export class LocationService {
 
   async deleteLocation(id: string): Promise<void> {
     const response = await fetch(`/api/locations/${id}`, {
-      method: 'DELETE',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
+        'X-HTTP-Method-Override': 'DELETE'
       },
       credentials: 'same-origin'
     });
