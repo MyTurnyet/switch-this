@@ -1,20 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { Industry } from '@/app/shared/types/models';
+import { Industry, LocationType, IndustryType } from '@/app/shared/types/models';
 import { IndustryService } from '@/app/shared/services/IndustryService';
-
-// Define the enum values directly to avoid circular imports
-const LocationType = {
-  ON_LAYOUT: 'ON_LAYOUT',
-  OFF_LAYOUT: 'OFF_LAYOUT',
-  FIDDLE_YARD: 'FIDDLE_YARD'
-};
-
-const IndustryType = {
-  FREIGHT: 'FREIGHT',
-  YARD: 'YARD',
-  PASSENGER: 'PASSENGER'
-};
 
 // Import these after the type definitions
 import IndustriesPage from '../page';

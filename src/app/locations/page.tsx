@@ -266,28 +266,27 @@ function LocationsContent() {
   };
 
   return (
-    <PageContainer 
+    <PageContainer
       title="Locations"
       description="Manage your layout locations"
       actions={actions}
-      isLoading={loading}
-      error={error || undefined}
     >
+      {error && (
+        <div className="error-message p-4 mb-4 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
+      
       <DataTable
         columns={columns}
         data={paginatedLocations as unknown as Record<string, unknown>[]}
         keyExtractor={(item) => (item as unknown as Location)._id}
         isLoading={loading}
-        error={error || undefined}
+        onSort={handleSort}
         sortColumn={sortColumn || undefined}
         sortDirection={sortDirection}
-        onSort={handleSort}
-        zebra
-        bordered
-        hover
       />
       
-      {/* Pagination */}
       {locations.length > itemsPerPage && (
         <div className="mt-6">
           <Pagination
@@ -299,24 +298,19 @@ function LocationsContent() {
         </div>
       )}
       
-      {/* Edit/Create Modal */}
       <EditLocationModal
         location={selectedLocation}
+        isOpen={isModalOpen}
         onSave={handleSave}
         onCancel={handleCloseModal}
-        isOpen={isModalOpen}
       />
       
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
-        onClose={handleDeleteCancel}
+        title={`Delete Location: ${locationToDelete?.stationName}`}
+        description="Are you sure you want to delete this location? This action cannot be undone."
         onConfirm={handleDeleteConfirm}
-        title="Delete Location"
-        description={`Are you sure you want to delete ${locationToDelete?.stationName}? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        destructive
+        onClose={handleDeleteCancel}
       />
     </PageContainer>
   );

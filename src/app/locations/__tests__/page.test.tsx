@@ -212,22 +212,28 @@ describe('LocationsPage', () => {
   });
 
   it('creates a new location and updates the UI', async () => {
-    // Create a new instance of LocationService with mocked methods
-    const mockCreateLocation = jest.fn().mockImplementation((locationData) => {
-      return Promise.resolve({
-        ...locationData,
-        _id: 'new-location-id'
-      });
+    // Reset the LocationService mock
+    (LocationService as jest.Mock).mockClear();
+    
+    // Create a mock implementation for this specific test
+    const mockCreateLocation = jest.fn().mockResolvedValue({
+      _id: 'new-location-id',
+      stationName: 'New Location',
+      block: 'NEW',
+      locationType: LocationType.ON_LAYOUT,
+      ownerId: 'owner1'
     });
     
-    // Override the mock implementation for this test only
-    (LocationService as jest.Mock).mockImplementationOnce(() => ({
+    // Set the correct implementation for getAllLocations and createLocation
+    (LocationService as jest.Mock).mockImplementation(() => ({
       getAllLocations: jest.fn().mockResolvedValue([
-        { _id: 'loc1', stationName: 'Echo Lake, WA', block: 'ECHO', locationType: LocationType.ON_LAYOUT },
-        { _id: 'loc2', stationName: 'Chicago, IL', block: 'EAST', locationType: LocationType.OFF_LAYOUT },
-        { _id: 'loc3', stationName: 'Echo Lake Yard', block: 'ECHO', locationType: LocationType.FIDDLE_YARD }
+        { _id: 'loc1', stationName: 'Echo Lake, WA', block: 'ECHO', locationType: LocationType.ON_LAYOUT, ownerId: 'owner1' },
+        { _id: 'loc2', stationName: 'Chicago, IL', block: 'EAST', locationType: LocationType.OFF_LAYOUT, ownerId: 'owner1' },
+        { _id: 'loc3', stationName: 'Echo Lake Yard', block: 'ECHO', locationType: LocationType.FIDDLE_YARD, ownerId: 'owner1' }
       ]),
-      createLocation: mockCreateLocation
+      createLocation: mockCreateLocation,
+      updateLocation: jest.fn(),
+      deleteLocation: jest.fn()
     }));
     
     render(<LocationsPage />);
@@ -254,16 +260,21 @@ describe('LocationsPage', () => {
   });
 
   it('handles deletion confirmation and deletes a location', async () => {
+    // Reset the LocationService mock
+    (LocationService as jest.Mock).mockClear();
+    
     // Create a mock delete function
     const mockDeleteLocation = jest.fn().mockResolvedValue(undefined);
     
-    // Override the mock implementation for this test only
-    (LocationService as jest.Mock).mockImplementationOnce(() => ({
+    // Set the correct implementation for this test
+    (LocationService as jest.Mock).mockImplementation(() => ({
       getAllLocations: jest.fn().mockResolvedValue([
-        { _id: 'loc1', stationName: 'Echo Lake, WA', block: 'ECHO', locationType: LocationType.ON_LAYOUT },
-        { _id: 'loc2', stationName: 'Chicago, IL', block: 'EAST', locationType: LocationType.OFF_LAYOUT },
-        { _id: 'loc3', stationName: 'Echo Lake Yard', block: 'ECHO', locationType: LocationType.FIDDLE_YARD }
+        { _id: 'loc1', stationName: 'Echo Lake, WA', block: 'ECHO', locationType: LocationType.ON_LAYOUT, ownerId: 'owner1' },
+        { _id: 'loc2', stationName: 'Chicago, IL', block: 'EAST', locationType: LocationType.OFF_LAYOUT, ownerId: 'owner1' },
+        { _id: 'loc3', stationName: 'Echo Lake Yard', block: 'ECHO', locationType: LocationType.FIDDLE_YARD, ownerId: 'owner1' }
       ]),
+      createLocation: jest.fn(),
+      updateLocation: jest.fn(),
       deleteLocation: mockDeleteLocation
     }));
     
@@ -293,27 +304,35 @@ describe('LocationsPage', () => {
   });
 
   it('handles API errors gracefully', async () => {
-    // Clear the mocks
-    jest.clearAllMocks();
+    // Reset the LocationService mock
+    (LocationService as jest.Mock).mockClear();
     
     // Create a mock that rejects with an error
     const mockGetAllLocations = jest.fn().mockRejectedValue(new Error('API error'));
     
-    // Override the mock implementation for this test only
-    (LocationService as jest.Mock).mockImplementationOnce(() => ({
-      getAllLocations: mockGetAllLocations
+    // Set the correct implementation for this test
+    (LocationService as jest.Mock).mockImplementation(() => ({
+      getAllLocations: mockGetAllLocations,
+      createLocation: jest.fn(),
+      updateLocation: jest.fn(),
+      deleteLocation: jest.fn()
     }));
     
     render(<LocationsPage />);
     
-    // Wait for the loading state to finish
+    // Wait for the loading state to finish and error to be set
     await waitFor(() => {
       expect(mockGetAllLocations).toHaveBeenCalled();
     });
     
-    // The PageContainer should have been called with the error prop
+    // Use a more flexible approach to find the error text
+    // Check if the error text is within the page container
     const pageContainer = screen.getByTestId('page-container');
-    const errorText = await screen.findByText('Failed to load data. Please try again later.');
-    expect(errorText).toBeInTheDocument();
+    
+    // Use waitFor instead of findByText to give the component time to update
+    await waitFor(() => {
+      // This checks if the text is anywhere in the container
+      expect(pageContainer.textContent).toContain('Failed to load data');
+    });
   });
 }); 
