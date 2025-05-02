@@ -2,6 +2,16 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { Industry, LocationType, IndustryType } from '@/app/shared/types/models';
 import { IndustryService } from '@/app/shared/services/IndustryService';
+import { ToastProvider } from '@/app/components/ui';
+
+// Create a wrapper component that includes the ToastProvider
+const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
+  return <ToastProvider>{children}</ToastProvider>;
+};
+
+// Custom render function that wraps the component with ToastProvider
+const customRender = (ui: React.ReactElement, options?: Record<string, unknown>) =>
+  render(ui, { wrapper: AllTheProviders, ...options });
 
 // Import these after the type definitions
 import IndustriesPage from '../page';
@@ -60,7 +70,7 @@ jest.mock('@/app/shared/services/clientServices', () => ({
 
 // Mock the groupIndustriesByLocationAndBlock function
 jest.mock('@/app/layout-state/utils/groupIndustries', () => ({
-  groupIndustriesByLocationAndBlock: jest.fn().mockImplementation((industries: Industry[], _: any) => {
+  groupIndustriesByLocationAndBlock: jest.fn().mockImplementation((industries: Industry[]) => {
     return {
       '1': {
         locationName: 'Station A',
@@ -346,7 +356,7 @@ describe('Industries Page', () => {
   });
 
   it('should fetch and display industries grouped by block and location', async () => {
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
 
     // Check for loading state
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -387,7 +397,7 @@ describe('Industries Page', () => {
     // Only mock the location service to fail
     (clientServices.services.locationService.getAllLocations as jest.Mock).mockRejectedValue(new Error('Failed to fetch locations'));
     
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
     
     await waitFor(() => {
       expect(screen.getByText('Failed to load data. Please try again later.')).toBeInTheDocument();
@@ -395,7 +405,7 @@ describe('Industries Page', () => {
   });
   
   it('should show the add industry form when Add New Industry button is clicked', async () => {
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
     
     // Wait for page to load
     await waitFor(() => {
@@ -413,7 +423,7 @@ describe('Industries Page', () => {
   });
   
   it('should add a new industry and update the UI', async () => {
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
     
     // Wait for page to load
     await waitFor(() => {
@@ -441,7 +451,7 @@ describe('Industries Page', () => {
   });
   
   it('should cancel adding a new industry', async () => {
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
     
     // Wait for page to load
     await waitFor(() => {
@@ -463,7 +473,7 @@ describe('Industries Page', () => {
   });
 
   it('should display location type indicators after loading', async () => {
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
 
     // Wait for loading to finish
     await waitFor(() => {
@@ -477,7 +487,7 @@ describe('Industries Page', () => {
   });
 
   it('should display block names within each location', async () => {
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
 
     // Wait for loading to finish
     await waitFor(() => {
@@ -491,7 +501,7 @@ describe('Industries Page', () => {
   });
 
   it('should show the delete confirmation dialog when delete button is clicked', async () => {
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
     
     // Wait for page to load
     await waitFor(() => {
@@ -515,7 +525,7 @@ describe('Industries Page', () => {
     const mockDeleteIndustry = clientServices.services.industryService.deleteIndustry as jest.Mock;
     mockDeleteIndustry.mockClear();
     
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
     
     // Wait for page to fully load (no loading indicator visible)
     await waitFor(() => {
@@ -559,7 +569,7 @@ describe('Industries Page', () => {
     const mockDeleteIndustry = clientServices.services.industryService.deleteIndustry as jest.Mock;
     mockDeleteIndustry.mockClear();
     
-    render(<IndustriesPage />);
+    customRender(<IndustriesPage />);
     
     // Wait for page to fully load (no loading indicator visible)
     await waitFor(() => {
