@@ -16,16 +16,20 @@ describe('RollingStockService', () => {
   let mockRollingStock: RollingStockWithLocation[];
   let originalConsoleLog: any;
   let originalConsoleError: any;
+  let consoleLogSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     service = new RollingStockService();
+    
     // Store original console methods
     originalConsoleLog = console.log;
     originalConsoleError = console.error;
-    // Mock console methods to suppress output during tests
-    console.log = jest.fn();
-    console.error = jest.fn();
+    
+    // Use jest.spyOn instead of mocking to preserve functionality but allow assertions
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     mockRollingStock = [
       {
@@ -69,6 +73,8 @@ describe('RollingStockService', () => {
 
   afterEach(() => {
     // Restore original console methods
+    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
     console.log = originalConsoleLog;
     console.error = originalConsoleError;
   });
@@ -202,23 +208,24 @@ describe('RollingStockService', () => {
       });
       
       // Verify that the expected console messages were logged
-      expect(console.log).toHaveBeenCalledWith('Starting reset to home yards operation');
-      expect(console.log).toHaveBeenCalledWith('Reset operation completed successfully');
+      expect(consoleLogSpy).toHaveBeenCalledWith('Starting reset to home yards operation');
+      expect(consoleLogSpy).toHaveBeenCalledWith('Reset operation completed successfully');
     });
     
     it('should handle API error when resetting rolling stock', async () => {
       // Mock a failed response
+      const errorData = { error: 'Reset operation failed' };
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
-        json: async () => ({ error: 'Reset operation failed' })
+        json: async () => errorData
       });
       
       // Verify the method throws the expected error
       await expect(service.resetToHomeYards()).rejects.toThrow('Failed to reset rolling stock to home yards');
       
       // Verify the error message was logged
-      expect(console.log).toHaveBeenCalledWith('Starting reset to home yards operation');
-      expect(console.error).toHaveBeenCalledWith('Reset API returned error:', { error: 'Reset operation failed' });
+      expect(consoleLogSpy).toHaveBeenCalledWith('Starting reset to home yards operation');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Reset API returned error:', errorData);
     });
     
     it('should handle network error when resetting rolling stock', async () => {
@@ -230,8 +237,8 @@ describe('RollingStockService', () => {
       await expect(service.resetToHomeYards()).rejects.toThrow('Network error');
       
       // Verify the error message was logged
-      expect(console.log).toHaveBeenCalledWith('Starting reset to home yards operation');
-      expect(console.error).toHaveBeenCalledWith('Error during reset operation:', networkError);
+      expect(consoleLogSpy).toHaveBeenCalledWith('Starting reset to home yards operation');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reset operation:', networkError);
     });
   });
 }); 
