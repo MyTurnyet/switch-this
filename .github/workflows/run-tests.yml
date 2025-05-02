@@ -11,6 +11,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # This is needed to push to branches
     
     steps:
       - name: Checkout code
@@ -91,9 +93,11 @@ jobs:
       
       - name: Deploy Coverage Summary
         if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./coverage-summary
-          publish_branch: coverage-summary
-          force_orphan: true 
+        run: |
+          cd coverage-summary
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git init
+          git add .
+          git commit -m "Update coverage summary"
+          git push --force https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:coverage-summary 
