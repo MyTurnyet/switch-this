@@ -15,7 +15,7 @@ describe('Pagination Component', () => {
     render(<Pagination totalItems={50} itemsPerPage={10} currentPage={2} onPageChange={jest.fn()} />);
     
     const currentPageButton = screen.getByLabelText('Page 2');
-    expect(currentPageButton).toHaveClass('bg-primary');
+    expect(currentPageButton).toHaveClass('bg-primary-600');
   });
 
   it('calls onPageChange when a page is clicked', () => {
