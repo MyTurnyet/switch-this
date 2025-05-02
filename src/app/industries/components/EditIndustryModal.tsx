@@ -340,7 +340,7 @@ export default function EditIndustryModal({
                             type="button"
                             key={type.aarType}
                             onClick={() => {
-                              const currentTypes = [...track.acceptedCarTypes] || [];
+                              const currentTypes = Array.isArray(track.acceptedCarTypes) ? [...track.acceptedCarTypes] : [];
                               if (currentTypes.includes(type.aarType)) {
                                 updateTrack(index, 'acceptedCarTypes', currentTypes.filter(t => t !== type.aarType));
                               } else {
