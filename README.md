@@ -126,6 +126,98 @@ The project follows a component-based architecture with a focus on:
   - `test/` - Test utilities and integration tests
 - `docker/` - Docker configuration for development
 
+### UML Class Diagram
+
+Below is a UML diagram representing the core entities and their relationships in the Switch This application:
+
+```mermaid
+classDiagram
+    class BaseEntity {
+        +string _id
+        +string ownerId
+    }
+
+    class Location {
+        +string stationName
+        +string block
+        +string description
+        +LocationType locationType
+    }
+
+    class Industry {
+        +string name
+        +string locationId
+        +string blockName
+        +string description
+        +IndustryType industryType
+        +Track[] tracks
+    }
+
+    class Track {
+        +string name
+        +number length
+        +number capacity
+        +number maxCars
+        +string[] placedCars
+        +string[] acceptedCarTypes
+    }
+
+    class RollingStock {
+        +string roadName
+        +string roadNumber
+        +string aarType
+        +string description
+        +string color
+        +string note
+        +string homeYard
+        +RollingStockLocation currentLocation
+        +CarDestination destination
+    }
+
+    class TrainRoute {
+        +string name
+        +string routeNumber
+        +string routeType
+        +string originatingYardId
+        +string terminatingYardId
+        +string[] stations
+        +string description
+    }
+
+    class Switchlist {
+        +string trainRouteId
+        +string name
+        +string createdAt
+        +string status
+        +string notes
+    }
+
+    class CarDestination {
+        +Object immediateDestination
+        +Object finalDestination
+    }
+
+    class RollingStockLocation {
+        +string industryId
+        +string trackId
+    }
+
+    BaseEntity <|-- Location
+    BaseEntity <|-- Industry
+    BaseEntity <|-- Track
+    BaseEntity <|-- RollingStock
+    BaseEntity <|-- TrainRoute
+    BaseEntity <|-- Switchlist
+
+    Industry "1" --> "1" Location : located at
+    Industry "1" *-- "many" Track : contains
+    RollingStock "many" --> "1" RollingStockLocation : has current
+    RollingStock "many" --> "0..1" CarDestination : has
+    Switchlist "1" --> "1" TrainRoute : uses
+    TrainRoute "1" --> "many" Location : goes through
+    RollingStock "many" --> "0..1" Track : placed on
+```
+
 ## Testing
 
 The project uses Jest and React Testing Library for testing. Run tests with:
