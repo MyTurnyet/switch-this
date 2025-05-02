@@ -191,7 +191,14 @@ describe('LocationService', () => {
       await service.deleteLocation(locationId);
       
       expect(global.fetch).toHaveBeenCalledWith(`/api/locations/${locationId}`, {
-        method: 'DELETE',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-HTTP-Method-Override': 'DELETE'
+        },
+        credentials: 'same-origin'
       });
     });
 

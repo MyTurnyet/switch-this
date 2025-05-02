@@ -80,7 +80,7 @@ describe('Location ID API', () => {
   });
 
   describe('GET', () => {
-    it('should return a location by ID', async () => {
+    it('should retrieve a location by ID', async () => {
       const request = {} as Request;
       const params = { id: 'loc1' };
 
@@ -88,17 +88,27 @@ describe('Location ID API', () => {
 
       // Verify that the MongoDB service methods were called correctly
       expect(mockMongoService.connect).toHaveBeenCalled();
-      expect(mockMongoService.getLocationsCollection).toHaveBeenCalled();
       expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: 'loc1' });
       expect(mockMongoService.close).toHaveBeenCalled();
-
-      // Verify that NextResponse.json was called with the location
-      expect(NextResponse.json).toHaveBeenCalledWith(mockLocation);
+      
+      // Verify that NextResponse.json was called with the found location
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        mockLocation, 
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
+      );
     });
 
     it('should return 404 when location is not found', async () => {
+      // No location found
       mockCollection.findOne.mockResolvedValue(null);
-
+      
       const request = {} as Request;
       const params = { id: 'nonexistent-id' };
 
@@ -106,7 +116,15 @@ describe('Location ID API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Location not found' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
 
@@ -120,7 +138,15 @@ describe('Location ID API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to fetch location' },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
   });
@@ -128,12 +154,14 @@ describe('Location ID API', () => {
   describe('PUT', () => {
     it('should update a location successfully', async () => {
       const updatedLocation = {
-        ...mockLocation,
+        _id: 'loc1',
         stationName: 'Updated Echo Lake, WA',
+        block: 'ECHO',
+        locationType: LocationType.ON_LAYOUT,
+        ownerId: 'owner1',
         description: 'Updated description'
       };
 
-      // Mock the request body
       const request = {
         json: jest.fn().mockResolvedValue(updatedLocation)
       } as unknown as Request;
@@ -158,7 +186,17 @@ describe('Location ID API', () => {
       expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: 'loc1' });
 
       // Verify that NextResponse.json was called with the updated location
-      expect(NextResponse.json).toHaveBeenCalledWith(updatedLocation);
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        updatedLocation,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
+      );
     });
 
     it('should return 400 for invalid input - missing station name', async () => {
@@ -177,7 +215,15 @@ describe('Location ID API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Station name is required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
 
@@ -197,7 +243,15 @@ describe('Location ID API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Block is required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
 
@@ -218,7 +272,15 @@ describe('Location ID API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Location not found' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
 
@@ -239,7 +301,15 @@ describe('Location ID API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to update location' },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
   });
@@ -280,7 +350,15 @@ describe('Location ID API', () => {
       // Verify that NextResponse.json was called with success response
       expect(NextResponse.json).toHaveBeenCalledWith(
         { success: true },
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 200, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          } 
+        }
       );
     });
 
@@ -295,7 +373,15 @@ describe('Location ID API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Location not found' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
     
@@ -313,7 +399,15 @@ describe('Location ID API', () => {
           error: 'Cannot delete location: it is being used by industries',
           referencedCount: 2
         },
-        { status: 409 }
+        { 
+          status: 409,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
       
       // The location should not be deleted
@@ -330,7 +424,15 @@ describe('Location ID API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Connection error' },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
   });

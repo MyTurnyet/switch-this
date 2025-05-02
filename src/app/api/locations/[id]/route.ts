@@ -72,12 +72,27 @@ export async function GET(
       return createNotFoundResponse();
     }
     
-    return NextResponse.json(location);
+    return NextResponse.json(location, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+      }
+    });
   } catch (error) {
     console.error('Error fetching location:', error);
     return NextResponse.json(
       { error: 'Failed to fetch location' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+        }
+      }
     );
   } finally {
     await mongoService.close();
@@ -127,12 +142,27 @@ export async function PUT(
     
     const updatedLocation = await findLocationById(collection, params.id, mongoService);
     
-    return NextResponse.json(updatedLocation);
+    return NextResponse.json(updatedLocation, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+      }
+    });
   } catch (error) {
     console.error('Error updating location:', error);
     return NextResponse.json(
       { error: 'Failed to update location' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+        }
+      }
     );
   } finally {
     await mongoService.close();

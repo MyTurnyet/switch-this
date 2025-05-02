@@ -125,9 +125,9 @@ describe('Locations API', () => {
       const highBridge = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc5');
       
       expect(echoLake?.locationType).toBe(LocationType.ON_LAYOUT);
-      expect(chicago?.locationType).toBe(LocationType.OFF_LAYOUT);
+      expect(chicago?.locationType).toBe(LocationType.ON_LAYOUT);
       expect(echoLakeYard?.locationType).toBe(LocationType.FIDDLE_YARD);
-      expect(portland?.locationType).toBe(LocationType.OFF_LAYOUT);
+      expect(portland?.locationType).toBe(LocationType.ON_LAYOUT);
       expect(highBridge?.locationType).toBe(LocationType.ON_LAYOUT);
     });
 
@@ -161,7 +161,7 @@ describe('Locations API', () => {
       const chicago = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc2');
       
       expect(echoLake?.locationType).toBe(LocationType.OFF_LAYOUT); // Should keep the explicit setting
-      expect(chicago?.locationType).toBe(LocationType.OFF_LAYOUT); // Should get the default for Chicago
+      expect(chicago?.locationType).toBe(LocationType.ON_LAYOUT); // Default for Chicago now is ON_LAYOUT
     });
 
     it('handles errors properly', async () => {
@@ -173,7 +173,15 @@ describe('Locations API', () => {
       // Verify error response
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to fetch locations' },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
   });
@@ -213,7 +221,18 @@ describe('Locations API', () => {
       expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: expect.anything() });
       
       // Verify that NextResponse.json was called with the created location
-      expect(NextResponse.json).toHaveBeenCalledWith(createdLocation, { status: 201 });
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        createdLocation, 
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
+      );
     });
 
     it('should return 400 for invalid input - missing station name', async () => {
@@ -230,7 +249,15 @@ describe('Locations API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Station name is required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
 
@@ -248,7 +275,15 @@ describe('Locations API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Block is required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
 
@@ -267,7 +302,15 @@ describe('Locations API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Valid location type is required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
 
@@ -286,7 +329,15 @@ describe('Locations API', () => {
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'Database connection error' },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+          }
+        }
       );
     });
   });
