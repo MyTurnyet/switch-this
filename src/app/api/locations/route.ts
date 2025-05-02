@@ -36,4 +36,50 @@ export async function GET() {
   } finally {
     await mongoService.close();
   }
+}
+
+export async function POST(request: Request) {
+  const mongoService = getMongoDbService();
+
+  try {
+    const data = await request.json();
+    
+    // Validate required fields
+    if (!data.stationName) {
+      return NextResponse.json(
+        { error: 'Station name is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!data.block) {
+      return NextResponse.json(
+        { error: 'Block is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!Object.values(LocationType).includes(data.locationType)) {
+      return NextResponse.json(
+        { error: 'Valid location type is required' },
+        { status: 400 }
+      );
+    }
+    
+    await mongoService.connect();
+    const collection = mongoService.getLocationsCollection();
+    
+    const result = await collection.insertOne(data);
+    const newLocation = await collection.findOne({ _id: result.insertedId });
+    
+    return NextResponse.json(newLocation, { status: 201 });
+  } catch (error) {
+    console.error('Error creating location:', error);
+    return NextResponse.json(
+      { error: 'Failed to create location' },
+      { status: 500 }
+    );
+  } finally {
+    await mongoService.close();
+  }
 } 

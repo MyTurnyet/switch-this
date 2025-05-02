@@ -95,6 +95,12 @@ const Header = () => {
                     Industries
                   </Link>
                   <Link 
+                    href="/locations" 
+                    className={`block px-4 py-2 text-sm ${getLinkClass('/locations').replace('text-primary-600', 'text-primary-600 bg-gray-100').replace('text-gray-600', 'text-gray-700')}`}
+                  >
+                    Locations
+                  </Link>
+                  <Link 
                     href="/rolling-stock" 
                     className={`block px-4 py-2 text-sm ${getLinkClass('/rolling-stock').replace('text-primary-600', 'text-primary-600 bg-gray-100').replace('text-gray-600', 'text-gray-700')}`}
                   >

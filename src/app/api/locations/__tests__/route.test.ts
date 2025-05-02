@@ -1,4 +1,4 @@
-import { GET } from '../route';
+import { GET, POST } from '../route';
 import { getMongoDbService } from '@/lib/services/mongodb.provider';
 import { NextResponse } from 'next/server';
 import { LocationType } from '@/app/shared/types/models';
@@ -17,15 +17,19 @@ describe('Locations API', () => {
     locationType?: LocationType;
   };
 
+  // Define common mock types
+  type MockCollection = {
+    find: jest.Mock;
+    findOne: jest.Mock;
+    insertOne: jest.Mock;
+    toArray: jest.Mock;
+  };
+
   type MockMongoService = {
     connect: jest.Mock;
     close: jest.Mock;
     getLocationsCollection: jest.Mock;
-  };
-
-  type MockCollection = {
-    find: jest.Mock;
-    toArray: jest.Mock;
+    toObjectId: jest.Mock;
   };
 
   let mockMongoService: MockMongoService;
@@ -70,104 +74,210 @@ describe('Locations API', () => {
     // Set up mock MongoDB service and collection
     mockCollection = {
       find: jest.fn().mockReturnThis(),
+      findOne: jest.fn().mockImplementation((query) => {
+        const id = query._id;
+        return Promise.resolve(mockLocationsData.find(loc => loc._id === id) || null);
+      }),
+      insertOne: jest.fn().mockResolvedValue({ insertedId: 'new-loc-id' }),
       toArray: jest.fn().mockResolvedValue(mockLocationsData)
     };
 
     mockMongoService = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
-      getLocationsCollection: jest.fn().mockReturnValue(mockCollection)
+      getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
+      toObjectId: jest.fn().mockImplementation((id) => id) // Simple pass-through for tests
     };
 
     (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
+
+    // Mock NextResponse.json
+    (NextResponse.json as jest.Mock) = jest.fn().mockImplementation((data, options) => ({ data, options }));
   });
 
-  it('returns locations with correctly assigned location types', async () => {
-    // Mock NextResponse.json to capture the returned data
-    const mockJson = jest.fn().mockReturnValue({});
-    (NextResponse.json as jest.Mock) = mockJson;
-
-    await GET();
-
-    // Verify that the MongoDB service methods were called correctly
-    expect(mockMongoService.connect).toHaveBeenCalled();
-    expect(mockMongoService.getLocationsCollection).toHaveBeenCalled();
-    expect(mockMongoService.close).toHaveBeenCalled();
-
-    // Verify that NextResponse.json was called with the enhanced locations
-    expect(mockJson).toHaveBeenCalled();
-    
-    // Get the data that was passed to NextResponse.json
-    const enhancedLocations = mockJson.mock.calls[0][0] as MockLocation[];
-    
-    // Verify that location types were correctly assigned
-    expect(enhancedLocations).toHaveLength(5);
-    
-    // Check specific locations
-    const echoLake = enhancedLocations.find(loc => loc._id === 'loc1');
-    const chicago = enhancedLocations.find(loc => loc._id === 'loc2');
-    const echoLakeYard = enhancedLocations.find(loc => loc._id === 'loc3');
-    const portland = enhancedLocations.find(loc => loc._id === 'loc4');
-    const highBridge = enhancedLocations.find(loc => loc._id === 'loc5');
-    
-    expect(echoLake?.locationType).toBe(LocationType.ON_LAYOUT);
-    expect(chicago?.locationType).toBe(LocationType.OFF_LAYOUT);
-    expect(echoLakeYard?.locationType).toBe(LocationType.FIDDLE_YARD);
-    expect(portland?.locationType).toBe(LocationType.OFF_LAYOUT);
-    expect(highBridge?.locationType).toBe(LocationType.ON_LAYOUT);
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('respects existing location types if already set', async () => {
-    // Modify mock data to include some locations with already set location types
-    mockLocationsData = [
-      {
-        _id: 'loc1',
-        stationName: 'Echo Lake, WA',
-        block: 'ECHO',
-        locationType: LocationType.OFF_LAYOUT, // Explicitly set as OFF_LAYOUT even though it would normally be ON_LAYOUT
+  describe('GET', () => {
+    it('returns locations with correctly assigned location types', async () => {
+      await GET();
+
+      // Verify that the MongoDB service methods were called correctly
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockMongoService.getLocationsCollection).toHaveBeenCalled();
+      expect(mockMongoService.close).toHaveBeenCalled();
+
+      // Verify that NextResponse.json was called with the enhanced locations
+      expect(NextResponse.json).toHaveBeenCalled();
+      
+      // Get the data that was passed to NextResponse.json
+      const enhancedLocations = (NextResponse.json as jest.Mock).mock.calls[0][0];
+      
+      // Verify that location types were correctly assigned
+      expect(enhancedLocations).toHaveLength(5);
+      
+      // Check specific locations
+      const echoLake = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc1');
+      const chicago = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc2');
+      const echoLakeYard = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc3');
+      const portland = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc4');
+      const highBridge = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc5');
+      
+      expect(echoLake?.locationType).toBe(LocationType.ON_LAYOUT);
+      expect(chicago?.locationType).toBe(LocationType.OFF_LAYOUT);
+      expect(echoLakeYard?.locationType).toBe(LocationType.FIDDLE_YARD);
+      expect(portland?.locationType).toBe(LocationType.OFF_LAYOUT);
+      expect(highBridge?.locationType).toBe(LocationType.ON_LAYOUT);
+    });
+
+    it('respects existing location types if already set', async () => {
+      // Modify mock data to include some locations with already set location types
+      mockLocationsData = [
+        {
+          _id: 'loc1',
+          stationName: 'Echo Lake, WA',
+          block: 'ECHO',
+          locationType: LocationType.OFF_LAYOUT, // Explicitly set as OFF_LAYOUT even though it would normally be ON_LAYOUT
+          ownerId: 'owner1'
+        },
+        {
+          _id: 'loc2',
+          stationName: 'Chicago, IL',
+          block: 'EAST',
+          ownerId: 'owner1'
+        }
+      ];
+
+      mockCollection.toArray.mockResolvedValue(mockLocationsData);
+
+      await GET();
+
+      // Get the data that was passed to NextResponse.json
+      const enhancedLocations = (NextResponse.json as jest.Mock).mock.calls[0][0];
+      
+      // Verify that existing location types were respected
+      const echoLake = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc1');
+      const chicago = enhancedLocations.find((loc: MockLocation) => loc._id === 'loc2');
+      
+      expect(echoLake?.locationType).toBe(LocationType.OFF_LAYOUT); // Should keep the explicit setting
+      expect(chicago?.locationType).toBe(LocationType.OFF_LAYOUT); // Should get the default for Chicago
+    });
+
+    it('handles errors properly', async () => {
+      // Mock a database error
+      mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
+
+      await GET();
+
+      // Verify error response
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Failed to fetch locations' },
+        { status: 500 }
+      );
+    });
+  });
+
+  describe('POST', () => {
+    it('should create a new location successfully', async () => {
+      const newLocation = {
+        stationName: 'New Station',
+        block: 'NEW',
+        locationType: LocationType.ON_LAYOUT,
         ownerId: 'owner1'
-      },
-      {
-        _id: 'loc2',
-        stationName: 'Chicago, IL',
-        block: 'EAST',
-        ownerId: 'owner1'
-      }
-    ];
+      };
 
-    mockCollection.toArray.mockResolvedValue(mockLocationsData);
+      const request = {
+        json: jest.fn().mockResolvedValue(newLocation)
+      } as unknown as Request;
 
-    // Mock NextResponse.json to capture the returned data
-    const mockJson = jest.fn().mockReturnValue({});
-    (NextResponse.json as jest.Mock) = mockJson;
+      // Mock findOne to return the created location after insert
+      const createdLocation = { ...newLocation, _id: 'new-loc-id' };
+      mockCollection.findOne.mockResolvedValue(createdLocation);
 
-    await GET();
+      await POST(request);
 
-    // Get the data that was passed to NextResponse.json
-    const enhancedLocations = mockJson.mock.calls[0][0] as MockLocation[];
-    
-    // Verify that existing location types were respected
-    const echoLake = enhancedLocations.find(loc => loc._id === 'loc1');
-    const chicago = enhancedLocations.find(loc => loc._id === 'loc2');
-    
-    expect(echoLake?.locationType).toBe(LocationType.OFF_LAYOUT); // Should keep the explicit setting
-    expect(chicago?.locationType).toBe(LocationType.OFF_LAYOUT); // Should get the default for Chicago
-  });
+      // Verify that the MongoDB service methods were called correctly
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockCollection.insertOne).toHaveBeenCalledWith(newLocation);
+      expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: 'new-loc-id' });
+      
+      // Verify that NextResponse.json was called with the created location
+      expect(NextResponse.json).toHaveBeenCalledWith(createdLocation, { status: 201 });
+    });
 
-  it('handles errors properly', async () => {
-    // Mock a database error
-    mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
+    it('should return 400 for invalid input - missing station name', async () => {
+      const invalidLocation = {
+        block: 'NEW',
+        locationType: LocationType.ON_LAYOUT
+      };
 
-    // Mock NextResponse.json to capture the returned error
-    const mockJson = jest.fn().mockReturnValue({});
-    (NextResponse.json as jest.Mock) = mockJson;
+      const request = {
+        json: jest.fn().mockResolvedValue(invalidLocation)
+      } as unknown as Request;
 
-    await GET();
+      await POST(request);
 
-    // Verify error response
-    expect(mockJson).toHaveBeenCalledWith(
-      { error: 'Failed to fetch locations' },
-      { status: 500 }
-    );
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Station name is required' },
+        { status: 400 }
+      );
+    });
+
+    it('should return 400 for invalid input - missing block', async () => {
+      const invalidLocation = {
+        stationName: 'New Station',
+        locationType: LocationType.ON_LAYOUT
+      };
+
+      const request = {
+        json: jest.fn().mockResolvedValue(invalidLocation)
+      } as unknown as Request;
+
+      await POST(request);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Block is required' },
+        { status: 400 }
+      );
+    });
+
+    it('should return 400 for invalid input - invalid location type', async () => {
+      const invalidLocation = {
+        stationName: 'New Station',
+        block: 'NEW',
+        locationType: 'INVALID_TYPE'
+      };
+
+      const request = {
+        json: jest.fn().mockResolvedValue(invalidLocation)
+      } as unknown as Request;
+
+      await POST(request);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Valid location type is required' },
+        { status: 400 }
+      );
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
+
+      const request = {
+        json: jest.fn().mockResolvedValue({
+          stationName: 'New Station',
+          block: 'NEW',
+          locationType: LocationType.ON_LAYOUT
+        })
+      } as unknown as Request;
+
+      await POST(request);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Failed to create location' },
+        { status: 500 }
+      );
+    });
   });
 }); 

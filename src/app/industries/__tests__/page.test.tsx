@@ -1,26 +1,94 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import IndustriesPage from '../page';
-import * as services from '@/app/shared/services';
-import { groupIndustriesByLocationAndBlock } from '@/app/layout-state/utils/groupIndustries';
-import { IndustryType, LocationType, Industry } from '@/app/shared/types/models';
+import { Industry } from '@/app/shared/types/models';
 import { IndustryService } from '@/app/shared/services/IndustryService';
 
+// Define the enum values directly to avoid circular imports
+const LocationType = {
+  ON_LAYOUT: 'ON_LAYOUT',
+  OFF_LAYOUT: 'OFF_LAYOUT',
+  FIDDLE_YARD: 'FIDDLE_YARD'
+};
+
+const IndustryType = {
+  FREIGHT: 'FREIGHT',
+  YARD: 'YARD',
+  PASSENGER: 'PASSENGER'
+};
+
+// Import these after the type definitions
+import IndustriesPage from '../page';
+import * as clientServices from '@/app/shared/services/clientServices';
+import { groupIndustriesByLocationAndBlock } from '@/app/layout-state/utils/groupIndustries';
+
 // Mock the services
-jest.mock('@/app/shared/services', () => ({
+jest.mock('@/app/shared/services/clientServices', () => ({
   services: {
     locationService: {
-      getAllLocations: jest.fn()
+      getAllLocations: jest.fn().mockResolvedValue([
+        { _id: '1', stationName: 'Station A', block: 'Block A', ownerId: 'owner1', locationType: LocationType.ON_LAYOUT },
+        { _id: '2', stationName: 'Station B', block: 'Block B', ownerId: 'owner1', locationType: LocationType.FIDDLE_YARD },
+        { _id: '3', stationName: 'Station C', block: 'Block Z', ownerId: 'owner1', locationType: LocationType.OFF_LAYOUT }
+      ])
     },
     industryService: {
-      getAllIndustries: jest.fn()
+      getAllIndustries: jest.fn().mockResolvedValue([
+        { 
+          _id: '1', 
+          name: 'Industry 1', 
+          locationId: '1', 
+          industryType: IndustryType.FREIGHT, 
+          tracks: [{ _id: 'track1' }], 
+          ownerId: 'owner1',
+          blockName: 'Block A',
+          description: 'Description 1' 
+        },
+        { 
+          _id: '2', 
+          name: 'Industry 2', 
+          locationId: '1', 
+          industryType: IndustryType.YARD, 
+          tracks: [{ _id: 'track2' }], 
+          ownerId: 'owner1',
+          blockName: 'Block A',
+          description: 'Description 2' 
+        },
+        { 
+          _id: '3', 
+          name: 'Industry 3', 
+          locationId: '2', 
+          industryType: IndustryType.PASSENGER, 
+          tracks: [{ _id: 'track3' }], 
+          ownerId: 'owner1',
+          blockName: 'Block B',
+          description: 'Description 3' 
+        }
+      ]),
+      updateIndustry: jest.fn(),
+      createIndustry: jest.fn(),
+      deleteIndustry: jest.fn()
     }
   }
 }));
 
 // Mock the groupIndustriesByLocationAndBlock function
 jest.mock('@/app/layout-state/utils/groupIndustries', () => ({
-  groupIndustriesByLocationAndBlock: jest.fn()
+  groupIndustriesByLocationAndBlock: jest.fn().mockImplementation((industries: Industry[], _: any) => {
+    return {
+      '1': {
+        locationName: 'Station A',
+        blocks: {
+          'Block A': industries.filter((i: Industry) => i.locationId === '1' && i.blockName === 'Block A')
+        }
+      },
+      '2': {
+        locationName: 'Station B',
+        blocks: {
+          'Block B': industries.filter((i: Industry) => i.locationId === '2' && i.blockName === 'Block B')
+        }
+      }
+    };
+  })
 }));
 
 // Mock the IndustryService class
@@ -71,7 +139,8 @@ jest.mock('@/app/shared/services/IndustryService', () => {
             _id: id,
             ...industryData
           });
-        })
+        }),
+        deleteIndustry: jest.fn().mockResolvedValue(undefined)
       };
     })
   };
@@ -120,6 +189,35 @@ jest.mock('@/app/components/AddIndustryForm', () => ({
     </div>
   )
 }));
+
+// Mock the ConfirmDialog component
+jest.mock('@/app/components/ui/dialog', () => {
+  return {
+    ...jest.requireActual('@/app/components/ui/dialog'),
+    ConfirmDialog: ({ 
+      title, 
+      description, 
+      isOpen, 
+      onConfirm, 
+      onClose 
+    }: { 
+      title: string;
+      description: string;
+      isOpen: boolean;
+      onConfirm: () => void;
+      onClose: () => void;
+    }) => (
+      isOpen ? (
+        <div data-testid="confirm-dialog">
+          <div data-testid="confirm-dialog-title">{title}</div>
+          <div data-testid="confirm-dialog-description">{description}</div>
+          <button data-testid="confirm-dialog-confirm" onClick={onConfirm}>Confirm</button>
+          <button data-testid="confirm-dialog-cancel" onClick={onClose}>Cancel</button>
+        </div>
+      ) : null
+    )
+  };
+});
 
 describe('Industries Page', () => {
   const mockLocations = [
@@ -251,8 +349,8 @@ describe('Industries Page', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (services.services.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockLocations);
-    (services.services.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockApiIndustries);
+    (clientServices.services.locationService.getAllLocations as jest.Mock).mockResolvedValue(mockLocations);
+    (clientServices.services.industryService.getAllIndustries as jest.Mock).mockResolvedValue(mockApiIndustries);
     (groupIndustriesByLocationAndBlock as jest.Mock).mockReturnValue(mockGroupedIndustries);
     
     // Make sure IndustryService.prototype.getAllIndustries returns the mock data
@@ -292,7 +390,7 @@ describe('Industries Page', () => {
 
     // Check for industry types
     await waitFor(() => {
-      expect(screen.getByText(IndustryType.FREIGHT)).toBeInTheDocument();
+      expect(screen.getAllByText(IndustryType.FREIGHT)[0]).toBeInTheDocument();
       expect(screen.getByText(IndustryType.YARD)).toBeInTheDocument();
       expect(screen.getByText(IndustryType.PASSENGER)).toBeInTheDocument();
     });
@@ -300,7 +398,7 @@ describe('Industries Page', () => {
 
   it('should handle API errors gracefully', async () => {
     // Only mock the location service to fail
-    (services.services.locationService.getAllLocations as jest.Mock).mockRejectedValue(new Error('Failed to fetch locations'));
+    (clientServices.services.locationService.getAllLocations as jest.Mock).mockRejectedValue(new Error('Failed to fetch locations'));
     
     render(<IndustriesPage />);
     
@@ -403,5 +501,110 @@ describe('Industries Page', () => {
     expect(screen.getByText(/Block: Block A/)).toBeInTheDocument();
     expect(screen.getByText(/Block: Block 1/)).toBeInTheDocument();
     expect(screen.getByText(/Block: Block Z/)).toBeInTheDocument();
+  });
+
+  it('should show the delete confirmation dialog when delete button is clicked', async () => {
+    render(<IndustriesPage />);
+    
+    // Wait for page to load
+    await waitFor(() => {
+      expect(screen.getByText('Industries by Location and Block')).toBeInTheDocument();
+    });
+    
+    // Find and click the delete button for the first industry
+    const deleteButtons = await screen.findAllByTestId(/delete-industry/);
+    fireEvent.click(deleteButtons[0]);
+    
+    // Confirm dialog should appear
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+      expect(screen.getByTestId('confirm-dialog-title')).toHaveTextContent('Delete Industry');
+      expect(screen.getByTestId('confirm-dialog-description')).toContainHTML('Are you sure you want to delete');
+    });
+  });
+
+  it('should delete an industry when confirmed and update the UI', async () => {
+    // Get a reference to the mocked deleteIndustry method
+    const mockDeleteIndustry = clientServices.services.industryService.deleteIndustry as jest.Mock;
+    mockDeleteIndustry.mockClear();
+    
+    render(<IndustriesPage />);
+    
+    // Wait for page to fully load (no loading indicator visible)
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+    
+    // Initial industry count - use findAllByText to wait for elements to be present
+    const initialIndustries = await screen.findAllByText(/Industry \d/);
+    const initialIndustryCount = initialIndustries.length;
+    
+    // Find and click the delete button for the first industry
+    const deleteButtons = await screen.findAllByTestId(/delete-industry/);
+    fireEvent.click(deleteButtons[0]);
+    
+    // Confirm dialog should appear
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+    });
+    
+    // Click confirm to delete
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+    
+    // Verify the delete API was called
+    await waitFor(() => {
+      expect(mockDeleteIndustry).toHaveBeenCalled();
+    });
+    
+    // Wait for the UI to update
+    await waitFor(() => {
+      // Dialog should be closed
+      expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument();
+    });
+    
+    // Get the new count of industries
+    const finalIndustries = screen.getAllByText(/Industry \d/);
+    expect(finalIndustries.length).toBeLessThan(initialIndustryCount);
+  });
+
+  it('should cancel industry deletion when cancel button is clicked', async () => {
+    // Get a reference to the mocked deleteIndustry method
+    const mockDeleteIndustry = clientServices.services.industryService.deleteIndustry as jest.Mock;
+    mockDeleteIndustry.mockClear();
+    
+    render(<IndustriesPage />);
+    
+    // Wait for page to fully load (no loading indicator visible)
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+    
+    // Initial industry count - use findAllByText to wait for elements to be present
+    const initialIndustries = await screen.findAllByText(/Industry \d/);
+    const initialIndustryCount = initialIndustries.length;
+    
+    // Find and click the delete button for the first industry
+    const deleteButtons = await screen.findAllByTestId(/delete-industry/);
+    fireEvent.click(deleteButtons[0]);
+    
+    // Confirm dialog should appear
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+    });
+    
+    // Click cancel
+    fireEvent.click(screen.getByTestId('confirm-dialog-cancel'));
+    
+    // Verify the delete API was NOT called
+    expect(mockDeleteIndustry).not.toHaveBeenCalled();
+    
+    // Dialog should be closed
+    await waitFor(() => {
+      expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument();
+    });
+    
+    // Industry count should remain the same
+    const finalIndustries = screen.getAllByText(/Industry \d/);
+    expect(finalIndustries.length).toBe(initialIndustryCount);
   });
 }); 

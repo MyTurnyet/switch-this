@@ -114,6 +114,7 @@ export function AddIndustryForm({ onSave, onCancel }: AddIndustryFormProps) {
       maxCars: newTrackCapacity,
       length: 0,
       placedCars: [],
+      acceptedCarTypes: [],
       ownerId: 'user-id' // This should be dynamically set
     };
     
