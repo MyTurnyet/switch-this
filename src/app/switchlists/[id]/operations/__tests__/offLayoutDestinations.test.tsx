@@ -181,7 +181,10 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
 
     // Check if the operations section is shown correctly
     expect(screen.getByText('Operations')).toBeInTheDocument();
-    expect(screen.getByText('Handling off-layout destinations through fiddle yards')).toBeInTheDocument();
+    
+    // Updated to match the new UI text
+    expect(screen.getByText('Cars from the originating yard will be assigned to industries along the route')).toBeInTheDocument();
+    expect(screen.getByText('Cars at industries along the route will be picked up and sent to the terminating yard')).toBeInTheDocument();
   });
 
   it('handles missing destinations gracefully', async () => {
