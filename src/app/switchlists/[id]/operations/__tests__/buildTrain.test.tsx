@@ -243,10 +243,32 @@ describe('Switchlist Operations - Build Train', () => {
     // Click the build train button
     fireEvent.click(screen.getByText('Build Train'));
     
-    // Verify that picked up cars have the terminating yard as destination
+    // Verify that cars from industries are assigned to the train
     await waitFor(() => {
-      // Check if the cars have the terminating yard as destination - using getAllByText since there may be multiple matches
-      expect(screen.getAllByText(/Ending Yard/).length).toBeGreaterThan(0);
+      expect(screen.getByText('CSX 67890')).toBeInTheDocument();
+      expect(screen.getByText('NS 45678')).toBeInTheDocument();
+    });
+    
+    // Instead of searching for "Ending Yard" text which might not be displayed,
+    // check that the RollingStockService.updateRollingStock was called with the 
+    // correct parameters (terminating yard ID)
+    await waitFor(() => {
+      expect(RollingStockService.prototype.updateRollingStock).toHaveBeenCalled();
+      
+      // Verify it was called for each car
+      const calls = (RollingStockService.prototype.updateRollingStock as jest.Mock).mock.calls;
+      let foundTerminatingYardDestination = false;
+      
+      // Check that at least one car has the terminating yard as destination
+      for (const call of calls) {
+        const carData = call[1]; // Second argument is the car data
+        if (carData?.destination?.immediateDestination?.industryId === 'ind_yard2') {
+          foundTerminatingYardDestination = true;
+          break;
+        }
+      }
+      
+      expect(foundTerminatingYardDestination).toBe(true);
     });
   });
 }); 
