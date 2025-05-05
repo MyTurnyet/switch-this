@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import SwitchlistOperationsPage from '../page';
 import { SwitchlistService } from '@/app/shared/services/SwitchlistService';
 import { RollingStockService } from '@/app/shared/services/RollingStockService';
@@ -14,7 +14,7 @@ jest.mock('@/app/shared/services/TrainRouteService');
 jest.mock('@/app/shared/services/LocationService');
 jest.mock('@/app/shared/services/IndustryService');
 
-describe('Switchlist Operations - Build Train', () => {
+describe('Switchlist Operations', () => {
   const mockSwitchlist = {
     _id: 'switchlist1',
     trainRouteId: 'route1',
@@ -185,115 +185,28 @@ describe('Switchlist Operations - Build Train', () => {
     (RollingStockService.prototype.updateRollingStock as jest.Mock).mockResolvedValue(undefined);
   });
 
-  test('should display Build Train button', async () => {
+  test('should display the build train button as disabled', async () => {
     render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
     
     await waitFor(() => {
-      expect(screen.getByText('Build Train')).toBeInTheDocument();
+      expect(screen.getAllByText('Build Train functionality has been removed.').length).toBeGreaterThan(0);
     });
   });
 
-  test('should build a train with cars from the originating yard with destinations along the route', async () => {
+  test('should display available rolling stock', async () => {
     render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
     
     await waitFor(() => {
-      expect(screen.getByText('Build Train')).toBeInTheDocument();
+      expect(screen.getByText('Available Rolling Stock')).toBeInTheDocument();
     });
     
-    // Click the build train button
-    fireEvent.click(screen.getByText('Build Train'));
-    
-    // Verify that cars from the originating yard are assigned to the train
-    await waitFor(() => {
-      expect(screen.getByText('UP 12345')).toBeInTheDocument();
-      expect(screen.getByText('BNSF 54321')).toBeInTheDocument();
-    });
-    
-    // Verify destinations are assigned to the cars
-    await waitFor(() => {
-      // Check if the cars have destinations assigned - using getAllByText since there may be multiple matches
-      expect(screen.getAllByText(/Echo Lake Factory|Pine Ridge Mill/).length).toBeGreaterThan(0);
-    });
+    // Verify rolling stock is displayed
+    expect(screen.getByText('UP 12345')).toBeInTheDocument();
+    expect(screen.getByText('BNSF 54321')).toBeInTheDocument();
+    expect(screen.getByText('CSX 67890')).toBeInTheDocument();
+    expect(screen.getByText('NS 45678')).toBeInTheDocument();
   });
 
-  test('should pick up cars from industries along the route', async () => {
-    render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Build Train')).toBeInTheDocument();
-    });
-    
-    // Click the build train button
-    fireEvent.click(screen.getByText('Build Train'));
-    
-    // Verify that cars at industries are also assigned to the train
-    await waitFor(() => {
-      expect(screen.getByText('CSX 67890')).toBeInTheDocument();
-      expect(screen.getByText('NS 45678')).toBeInTheDocument();
-    });
-  });
-
-  test('should set the terminating yard as destination for cars picked up from industries', async () => {
-    render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Build Train')).toBeInTheDocument();
-    });
-    
-    // Click the build train button
-    fireEvent.click(screen.getByText('Build Train'));
-    
-    // Verify that cars from industries are assigned to the train
-    await waitFor(() => {
-      expect(screen.getByText('CSX 67890')).toBeInTheDocument();
-      expect(screen.getByText('NS 45678')).toBeInTheDocument();
-    });
-    
-    // Instead of searching for "Ending Yard" text which might not be displayed,
-    // check that the RollingStockService.updateRollingStock was called with the 
-    // correct parameters (terminating yard ID)
-    await waitFor(() => {
-      expect(RollingStockService.prototype.updateRollingStock).toHaveBeenCalled();
-      
-      // Verify it was called for each car
-      const calls = (RollingStockService.prototype.updateRollingStock as jest.Mock).mock.calls;
-      let foundTerminatingYardDestination = false;
-      
-      // Check that at least one car has the terminating yard as destination
-      for (const call of calls) {
-        const carData = call[1]; // Second argument is the car data
-        if (carData?.destination?.immediateDestination?.industryId === 'ind_yard2') {
-          foundTerminatingYardDestination = true;
-          break;
-        }
-      }
-      
-      expect(foundTerminatingYardDestination).toBe(true);
-    });
-  });
-
-  test('should display train summary after building a train', async () => {
-    render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Build Train')).toBeInTheDocument();
-    });
-    
-    // Click the build train button
-    fireEvent.click(screen.getByText('Build Train'));
-    
-    // Check for train summary heading
-    await waitFor(() => {
-      expect(screen.getByText('Train Summary')).toBeInTheDocument();
-    });
-    
-    // Verify the summary contains information about cars assigned
-    await waitFor(() => {
-      expect(screen.getByText(/cars assigned from Starting Yard/)).toBeInTheDocument();
-      expect(screen.getByText(/cars picked up from industries along the route/)).toBeInTheDocument();
-    });
-  });
-  
   test('should display train route visualization', async () => {
     render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
     

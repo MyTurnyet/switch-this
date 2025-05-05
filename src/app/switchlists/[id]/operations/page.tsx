@@ -7,7 +7,7 @@ import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { LocationService } from '@/app/shared/services/LocationService';
 import { IndustryService } from '@/app/shared/services/IndustryService';
-import { Switchlist, RollingStock, TrainRoute, Industry, IndustryType } from '@/app/shared/types/models';
+import { Switchlist, RollingStock, TrainRoute, Industry } from '@/app/shared/types/models';
 import { Location } from '@/shared/types/models';
 
 export default function SwitchlistOperationsPage({ params }: { params: { id: string } }) {
@@ -19,13 +19,6 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [buildingTrain, setBuildingTrain] = useState(false);
-  const [trainSummary, setTrainSummary] = useState<{
-    carsFromYard: number;
-    carsPickedUp: number;
-    industries: string[];
-  } | null>(null);
   
   const switchlistService = new SwitchlistService();
   const rollingStockService = new RollingStockService();
@@ -89,355 +82,9 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
     return industry ? industry.name : 'Unknown';
   };
 
-  // Function to get random industry from route for car assignment
-  const getRandomIndustryAlongRoute = () => {
-    if (!trainRoute || !industries.length) return null;
-    
-    // Filter for industries that are at locations along the route (excluding yards)
-    const routeStations = trainRoute.stations;
-    const routeIndustries = industries.filter(industry => {
-      // Exclude the originating and terminating yards
-      if (industry.locationId === trainRoute.originatingYardId || 
-          industry.locationId === trainRoute.terminatingYardId) {
-        return false;
-      }
-      
-      // Check if the industry is a freight industry - try with enum value first
-      const isFreightIndustry = 
-        industry.industryType === IndustryType.FREIGHT || 
-        (typeof industry.industryType === 'string' && 
-         industry.industryType.toUpperCase() === 'FREIGHT');
-      
-      // Include only industries at locations along the route
-      return routeStations.includes(industry.locationId) && isFreightIndustry;
-    });
-    
-    console.log("Available industries along route for assignment:", routeIndustries);
-    
-    if (routeIndustries.length === 0) {
-      // If no freight industries found, try to find any industry along the route
-      const anyIndustryAlongRoute = industries.filter(industry => {
-        // Exclude the originating and terminating yards
-        if (industry.locationId === trainRoute.originatingYardId || 
-            industry.locationId === trainRoute.terminatingYardId) {
-          return false;
-        }
-        
-        // Include any industry at locations along the route
-        return routeStations.includes(industry.locationId);
-      });
-      
-      console.log("No freight industries found, using any industries:", anyIndustryAlongRoute);
-      
-      if (anyIndustryAlongRoute.length === 0) {
-        // If still no industries, return the terminating yard as fallback
-        console.log("No industries found along route, using terminating yard as fallback");
-        return getTerminatingYardIndustry();
-      }
-      
-      // Return a random industry from any industries found
-      const randomIndex = Math.floor(Math.random() * anyIndustryAlongRoute.length);
-      return anyIndustryAlongRoute[randomIndex];
-    }
-    
-    // Return a random industry from freight industries
-    const randomIndex = Math.floor(Math.random() * routeIndustries.length);
-    return routeIndustries[randomIndex];
-  };
-  
-  // Function to get the industry at the terminating yard
-  const getTerminatingYardIndustry = () => {
-    if (!trainRoute) return null;
-    
-    // Find the industry at the terminating yard - try with enum value first
-    let terminatingYardIndustry = industries.find(
-      industry => industry.locationId === trainRoute.terminatingYardId && 
-                  industry.industryType === IndustryType.YARD
-    );
-    
-    // If not found, try with string value (case-insensitive)
-    if (!terminatingYardIndustry) {
-      terminatingYardIndustry = industries.find(
-        industry => industry.locationId === trainRoute.terminatingYardId && 
-                    (typeof industry.industryType === 'string' && 
-                     industry.industryType.toUpperCase() === 'YARD')
-      );
-    }
-    
-    // If still not found, try with any industry that has "yard" in the name
-    if (!terminatingYardIndustry) {
-      terminatingYardIndustry = industries.find(
-        industry => industry.locationId === trainRoute.terminatingYardId && 
-                    (industry.name.toLowerCase().includes('yard'))
-      );
-    }
-    
-    // If still not found, try with any industry at the terminating yard
-    if (!terminatingYardIndustry) {
-      terminatingYardIndustry = industries.find(
-        industry => industry.locationId === trainRoute.terminatingYardId
-      );
-    }
-    
-    // Final attempt: Look for any industry at any location that includes the same name as the terminating yard location
-    if (!terminatingYardIndustry && trainRoute.terminatingYardId) {
-      const terminatingLocation = locations.find(loc => loc._id === trainRoute.terminatingYardId);
-      if (terminatingLocation) {
-        const locationName = terminatingLocation.stationName.toLowerCase();
-        terminatingYardIndustry = industries.find(
-          industry => industry.name.toLowerCase().includes(locationName)
-        );
-      }
-    }
-    
-    return terminatingYardIndustry;
-  };
-  
-  const getOriginatingYardIndustry = () => {
-    if (!trainRoute) return null;
-    
-    // Find the industry at the originating yard - try with enum value first
-    let originatingYardIndustry = industries.find(
-      industry => industry.locationId === trainRoute.originatingYardId && 
-                  industry.industryType === IndustryType.YARD
-    );
-    
-    // If not found, try with string value (case-insensitive)
-    if (!originatingYardIndustry) {
-      originatingYardIndustry = industries.find(
-        industry => industry.locationId === trainRoute.originatingYardId && 
-                    (typeof industry.industryType === 'string' && 
-                     industry.industryType.toUpperCase() === 'YARD')
-      );
-    }
-    
-    // If still not found, try with any industry that has "yard" in the name
-    if (!originatingYardIndustry) {
-      originatingYardIndustry = industries.find(
-        industry => industry.locationId === trainRoute.originatingYardId && 
-                    (industry.name.toLowerCase().includes('yard'))
-      );
-    }
-    
-    // If still not found, try with any industry at the originating yard
-    if (!originatingYardIndustry) {
-      originatingYardIndustry = industries.find(
-        industry => industry.locationId === trainRoute.originatingYardId
-      );
-    }
-    
-    // Final attempt: Look for any industry at any location that includes the same name as the originating yard location
-    if (!originatingYardIndustry && trainRoute.originatingYardId) {
-      const originatingLocation = locations.find(loc => loc._id === trainRoute.originatingYardId);
-      if (originatingLocation) {
-        const locationName = originatingLocation.stationName.toLowerCase();
-        originatingYardIndustry = industries.find(
-          industry => industry.name.toLowerCase().includes(locationName)
-        );
-      }
-    }
-    
-    return originatingYardIndustry;
-  };
-  
-  const handleBuildTrain = async () => {
-    if (!trainRoute) return;
-    
-    try {
-      setBuildingTrain(true);
-      setSuccessMessage(null);
-      setError(null);
-      setTrainSummary(null);
-      
-      // Comprehensive debug logging
-      console.log("========== BUILD TRAIN DEBUG =========");
-      console.log("Train Route:", trainRoute);
-      console.log("Originating Yard ID:", trainRoute.originatingYardId);
-      console.log("Terminating Yard ID:", trainRoute.terminatingYardId);
-      
-      // Special case: Check if this is a route that starts and ends at the same yard
-      const sameYard = trainRoute.originatingYardId === trainRoute.terminatingYardId;
-      console.log("Same yard for origin and termination:", sameYard);
-      
-      // Log all available industries
-      console.log("All Industries:", industries);
-      console.log("Industries count:", industries.length);
-      industries.forEach(industry => {
-        console.log(`Industry: ${industry.name}, Type: ${industry.industryType}, Location: ${industry.locationId}`);
-      });
-      
-      // Log all available locations
-      console.log("All Locations:", locations);
-      console.log("Locations count:", locations.length);
-      locations.forEach(location => {
-        console.log(`Location: ${location.stationName}, ID: ${location._id}`);
-      });
-      
-      // Get the originating and terminating yard industries
-      let originatingYardIndustry = getOriginatingYardIndustry();
-      let terminatingYardIndustry = getTerminatingYardIndustry();
-      
-      console.log("Found Originating Yard Industry:", originatingYardIndustry);
-      console.log("Found Terminating Yard Industry:", terminatingYardIndustry);
-      
-      // Create virtual yard industries if not found
-      if (!originatingYardIndustry || !terminatingYardIndustry) {
-        console.log("Missing yard industries - attempting to create virtual yards");
-        
-        const universalYardResult = createUniversalYardIndustry();
-        if (universalYardResult && typeof universalYardResult === 'object') {
-          originatingYardIndustry = universalYardResult.originatingYardIndustry;
-          terminatingYardIndustry = universalYardResult.terminatingYardIndustry;
-          console.log("Applied universal yards:", universalYardResult);
-        } else {
-          setError('Could not find originating or terminating yard industries');
-          setBuildingTrain(false);
-          return;
-        }
-      }
-      
-      if (!originatingYardIndustry || !terminatingYardIndustry) {
-        console.error("Failed to find or create yard industries. Origin:", originatingYardIndustry, "Termination:", terminatingYardIndustry);
-        setError('Could not find originating or terminating yard industries');
-        setBuildingTrain(false);
-        return;
-      }
-      
-      // Continue with rest of function
-      // Get available rolling stock at the originating yard
-      const yardRollingStock = availableRollingStock.filter((car: RollingStock) => {
-        return car.currentLocation?.industryId === originatingYardIndustry?._id;
-      });
-      
-      console.log(`Found ${yardRollingStock.length} cars at originating yard`);
-      
-      if (yardRollingStock.length === 0) {
-        setError('No cars available at the originating yard');
-        setBuildingTrain(false);
-        return;
-      }
-      
-      // Assign cars to industries along the route
-      let assignedCount = 0;
-      const updatedCars: RollingStock[] = [];
-      
-      // Process each car from the originating yard
-      for (const car of yardRollingStock) {
-        // Don't assign more than 50% of available cars
-        if (assignedCount >= Math.ceil(yardRollingStock.length / 2)) break;
-        
-        const targetIndustry = getRandomIndustryAlongRoute();
-        
-        if (targetIndustry) {
-          const updatedCar = { ...car };
-          
-          // Update car to be on the train with destination
-          updatedCar.destination = {
-            immediateDestination: {
-              locationId: targetIndustry.locationId,
-              industryId: targetIndustry._id,
-              trackId: targetIndustry.tracks[0]?._id || 'track1'
-            }
-          };
-          
-          updatedCars.push(updatedCar);
-          assignedCount++;
-        }
-      }
-      
-      // Find cars at industries along the route to send to terminating yard
-      const industriesAlongRoute = industries.filter(industry => {
-        // Skip originating and terminating yards
-        return industry.locationId !== trainRoute.originatingYardId &&
-               industry.locationId !== trainRoute.terminatingYardId;
-      });
-      
-      console.log(`Found ${industriesAlongRoute.length} industries along the route`);
-      
-      const carsAtIndustries = availableRollingStock.filter((car: RollingStock) => {
-        if (!car.currentLocation?.industryId) return false;
-        
-        return industriesAlongRoute.some(industry => 
-          industry._id === car.currentLocation?.industryId
-        );
-      });
-      
-      console.log(`Found ${carsAtIndustries.length} cars at industries along the route`);
-      
-      // Process cars at industries to send to terminating yard
-      for (const car of carsAtIndustries) {
-        const updatedCar = { ...car };
-        
-        // Update car to be on the train with destination to terminating yard
-        updatedCar.destination = {
-          immediateDestination: {
-            locationId: terminatingYardIndustry.locationId,
-            industryId: terminatingYardIndustry._id,
-            trackId: terminatingYardIndustry.tracks[0]?._id || 'track1'
-          }
-        };
-        
-        updatedCars.push(updatedCar);
-      }
-      
-      // Save the updated cars
-      if (updatedCars.length > 0) {
-        try {
-          for (const car of updatedCars) {
-            await rollingStockService.updateRollingStock(car._id, car);
-          }
-          
-          console.log(`Successfully updated ${updatedCars.length} cars`);
-          
-          // Set success message with count of cars
-          const originationCount = Math.min(Math.ceil(yardRollingStock.length / 2), assignedCount);
-          const pickupCount = carsAtIndustries.length;
-          setSuccessMessage(`Train built successfully with ${originationCount} cars from originating yard and ${pickupCount} cars picked up from industries.`);
-          
-          // Create train summary
-          const targetIndustryIds = updatedCars
-            .filter(car => car.currentLocation?.industryId === originatingYardIndustry?._id)
-            .map(car => car.destination?.immediateDestination?.industryId)
-            .filter(id => id !== terminatingYardIndustry?._id);
-          
-          const uniqueIndustryIds = Array.from(new Set(targetIndustryIds));
-          const targetIndustryNames = uniqueIndustryIds
-            .map(id => industries.find(ind => ind._id === id)?.name || 'Unknown')
-            .filter(name => name !== 'Unknown');
-          
-          setTrainSummary({
-            carsFromYard: originationCount,
-            carsPickedUp: pickupCount,
-            industries: targetIndustryNames
-          });
-          
-          setAssignedRollingStock(prevCars => {
-            // Replace updated cars in the state
-            const newCars = [...prevCars];
-            for (const updatedCar of updatedCars) {
-              const index = newCars.findIndex(c => c._id === updatedCar._id);
-              if (index !== -1) {
-                newCars[index] = updatedCar;
-              }
-            }
-            return newCars;
-          });
-          
-          setError(null);
-        } catch (err) {
-          console.error('Error updating rolling stock:', err);
-          setError('Error updating rolling stock');
-        }
-      } else {
-        setError('No suitable cars found to build the train');
-      }
-      
-      setBuildingTrain(false);
-    } catch (err) {
-      console.error('Error building train:', err);
-      setError('Error building train');
-      setBuildingTrain(false);
-    }
+  // Empty handler for the Build Train button
+  const handleBuildTrain = () => {
+    console.log('Build Train button clicked, but functionality has been removed');
   };
   
   const handleAssignRollingStock = (rollingStock: RollingStock) => {
@@ -456,153 +103,6 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       current.filter(rs => rs._id !== rollingStock._id)
     );
     setAvailableRollingStock(current => [...current, rollingStock]);
-  };
-  
-  // Function to create a universal yard as absolute last resort
-  const createUniversalYardIndustry = () => {
-    if (!trainRoute) return false;
-    
-    console.log("Attempting to create universal yard industry as last resort");
-    
-    // Special case for High Bridge Yard
-    if (trainRoute.originatingYardId === '679c1c14fef4c138fd2a9d88') {
-      console.log("High Bridge Yard detected! Creating universal yard for it");
-      
-      // Create universal yard industries for High Bridge
-      const highBridgeYardIndustry: Industry = {
-        _id: `highbridge_yard_${Date.now()}`,
-        name: 'High Bridge Yard',
-        locationId: '679c1c14fef4c138fd2a9d88',
-        industryType: IndustryType.YARD,
-        blockName: 'YARD',
-        ownerId: 'system',
-        tracks: [
-          { 
-            _id: 'track1', 
-            name: 'Track 1', 
-            placedCars: [],
-            length: 100,
-            capacity: 10,
-            maxCars: 10,
-            acceptedCarTypes: ['all'],
-            ownerId: 'system'
-          },
-          { 
-            _id: 'track2', 
-            name: 'Track 2', 
-            placedCars: [],
-            length: 100,
-            capacity: 10,
-            maxCars: 10,
-            acceptedCarTypes: ['all'],
-            ownerId: 'system'
-          }
-        ]
-      };
-      
-      // Add to industries array
-      setIndustries(prev => [...prev, highBridgeYardIndustry]);
-      
-      // Create local variables for this function to return
-      const newOriginatingYard = highBridgeYardIndustry;
-      const newTerminatingYard = highBridgeYardIndustry;
-      
-      return {
-        originatingYardIndustry: newOriginatingYard,
-        terminatingYardIndustry: newTerminatingYard
-      };
-    }
-    
-    // Try to get the location names
-    const originatingLocation = locations.find(loc => loc._id === trainRoute.originatingYardId);
-    
-    if (!originatingLocation) {
-      console.error("Cannot create universal yard - missing originating location");
-      return false;
-    }
-    
-    // Create a universal yard industry that can act as both origin and termination
-    const universalYardIndustry: Industry = {
-      _id: `universal_yard_${Date.now()}`,
-      name: `${originatingLocation.stationName} Universal Yard`,
-      locationId: trainRoute.originatingYardId,
-      industryType: IndustryType.YARD,
-      blockName: originatingLocation.block || 'YARD',
-      ownerId: 'system',
-      tracks: [
-        { 
-          _id: 'track1', 
-          name: 'Track 1', 
-          placedCars: [],
-          length: 100,
-          capacity: 10,
-          maxCars: 10,
-          acceptedCarTypes: ['all'],
-          ownerId: 'system'
-        },
-        { 
-          _id: 'track2', 
-          name: 'Track 2', 
-          placedCars: [],
-          length: 100,
-          capacity: 10,
-          maxCars: 10,
-          acceptedCarTypes: ['all'],
-          ownerId: 'system'
-        }
-      ]
-    };
-    
-    // Add to industries array
-    setIndustries(prev => [...prev, universalYardIndustry]);
-    
-    // For same yard scenario
-    if (trainRoute.originatingYardId === trainRoute.terminatingYardId) {
-      return {
-        originatingYardIndustry: universalYardIndustry,
-        terminatingYardIndustry: universalYardIndustry
-      };
-    }
-    
-    // For different terminating yard
-    const terminatingLocation = locations.find(loc => loc._id === trainRoute.terminatingYardId);
-    
-    if (!terminatingLocation) {
-      // Default to originating yard if terminating location not found
-      return {
-        originatingYardIndustry: universalYardIndustry,
-        terminatingYardIndustry: universalYardIndustry
-      };
-    }
-    
-    // Create separate terminating yard
-    const terminatingYardIndustry: Industry = {
-      _id: `terminating_yard_${Date.now()}`,
-      name: `${terminatingLocation.stationName} Universal Yard`,
-      locationId: trainRoute.terminatingYardId,
-      industryType: IndustryType.YARD,
-      blockName: terminatingLocation.block || 'YARD',
-      ownerId: 'system',
-      tracks: [
-        { 
-          _id: 'track1', 
-          name: 'Track 1', 
-          placedCars: [],
-          length: 100,
-          capacity: 10,
-          maxCars: 10,
-          acceptedCarTypes: ['all'],
-          ownerId: 'system'
-        }
-      ]
-    };
-    
-    setIndustries(prev => [...prev, terminatingYardIndustry]);
-    
-    return {
-      originatingYardIndustry: universalYardIndustry,
-      terminatingYardIndustry: terminatingYardIndustry
-    };
   };
   
   // Render loading state
@@ -630,62 +130,6 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
     );
   }
   
-  // Add this new component after the main component
-
-  interface RouteStationProps {
-    name: string;
-    isTerminal: boolean;
-    isVisited?: boolean;
-  }
-
-  const RouteStation: React.FC<RouteStationProps> = ({ name, isTerminal, isVisited = false }) => {
-    return (
-      <div className="flex flex-col items-center">
-        <div className={`w-4 h-4 rounded-full ${isVisited ? 'bg-primary-600' : 'bg-gray-300'} ${isTerminal ? 'border-2 border-primary-800' : ''}`} />
-        <span className="text-xs mt-1 text-center">{name}</span>
-      </div>
-    );
-  };
-
-  interface TrainRouteProgressProps {
-    trainRoute: TrainRoute | null;
-    locations: Location[];
-  }
-
-  const TrainRouteProgress: React.FC<TrainRouteProgressProps> = ({ trainRoute, locations }) => {
-    if (!trainRoute) return null;
-    
-    // Get station names in order
-    const stationNames = trainRoute.stations.map(stationId => {
-      const location = locations.find(loc => loc._id === stationId);
-      return location ? location.stationName : 'Unknown';
-    });
-    
-    return (
-      <div className="bg-white shadow-md rounded-lg overflow-hidden mt-6 mb-6">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-          <h2 className="text-lg font-semibold">Train Route</h2>
-        </div>
-        <div className="p-4">
-          <div className="flex justify-between items-center">
-            {stationNames.map((name, index) => (
-              <React.Fragment key={index}>
-                <RouteStation 
-                  name={name} 
-                  isTerminal={index === 0 || index === stationNames.length - 1} 
-                  isVisited={true} // All stations are considered visited in this view
-                />
-                {index < stationNames.length - 1 && (
-                  <div className="h-0.5 bg-primary-600 flex-grow mx-1" />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
@@ -721,48 +165,20 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       <div className="mb-6">
         <button
           onClick={handleBuildTrain}
-          disabled={buildingTrain || assignedRollingStock.length > 0 || switchlist?.status === 'COMPLETED'}
+          disabled={assignedRollingStock.length > 0 || switchlist?.status === 'COMPLETED'}
           className={`px-4 py-2 rounded-md 
-            ${buildingTrain || assignedRollingStock.length > 0 || switchlist?.status === 'COMPLETED' 
+            ${assignedRollingStock.length > 0 || switchlist?.status === 'COMPLETED' 
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
               : 'bg-primary-600 text-white hover:bg-primary-700'}`}
         >
-          {buildingTrain ? 'Building Train...' : 'Build Train'}
+          {assignedRollingStock.length > 0 ? 'Train has been built.' : 'Build Train functionality has been removed.'}
         </button>
         <p className="text-sm text-gray-500 mt-1">
           {switchlist?.status === 'COMPLETED' 
             ? 'This switchlist has been completed.' 
-            : assignedRollingStock.length > 0 
-              ? 'Train has been built.' 
-              : 'Click to automatically build a train with cars from the originating yard and pick up cars from industries along the route.'}
+            : 'Build Train functionality has been removed.'}
         </p>
       </div>
-      
-      {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {successMessage}
-        </div>
-      )}
-      
-      {trainSummary && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
-          <h3 className="font-semibold mb-2">Train Summary</h3>
-          <ul className="list-disc ml-5 text-sm">
-            <li>{trainSummary.carsFromYard} cars assigned from {getLocationName(trainRoute?.originatingYardId)}</li>
-            <li>{trainSummary.carsPickedUp} cars picked up from industries along the route</li>
-            {trainSummary.industries.length > 0 && (
-              <li>
-                Destination industries: {trainSummary.industries.join(', ')}
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
-      
-      {/* Add the route progress component */}
-      {trainRoute && (
-        <TrainRouteProgress trainRoute={trainRoute} locations={locations} />
-      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Assigned Rolling Stock */}
@@ -834,8 +250,11 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
           </div>
         </div>
       </div>
+
+      {trainRoute && (
+        <TrainRouteProgress trainRoute={trainRoute} locations={locations} />
+      )}
       
-      {/* Operations panel */}
       <div className="mt-8 bg-white shadow-md rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <h2 className="text-lg font-semibold">Operations</h2>
@@ -845,9 +264,7 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
             This panel shows operations for the current switchlist. You can:
           </p>
           <ul className="list-disc ml-6 text-gray-600 space-y-1">
-            <li>Build a train using the &quot;Build Train&quot; button above</li>
-            <li>Cars from the originating yard will be assigned to industries along the route</li>
-            <li>Cars at industries along the route will be picked up and sent to the terminating yard</li>
+            <li>The &quot;Build Train&quot; functionality has been removed</li>
             <li>Manually assign or remove rolling stock using the panels above</li>
             <li>View the complete switchlist in the Print view</li>
           </ul>
@@ -861,4 +278,58 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       </div>
     </div>
   );
-} 
+}
+
+interface RouteStationProps {
+  name: string;
+  isTerminal: boolean;
+  isVisited?: boolean;
+}
+
+const RouteStation: React.FC<RouteStationProps> = ({ name, isTerminal, isVisited = false }) => {
+  return (
+    <div className="flex flex-col items-center">
+      <div className={`w-4 h-4 rounded-full ${isVisited ? 'bg-primary-600' : 'bg-gray-300'} ${isTerminal ? 'border-2 border-primary-800' : ''}`} />
+      <span className="text-xs mt-1 text-center">{name}</span>
+    </div>
+  );
+};
+
+interface TrainRouteProgressProps {
+  trainRoute: TrainRoute | null;
+  locations: Location[];
+}
+
+const TrainRouteProgress: React.FC<TrainRouteProgressProps> = ({ trainRoute, locations }) => {
+  if (!trainRoute) return null;
+  
+  // Get station names in order
+  const stationNames = trainRoute.stations.map(stationId => {
+    const location = locations.find(loc => loc._id === stationId);
+    return location ? location.stationName : 'Unknown';
+  });
+  
+  return (
+    <div className="bg-white shadow-md rounded-lg overflow-hidden mt-6 mb-6">
+      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+        <h2 className="text-lg font-semibold">Train Route</h2>
+      </div>
+      <div className="p-4">
+        <div className="flex justify-between items-center">
+          {stationNames.map((name, index) => (
+            <React.Fragment key={index}>
+              <RouteStation 
+                name={name} 
+                isTerminal={index === 0 || index === stationNames.length - 1} 
+                isVisited={true} // All stations are considered visited in this view
+              />
+              {index < stationNames.length - 1 && (
+                <div className="h-0.5 bg-primary-600 flex-grow mx-1" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}; 

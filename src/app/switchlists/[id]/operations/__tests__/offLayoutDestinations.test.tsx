@@ -176,15 +176,10 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
     // Check that the rolling stock is shown in the Available section
     expect(screen.getByText('BNSF 12345')).toBeInTheDocument();
     expect(screen.getByText('Boxcar - Test boxcar')).toBeInTheDocument();
-    expect(screen.getByText('UP 54321')).toBeInTheDocument();
-    expect(screen.getByText('Tanker - Test tanker')).toBeInTheDocument();
-
-    // Check if the operations section is shown correctly
-    expect(screen.getByText('Operations')).toBeInTheDocument();
     
-    // Updated to match the new UI text
-    expect(screen.getByText('Cars from the originating yard will be assigned to industries along the route')).toBeInTheDocument();
-    expect(screen.getByText('Cars at industries along the route will be picked up and sent to the terminating yard')).toBeInTheDocument();
+    // Updated to match the new UI text after the build train functionality was removed
+    expect(screen.getByText('The "Build Train" functionality has been removed')).toBeInTheDocument();
+    expect(screen.getByText('Manually assign or remove rolling stock using the panels above')).toBeInTheDocument();
   });
 
   it('handles missing destinations gracefully', async () => {
