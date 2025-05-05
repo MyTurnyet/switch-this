@@ -246,6 +246,10 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       console.log("Originating Yard ID:", trainRoute.originatingYardId);
       console.log("Terminating Yard ID:", trainRoute.terminatingYardId);
       
+      // Special case: Check if this is a route that starts and ends at the same yard
+      const sameYard = trainRoute.originatingYardId === trainRoute.terminatingYardId;
+      console.log("Same yard for origin and termination:", sameYard);
+      
       // Log all available industries
       console.log("All Industries:", industries);
       console.log("Industries count:", industries.length);
@@ -260,6 +264,10 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
         console.log(`Location: ${location.stationName}, ID: ${location._id}`);
       });
       
+      // Get more details about the originating yard location
+      const originatingLocation = locations.find(loc => loc._id === trainRoute.originatingYardId);
+      console.log("Originating location details:", originatingLocation);
+      
       let originatingYardIndustry = getOriginatingYardIndustry();
       let terminatingYardIndustry = getTerminatingYardIndustry();
       
@@ -268,7 +276,6 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       
       // Create virtual yard industries if not found
       if (!originatingYardIndustry) {
-        const originatingLocation = locations.find(loc => loc._id === trainRoute.originatingYardId);
         if (originatingLocation) {
           originatingYardIndustry = {
             _id: `virtual_${trainRoute.originatingYardId}`,
@@ -285,7 +292,11 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
         }
       }
       
-      if (!terminatingYardIndustry) {
+      // If it's the same yard, use the same industry for both
+      if (sameYard && originatingYardIndustry && !terminatingYardIndustry) {
+        terminatingYardIndustry = originatingYardIndustry;
+        console.log("Using originating yard as terminating yard (same location):", terminatingYardIndustry);
+      } else if (!terminatingYardIndustry) {
         const terminatingLocation = locations.find(loc => loc._id === trainRoute.terminatingYardId);
         if (terminatingLocation) {
           terminatingYardIndustry = {
@@ -305,14 +316,23 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       
       if (!originatingYardIndustry || !terminatingYardIndustry) {
         console.error("Failed to find or create yard industries. Origin:", originatingYardIndustry, "Termination:", terminatingYardIndustry);
-        setError('Could not find originating or terminating yard industries');
-        setBuildingTrain(false);
-        return;
+        
+        // Last resort: Create a universal yard industry if we know the yard location names
+        const universalYardResult = createUniversalYardIndustry();
+        if (universalYardResult) {
+          originatingYardIndustry = universalYardResult;
+          terminatingYardIndustry = universalYardResult;
+          console.log("Applied universal yard to both origin and termination:", universalYardResult);
+        } else {
+          setError('Could not find originating or terminating yard industries');
+          setBuildingTrain(false);
+          return;
+        }
       }
       
       // Get cars from the originating yard
       const carsFromOriginatingYard = availableRollingStock.filter(
-        car => car.currentLocation?.industryId === originatingYardIndustry._id
+        car => car.currentLocation?.industryId === (originatingYardIndustry?._id || '')
       );
       
       console.log("Cars from originating yard:", carsFromOriginatingYard);
@@ -362,8 +382,8 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
           ...car,
           destination: {
             immediateDestination: {
-              locationId: terminatingYardIndustry.locationId,
-              industryId: terminatingYardIndustry._id,
+              locationId: terminatingYardIndustry?.locationId || '',
+              industryId: terminatingYardIndustry?._id || '',
               trackId: 'track1' // Simplified for demo
             }
           }
@@ -417,6 +437,36 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       current.filter(rs => rs._id !== rollingStock._id)
     );
     setAvailableRollingStock(current => [...current, rollingStock]);
+  };
+  
+  // Function to create a universal yard as absolute last resort
+  const createUniversalYardIndustry = (): Industry | null => {
+    if (!trainRoute) return null;
+    
+    console.log("Attempting to create universal yard industry as last resort");
+    
+    // Try to get the location names
+    const originatingLocation = locations.find(loc => loc._id === trainRoute.originatingYardId);
+    
+    if (!originatingLocation) {
+      console.error("Cannot create universal yard - missing originating location");
+      return null;
+    }
+    
+    // Create a universal yard industry that can act as both origin and termination
+    const universalYardIndustry: Industry = {
+      _id: `universal_yard_${Date.now()}`,
+      name: `${originatingLocation.stationName} Universal Yard`,
+      locationId: trainRoute.originatingYardId,
+      industryType: IndustryType.YARD,
+      blockName: originatingLocation.block || 'YARD',
+      tracks: [],
+      ownerId: 'system'
+    };
+    
+    console.log("Created universal yard industry:", universalYardIndustry);
+    
+    return universalYardIndustry;
   };
   
   // Render loading state
