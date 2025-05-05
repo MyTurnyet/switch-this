@@ -114,33 +114,6 @@ class FakeMongoDbService implements IMongoDbService {
   }
 }
 
-// Mock the MongoDbService constructor
-jest.mock('../mongodb.service', () => {
-  // Create a mock constructor function
-  const MockMongoDbService = jest.fn().mockImplementation(() => {
-    return {
-      connect: jest.fn(),
-      close: jest.fn(),
-      getCollection: jest.fn(),
-      getRollingStockCollection: jest.fn(),
-      getIndustriesCollection: jest.fn(),
-      getLocationsCollection: jest.fn(),
-      getTrainRoutesCollection: jest.fn(),
-      getLayoutStateCollection: jest.fn(),
-      getSwitchlistsCollection: jest.fn(),
-      toObjectId: jest.fn()
-    };
-  });
-  
-  // Manually add a prototype to make instanceof checks work
-  MockMongoDbService.prototype = { constructor: MockMongoDbService };
-  
-  return {
-    // Use named export to match the original
-    MongoDbService: MockMongoDbService
-  };
-});
-
 describe('MongoDb Provider', () => {
   let mongoDbProvider: MongoDbProvider;
   let mockMongoService: IMongoDbService;
