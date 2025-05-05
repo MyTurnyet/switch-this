@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
 
 
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service to be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 interface Industry {
   _id?: string | ObjectId;
@@ -22,8 +22,6 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-
   try {
     await mongoService.connect();
     const collection = mongoService.getIndustriesCollection();
@@ -46,7 +44,7 @@ export async function GET(
   }
 }
 
-async function findIndustryById(collection: Collection, id: string, mongoService: any) {
+async function findIndustryById(collection: Collection, id: string, mongoService: IMongoDbService) {
   return await collection.findOne({ 
     _id: mongoService.toObjectId(id) 
   });
@@ -64,8 +62,6 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-
   try {
     const data = await request.json();
     
@@ -109,7 +105,7 @@ function createInvalidNameResponse() {
   );
 }
 
-function prepareForUpdate(id: string, data: Partial<Industry>, mongoService: any): ObjectId {
+function prepareForUpdate(id: string, data: Partial<Industry>, mongoService: IMongoDbService): ObjectId {
   const industryId = mongoService.toObjectId(id);
   delete data._id;
   return industryId;
@@ -127,8 +123,6 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-
   try {
     await mongoService.connect();
     const collection = mongoService.getIndustriesCollection();

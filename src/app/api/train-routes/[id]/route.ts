@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
 
 
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service to be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 // Helper function to validate train route data
 function validateTrainRoute(trainRoute: Record<string, unknown>): boolean {
@@ -25,8 +25,6 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     await mongoService.connect();
     const collection = mongoService.getTrainRoutesCollection();
@@ -57,8 +55,6 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     const trainRoute = await request.json();
     
@@ -122,8 +118,6 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     await mongoService.connect();
     const collection = mongoService.getTrainRoutesCollection();

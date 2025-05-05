@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
 import { Switchlist } from '@/app/shared/types/models';
 
 
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service to be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 // GET handler to fetch a specific switchlist
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     await mongoService.connect();
     const collection = mongoService.getSwitchlistsCollection();
@@ -49,8 +47,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 // PUT handler to update a switchlist
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     const body = await request.json();
     
@@ -138,8 +134,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 // DELETE handler to remove a switchlist
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     let id;
     try {
