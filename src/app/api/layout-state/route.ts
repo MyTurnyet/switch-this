@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection } from 'mongodb';
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
 
 interface LayoutState {
   _id?: string | any;
@@ -10,7 +15,7 @@ interface LayoutState {
 
 // GET - retrieves the latest layout state
 export async function GET() {
-  const mongoService = getMongoDbService();
+  const mongoService = mongoDbProvider.getService();
   
   try {
     await mongoService.connect();
@@ -45,7 +50,7 @@ function handleNoStateFound() {
 
 // POST - saves the current layout state
 export async function POST(request: Request) {
-  const mongoService = getMongoDbService();
+  const mongoService = mongoDbProvider.getService();
   
   try {
     const data = await request.json();

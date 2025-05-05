@@ -1,118 +1,7 @@
-import { MongoDbProvider, getMongoDbService, resetMongoDbService, setMongoDbService } from '../mongodb.provider';
+import { MongoDbProvider } from '../mongodb.provider';
 import { IMongoDbService } from '../mongodb.interface';
-import { Collection, Document, ObjectId } from 'mongodb';
-
-interface MockDocument extends Document {
-  name?: string;
-  [key: string]: unknown;
-}
-
-/**
- * FakeMongoDbService implements IMongoDbService for testing
- * 
- * A proper Fake test double that maintains some state and behavior,
- * but doesn't depend on the real MongoDB implementation.
- */
-class FakeMongoDbService implements IMongoDbService {
-  isConnected = false;
-  collections: Record<string, Collection<MockDocument>> = {};
-  
-  // Track method calls for verification in tests
-  callHistory: { method: string; args: unknown[] }[] = [];
-  
-  private recordCall(method: string, ...args: unknown[]) {
-    this.callHistory.push({ method, args });
-  }
-  
-  async connect(): Promise<void> {
-    this.recordCall('connect');
-    this.isConnected = true;
-    return Promise.resolve();
-  }
-  
-  async close(): Promise<void> {
-    this.recordCall('close');
-    this.isConnected = false;
-    return Promise.resolve();
-  }
-  
-  getCollection<T extends Document = Document>(collectionName: string): Collection<T> {
-    this.recordCall('getCollection', collectionName);
-    
-    if (!this.isConnected) {
-      throw new Error('Not connected to MongoDB');
-    }
-    
-    if (!this.collections[collectionName]) {
-      this.collections[collectionName] = this.createMockCollection(collectionName);
-    }
-    
-    return this.collections[collectionName] as unknown as Collection<T>;
-  }
-  
-  toObjectId(id: string): ObjectId {
-    this.recordCall('toObjectId', id);
-    if (!id || id.length !== 24) {
-      throw new Error('Invalid ObjectId');
-    }
-    return new ObjectId(id);
-  }
-  
-  getRollingStockCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getRollingStockCollection');
-    return this.getCollection<T>('rollingStock');
-  }
-  
-  getIndustriesCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getIndustriesCollection');
-    return this.getCollection<T>('industries');
-  }
-  
-  getLocationsCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getLocationsCollection');
-    return this.getCollection<T>('locations');
-  }
-  
-  getTrainRoutesCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getTrainRoutesCollection');
-    return this.getCollection<T>('trainRoutes');
-  }
-  
-  getLayoutStateCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getLayoutStateCollection');
-    return this.getCollection<T>('layoutState');
-  }
-  
-  getSwitchlistsCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getSwitchlistsCollection');
-    return this.getCollection<T>('switchlists');
-  }
-  
-  // Helper method to create mock collections
-  private createMockCollection(name: string): Collection<MockDocument> {
-    const mockDocuments: MockDocument[] = [];
-    
-    // Create a basic mock implementation of a MongoDB collection
-    return {
-      // Basic find implementation
-      find: jest.fn().mockImplementation(() => ({
-        toArray: jest.fn().mockResolvedValue(mockDocuments)
-      })),
-      // Basic insertOne implementation
-      insertOne: jest.fn().mockImplementation((doc: MockDocument) => {
-        const newDoc = { ...doc, _id: new ObjectId() };
-        mockDocuments.push(newDoc);
-        return Promise.resolve({ insertedId: newDoc._id });
-      }),
-      // Basic findOne implementation
-      findOne: jest.fn().mockImplementation(() => {
-        return Promise.resolve(mockDocuments[0] || null);
-      }),
-      // Other collection methods as needed
-      collectionName: name
-    } as unknown as Collection<MockDocument>;
-  }
-}
+import { Document, ObjectId } from 'mongodb';
+import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 
 describe('MongoDb Provider', () => {
   let mongoDbProvider: MongoDbProvider;
@@ -196,7 +85,7 @@ describe('MongoDb Provider', () => {
       });
       
       // Insert a document
-      await collection.insertOne({ name: 'Test Document' });
+      await collection.insertOne({ name: 'Test Document' } as unknown as Document);
       
       // Find documents
       const findResult = collection.find();
@@ -237,77 +126,6 @@ describe('MongoDb Provider', () => {
       expect(() => {
         service.toObjectId(invalidId);
       }).toThrow('Invalid ObjectId');
-    });
-  });
-  
-  describe('Legacy functions', () => {
-    beforeEach(() => {
-      // Start with a clean state for each test
-      resetMongoDbService();
-    });
-    
-    it('should get the MongoDB service using getMongoDbService', () => {
-      const service = getMongoDbService();
-      
-      expect(service).toBeTruthy();
-      expect(service.connect).toBeDefined();
-    });
-    
-    it('should return the same instance for subsequent calls to getMongoDbService', () => {
-      const service1 = getMongoDbService();
-      const service2 = getMongoDbService();
-      
-      expect(service1).toBe(service2);
-    });
-    
-    it('should reset the service with resetMongoDbService', () => {
-      // Get the initial service
-      const service1 = getMongoDbService();
-      
-      // Reset the service
-      resetMongoDbService();
-      
-      // Get the service again
-      const service2 = getMongoDbService();
-      
-      // They should be different instances
-      expect(service1).not.toBe(service2);
-    });
-    
-    it('should set a custom service with setMongoDbService', () => {
-      // Create a custom service
-      const customService: IMongoDbService = {
-        connect: jest.fn(),
-        close: jest.fn(),
-        getCollection: jest.fn(),
-        getRollingStockCollection: jest.fn(),
-        getIndustriesCollection: jest.fn(),
-        getLocationsCollection: jest.fn(),
-        getTrainRoutesCollection: jest.fn(),
-        getLayoutStateCollection: jest.fn(),
-        getSwitchlistsCollection: jest.fn(),
-        toObjectId: jest.fn()
-      };
-      
-      setMongoDbService(customService);
-      const service = getMongoDbService();
-      
-      expect(service).toBe(customService);
-    });
-    
-    it('should work with the FakeMongoDbService', async () => {
-      // Create a fake service
-      const fakeService = new FakeMongoDbService();
-      
-      // Set it as the service
-      setMongoDbService(fakeService);
-      const service = getMongoDbService() as FakeMongoDbService;
-      
-      expect(service).toBe(fakeService);
-      
-      // Should be able to use it like a real service
-      await service.connect();
-      expect(service.isConnected).toBe(true);
     });
   });
 }); 

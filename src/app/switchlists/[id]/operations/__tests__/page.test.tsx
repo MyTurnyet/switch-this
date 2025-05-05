@@ -5,6 +5,7 @@ import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { LocationService } from '@/app/shared/services/LocationService';
 import { IndustryService } from '@/app/shared/services/IndustryService';
+import { OperationsService } from '@/app/shared/services/OperationsService';
 import { LocationType, IndustryType } from '@/app/shared/types/models';
 
 // Mock the services
@@ -13,6 +14,7 @@ jest.mock('@/app/shared/services/RollingStockService');
 jest.mock('@/app/shared/services/TrainRouteService');
 jest.mock('@/app/shared/services/LocationService');
 jest.mock('@/app/shared/services/IndustryService');
+jest.mock('@/app/shared/services/OperationsService');
 
 const mockSwitchlist = {
   _id: 'switchlist123',
@@ -154,6 +156,7 @@ describe('SwitchlistOperationsPage', () => {
   let mockGetAllRollingStock: jest.Mock;
   let mockGetAllLocations: jest.Mock;
   let mockGetAllIndustries: jest.Mock;
+  let mockGetCarsInOriginatingYard: jest.Mock;
   
   beforeEach(() => {
     jest.clearAllMocks();
@@ -164,6 +167,13 @@ describe('SwitchlistOperationsPage', () => {
     mockGetAllRollingStock = jest.fn().mockResolvedValue(mockRollingStock);
     mockGetAllLocations = jest.fn().mockResolvedValue(mockLocations);
     mockGetAllIndustries = jest.fn().mockResolvedValue(mockIndustries);
+    
+    // Mock the OperationsService to return only rolling stock in the yard
+    mockGetCarsInOriginatingYard = jest.fn().mockImplementation(() => {
+      return mockRollingStock.filter(rs => 
+        rs.currentLocation && rs.currentLocation.industryId === 'yard_ind1'
+      );
+    });
     
     // Assign mocks to service classes
     (SwitchlistService as jest.Mock).mockImplementation(() => ({
@@ -184,6 +194,10 @@ describe('SwitchlistOperationsPage', () => {
     
     (IndustryService as jest.Mock).mockImplementation(() => ({
       getAllIndustries: mockGetAllIndustries
+    }));
+    
+    (OperationsService as jest.Mock).mockImplementation(() => ({
+      getCarsInOriginatingYard: mockGetCarsInOriginatingYard
     }));
   });
   

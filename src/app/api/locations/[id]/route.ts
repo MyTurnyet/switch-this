@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection } from 'mongodb';
 import { LocationType } from '@/app/shared/types/models';
 import { MongoDbService } from '@/lib/services/mongodb.service';
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
 
 // Helper functions
 function createNotFoundResponse() {
@@ -60,7 +65,7 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = getMongoDbService();
+  const mongoService = mongoDbProvider.getService();
 
   try {
     await mongoService.connect();
@@ -104,7 +109,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = getMongoDbService();
+  const mongoService = mongoDbProvider.getService();
 
   try {
     const data = await request.json();
@@ -174,7 +179,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = getMongoDbService();
+  const mongoService = mongoDbProvider.getService();
 
   try {
     // Validate the id parameter

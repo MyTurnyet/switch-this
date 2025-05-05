@@ -1,7 +1,51 @@
 import { NextRequest } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { GET, PUT, DELETE } from '../route';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
+
+import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// MongoDB provider mocking is now handled by createMongoDbTestSetup()
+
+
+
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// Mock removed and replaced with proper declaration
+
+
+
+// Define the mock service before jest.mock
+const mockFindOne = jest.fn();
+const mockUpdateOne = jest.fn();
+const mockDeleteOne = jest.fn();
+const mockClose = jest.fn();
+const mockConnect = jest.fn();
+
+const mockCollection = {
+  findOne: mockFindOne,
+  updateOne: mockUpdateOne,
+  deleteOne: mockDeleteOne
+};
+
+const mockGetTrainRoutesCollection = jest.fn().mockReturnValue(mockCollection);
+
+const fakeMongoService: IMongoDbService = {
+  connect: mockConnect,
+  close: mockClose,
+  getCollection: jest.fn(),
+  getRollingStockCollection: jest.fn(),
+  getIndustriesCollection: jest.fn(),
+  getLocationsCollection: jest.fn(),
+  getTrainRoutesCollection: mockGetTrainRoutesCollection,
+  getLayoutStateCollection: jest.fn(),
+  getSwitchlistsCollection: jest.fn(),
+  toObjectId: jest.fn().mockImplementation(id => new ObjectId(id))
+};
 
 // Mock NextResponse and MongoDB first, before any variable declarations
 jest.mock('next/server', () => {
@@ -16,39 +60,31 @@ jest.mock('next/server', () => {
 });
 
 // Mock MongoDB provider
-jest.mock('@/lib/services/mongodb.provider', () => ({
-  getMongoDbService: jest.fn()
-}));
+// Mock removed and replaced with proper declaration
 
 // Get a reference to the mocked json function after mocking
 const jsonMock = jest.requireMock('next/server').NextResponse.json;
 
 describe('Train Route API Endpoints', () => {
-  const mockFindOne = jest.fn();
-  const mockUpdateOne = jest.fn();
-  const mockDeleteOne = jest.fn();
-  const mockClose = jest.fn();
-  const mockConnect = jest.fn();
-  
-  const mockCollection = {
-    findOne: mockFindOne,
-    updateOne: mockUpdateOne,
-    deleteOne: mockDeleteOne
-  };
-  
-  const mockGetTrainRoutesCollection = jest.fn().mockReturnValue(mockCollection);
-  
-  const mockMongoService = {
-    connect: mockConnect,
-    getTrainRoutesCollection: mockGetTrainRoutesCollection,
-    close: mockClose
-  };
-  
   beforeAll(() => {
-    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
+    const mockProvider = new MongoDbProvider(fakeMongoService);
+    (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
   });
   
   beforeEach(() => {
+  // Setup mock collections for this test
+  beforeEach(() => {
+    // Configure the fake service collections
+    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
+    const industriesCollection = fakeMongoService.getIndustriesCollection();
+    const locationsCollection = fakeMongoService.getLocationsCollection();
+    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
+    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+    
+    // Configure collection methods as needed for specific tests
+    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
+  });
+
     jest.clearAllMocks();
     jsonMock.mockClear();
     mockFindOne.mockReset();
@@ -314,5 +350,10 @@ describe('Train Route API Endpoints', () => {
       );
       expect(result.status).toBe(500);
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    fakeMongoService.clearCallHistory();
   });
 }); 

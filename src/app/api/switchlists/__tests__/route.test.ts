@@ -1,12 +1,31 @@
 import { GET, POST } from '../route';
 import { NextRequest, NextResponse } from 'next/server';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
+import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
 
+import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// MongoDB provider mocking is now handled by createMongoDbTestSetup()
+
+
+
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// Mock removed and replaced with proper declaration
+
+
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+
 // Mock the MongoDB service
-jest.mock('@/lib/services/mongodb.provider', () => ({
-  getMongoDbService: jest.fn()
-}));
+// Mock removed and replaced with proper declaration
 
 // Mock NextResponse
 jest.mock('next/server', () => ({
@@ -42,7 +61,7 @@ describe('Switchlists API Routes', () => {
     findOne: jest.fn()
   };
   
-  const mockMongoService = {
+  const fakeMongoService = {
     connect: jest.fn().mockResolvedValue(undefined),
     close: jest.fn().mockResolvedValue(undefined),
     getSwitchlistsCollection: jest.fn().mockReturnValue(mockCollection),
@@ -50,8 +69,22 @@ describe('Switchlists API Routes', () => {
   };
   
   beforeEach(() => {
+  // Setup mock collections for this test
+  beforeEach(() => {
+    // Configure the fake service collections
+    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
+    const industriesCollection = fakeMongoService.getIndustriesCollection();
+    const locationsCollection = fakeMongoService.getLocationsCollection();
+    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
+    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+    
+    // Configure collection methods as needed for specific tests
+    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
+  });
+
     jest.clearAllMocks();
-    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
+    const mockProvider = new MongoDbProvider(fakeMongoService);
+  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
     (ObjectId as unknown as jest.Mock).mockImplementation((id) => ({ toString: () => id }));
   });
   
@@ -66,12 +99,12 @@ describe('Switchlists API Routes', () => {
       
       await GET();
       
-      expect(mockMongoService.connect).toHaveBeenCalled();
-      expect(mockMongoService.getSwitchlistsCollection).toHaveBeenCalled();
+      expect(fakeMongoService.connect).toHaveBeenCalled();
+      expect(fakeMongoService.getSwitchlistsCollection).toHaveBeenCalled();
       expect(mockCollection.find).toHaveBeenCalledWith({});
       expect(mockCollection.toArray).toHaveBeenCalled();
       expect(NextResponse.json).toHaveBeenCalledWith(mockSwitchlists);
-      expect(mockMongoService.close).toHaveBeenCalled();
+      expect(fakeMongoService.close).toHaveBeenCalled();
     });
     
     it('should handle errors', async () => {
@@ -108,7 +141,7 @@ describe('Switchlists API Routes', () => {
       
       await POST(mockRequest);
       
-      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(fakeMongoService.connect).toHaveBeenCalled();
       expect(mockTrainRoutesCollection.findOne).toHaveBeenCalled();
       expect(mockCollection.insertOne).toHaveBeenCalled();
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -199,5 +232,10 @@ describe('Switchlists API Routes', () => {
         { status: 400 }
       );
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    fakeMongoService.clearCallHistory();
   });
 }); 

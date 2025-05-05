@@ -1,12 +1,33 @@
 import { GET, PUT, DELETE } from '../route';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
+import { MongoDbService } from '@/lib/services/mongodb.service';
 import { NextResponse } from 'next/server';
 import { LocationType } from '@/app/shared/types/models';
 
+import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// MongoDB provider mocking is now handled by createMongoDbTestSetup()
+
+
+
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// Mock removed and replaced with proper declaration
+
+
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+
 // Mock the mongodb provider
-jest.mock('@/lib/services/mongodb.provider', () => ({
-  getMongoDbService: jest.fn()
-}));
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Mock removed and replaced with proper declaration
 
 describe('Location ID API', () => {
   type MockLocation = {
@@ -36,11 +57,24 @@ describe('Location ID API', () => {
     getIndustriesCollection: jest.Mock;
   };
 
-  let mockMongoService: MockMongoService;
+  let fakeMongoService: MockMongoService;
   let mockCollection: MockCollection;
   let mockLocation: MockLocation;
 
   beforeEach(() => {
+  // Setup mock collections for this test
+  beforeEach(() => {
+    // Configure the fake service collections
+    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
+    const industriesCollection = fakeMongoService.getIndustriesCollection();
+    const locationsCollection = fakeMongoService.getLocationsCollection();
+    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
+    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+    
+    // Configure collection methods as needed for specific tests
+    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
+  });
+
     // Set up mock location data
     mockLocation = {
       _id: 'loc1',
@@ -61,7 +95,7 @@ describe('Location ID API', () => {
       toArray: jest.fn().mockResolvedValue([mockLocation])
     };
 
-    mockMongoService = {
+    fakeMongoService = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
       getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
@@ -69,7 +103,8 @@ describe('Location ID API', () => {
       getIndustriesCollection: jest.fn().mockReturnValue({ countDocuments: jest.fn().mockResolvedValue(0) })
     };
 
-    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
+    const mockProvider = new MongoDbProvider(fakeMongoService);
+  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
 
     // Mock NextResponse.json
     (NextResponse.json as jest.Mock) = jest.fn().mockImplementation((data) => ({ data }));
@@ -87,9 +122,9 @@ describe('Location ID API', () => {
       await GET(request, { params });
 
       // Verify that the MongoDB service methods were called correctly
-      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(fakeMongoService.connect).toHaveBeenCalled();
       expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: 'loc1' });
-      expect(mockMongoService.close).toHaveBeenCalled();
+      expect(fakeMongoService.close).toHaveBeenCalled();
       
       // Verify that NextResponse.json was called with the found location
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -129,7 +164,7 @@ describe('Location ID API', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      mockMongoService.connect.mockRejectedValue(new Error('Connection error'));
+      fakeMongoService.connect.mockRejectedValue(new Error('Connection error'));
 
       const request = {} as Request;
       const params = { id: 'loc1' };
@@ -174,7 +209,7 @@ describe('Location ID API', () => {
       await PUT(request, { params });
 
       // Verify that the MongoDB service methods were called correctly
-      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(fakeMongoService.connect).toHaveBeenCalled();
       expect(mockCollection.updateOne).toHaveBeenCalledWith(
         { _id: 'loc1' },
         { $set: expect.objectContaining({
@@ -285,7 +320,7 @@ describe('Location ID API', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      mockMongoService.connect.mockRejectedValue(new Error('Connection error'));
+      fakeMongoService.connect.mockRejectedValue(new Error('Connection error'));
 
       const request = {
         json: jest.fn().mockResolvedValue({
@@ -324,7 +359,7 @@ describe('Location ID API', () => {
       };
       
       // Add the getIndustriesCollection method to the mock service
-      mockMongoService.getIndustriesCollection = jest.fn().mockReturnValue(mockIndustriesCollection);
+      fakeMongoService.getIndustriesCollection = jest.fn().mockReturnValue(mockIndustriesCollection);
       
       // Set up the successful case for finding a location
       mockCollection.findOne.mockResolvedValue({ ...mockLocation });
@@ -340,12 +375,12 @@ describe('Location ID API', () => {
       await DELETE(request, { params });
 
       // Verify that the MongoDB service methods were called correctly
-      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(fakeMongoService.connect).toHaveBeenCalled();
       expect(mockCollection.findOne).toHaveBeenCalled(); // Check if location exists
-      expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled(); // Check references
+      expect(fakeMongoService.getIndustriesCollection).toHaveBeenCalled(); // Check references
       expect(mockIndustriesCollection.countDocuments).toHaveBeenCalled(); // Count references
       expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: expect.anything() });
-      expect(mockMongoService.close).toHaveBeenCalled();
+      expect(fakeMongoService.close).toHaveBeenCalled();
 
       // Verify that NextResponse.json was called with success response
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -415,7 +450,7 @@ describe('Location ID API', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      mockMongoService.connect.mockRejectedValue(new Error('Connection error'));
+      fakeMongoService.connect.mockRejectedValue(new Error('Connection error'));
 
       const request = {} as Request;
       const params = { id: 'loc1' };

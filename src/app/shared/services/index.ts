@@ -1,4 +1,5 @@
 import { Location, Industry, TrainRoute, RollingStock } from '@/app/shared/types/models';
+import { OperationsService } from './OperationsService';
 
 interface ServiceMethods {
   locationService: {
@@ -14,7 +15,27 @@ interface ServiceMethods {
   rollingStockService: {
     getAllRollingStock: () => Promise<RollingStock[]>;
   };
+  operationsService: {
+    getCarsInOriginatingYard: (
+      trainRoute: TrainRoute,
+      industries: Industry[],
+      rollingStock: RollingStock[]
+    ) => RollingStock[];
+    getCarsInYardTrack: (
+      trainRoute: TrainRoute,
+      industries: Industry[],
+      rollingStock: RollingStock[],
+      trackId: string
+    ) => RollingStock[];
+    getOriginatingYardIndustries: (
+      trainRoute: TrainRoute,
+      industries: Industry[]
+    ) => Industry[];
+  };
 }
+
+// Create an instance of OperationsService
+const operationsService = new OperationsService();
 
 export const services: ServiceMethods = {
   locationService: {
@@ -59,5 +80,16 @@ export const services: ServiceMethods = {
       if (!response.ok) throw new Error('Failed to fetch rolling stock');
       return response.json();
     }
+  },
+  operationsService: {
+    getCarsInOriginatingYard: (trainRoute, industries, rollingStock) => 
+      operationsService.getCarsInOriginatingYard(trainRoute, industries, rollingStock),
+    getCarsInYardTrack: (trainRoute, industries, rollingStock, trackId) => 
+      operationsService.getCarsInYardTrack(trainRoute, industries, rollingStock, trackId),
+    getOriginatingYardIndustries: (trainRoute, industries) => 
+      operationsService.getOriginatingYardIndustries(trainRoute, industries)
   }
-}; 
+};
+
+// Export the OperationsService class for direct use
+export { OperationsService }; 

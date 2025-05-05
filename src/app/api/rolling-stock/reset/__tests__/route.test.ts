@@ -1,7 +1,28 @@
 import { POST } from '../route';
 import { NextResponse } from 'next/server';
 import { MongoDbService } from '@/lib/services/mongodb.service';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// MongoDB provider mocking is now handled by createMongoDbTestSetup()
+
+
+
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// Mock removed and replaced with proper declaration
+
+
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
+import { MongoDbService } from '@/lib/services/mongodb.service';
+
+import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
 
 // Mock NextResponse
 jest.mock('next/server', () => ({
@@ -16,14 +37,29 @@ jest.mock('next/server', () => ({
 // Mock MongoDB service provider
 jest.mock('@/lib/services/mongodb.provider', () => {
   return {
-    getMongoDbService: jest.fn()
+    MongoDbProvider: jest.fn().mockImplementation(() => ({
+    getService: jest.fn().mockReturnValue(fakeMongoService)
+  })),
   };
 });
 
 describe('Rolling Stock Reset API', () => {
-  let mockMongoService: jest.Mocked<MongoDbService>;
+  let fakeMongoService: jest.Mocked<MongoDbService>;
   
   beforeEach(() => {
+  // Setup mock collections for this test
+  beforeEach(() => {
+    // Configure the fake service collections
+    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
+    const industriesCollection = fakeMongoService.getIndustriesCollection();
+    const locationsCollection = fakeMongoService.getLocationsCollection();
+    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
+    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+    
+    // Configure collection methods as needed for specific tests
+    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
+  });
+
     jest.clearAllMocks();
     
     // Create mock collections
@@ -115,7 +151,7 @@ describe('Rolling Stock Reset API', () => {
     };
     
     // Create mock MongoDB service
-    mockMongoService = {
+    fakeMongoService = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
       getCollection: jest.fn(),
@@ -128,7 +164,8 @@ describe('Rolling Stock Reset API', () => {
     } as unknown as jest.Mocked<MongoDbService>;
     
     // Mock the getMongoDbService to return our mock
-    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
+    const mockProvider = new MongoDbProvider(fakeMongoService);
+  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
   });
 
   it('should reset rolling stock to their home yards on the least occupied tracks', async () => {
@@ -140,13 +177,13 @@ describe('Rolling Stock Reset API', () => {
     expect(result.status).toBe(200);
     
     // Verify the MongoDB service was used correctly
-    expect(mockMongoService.connect).toHaveBeenCalled();
-    expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
-    expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
-    expect(mockMongoService.close).toHaveBeenCalled();
+    expect(fakeMongoService.connect).toHaveBeenCalled();
+    expect(fakeMongoService.getRollingStockCollection).toHaveBeenCalled();
+    expect(fakeMongoService.getIndustriesCollection).toHaveBeenCalled();
+    expect(fakeMongoService.close).toHaveBeenCalled();
     
     // Verify updateOne was called for the rolling stock
-    const rollingStockCollection = mockMongoService.getRollingStockCollection();
+    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
     expect(rollingStockCollection.updateOne).toHaveBeenCalledTimes(3);
   });
 
@@ -155,13 +192,13 @@ describe('Rolling Stock Reset API', () => {
     await POST();
     
     // Verify the correct collection methods were called
-    expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
-    expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
+    expect(fakeMongoService.getRollingStockCollection).toHaveBeenCalled();
+    expect(fakeMongoService.getIndustriesCollection).toHaveBeenCalled();
   });
 
   it('should handle errors gracefully', async () => {
     // Mock the connect method to throw an error
-    mockMongoService.connect.mockRejectedValueOnce(new Error('Database connection failed'));
+    fakeMongoService.connect.mockRejectedValueOnce(new Error('Database connection failed'));
 
     // Call the API route handler
     await POST();
@@ -173,6 +210,11 @@ describe('Rolling Stock Reset API', () => {
     );
     
     // Verify close was still called for cleanup
-    expect(mockMongoService.close).toHaveBeenCalled();
+    expect(fakeMongoService.close).toHaveBeenCalled();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    fakeMongoService.clearCallHistory();
   });
 }); 

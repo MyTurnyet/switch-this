@@ -1,12 +1,33 @@
 import { PUT } from '../route';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
+import { MongoDbService } from '@/lib/services/mongodb.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 
+import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// MongoDB provider mocking is now handled by createMongoDbTestSetup()
+
+
+
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Now mock the MongoDB provider
+// Mock removed and replaced with proper declaration
+
+
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+
 // Mock the mongodb provider
-jest.mock('@/lib/services/mongodb.provider', () => ({
-  getMongoDbService: jest.fn()
-}));
+// Using FakeMongoDbService from test utils instead of custom mocks
+
+// Mock removed and replaced with proper declaration
 
 describe('Rolling Stock API - PUT', () => {
   type MockMongoService = {
@@ -20,26 +41,40 @@ describe('Rolling Stock API - PUT', () => {
     updateOne: jest.Mock;
   };
 
-  let mockMongoService: MockMongoService;
+  let fakeMongoService: MockMongoService;
   let mockCollection: MockCollection;
   let mockRequestJson: jest.Mock;
   let mockRequest: NextRequest;
   let mockParams: { id: string };
   
   beforeEach(() => {
+  // Setup mock collections for this test
+  beforeEach(() => {
+    // Configure the fake service collections
+    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
+    const industriesCollection = fakeMongoService.getIndustriesCollection();
+    const locationsCollection = fakeMongoService.getLocationsCollection();
+    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
+    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+    
+    // Configure collection methods as needed for specific tests
+    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
+  });
+
     // Set up mock MongoDB service and collection
     mockCollection = {
       updateOne: jest.fn().mockResolvedValue({ matchedCount: 1 })
     };
 
-    mockMongoService = {
+    fakeMongoService = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
       getRollingStockCollection: jest.fn().mockReturnValue(mockCollection),
       toObjectId: jest.fn().mockImplementation((id: string) => new ObjectId(id))
     };
 
-    (getMongoDbService as jest.Mock).mockReturnValue(mockMongoService);
+    const mockProvider = new MongoDbProvider(fakeMongoService);
+  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
 
     // Set up mock request
     mockRequestJson = jest.fn();
@@ -81,9 +116,9 @@ describe('Rolling Stock API - PUT', () => {
     await PUT(mockRequest, { params: mockParams });
 
     // Verify that the MongoDB service methods were called correctly
-    expect(mockMongoService.connect).toHaveBeenCalled();
-    expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
-    expect(mockMongoService.close).toHaveBeenCalled();
+    expect(fakeMongoService.connect).toHaveBeenCalled();
+    expect(fakeMongoService.getRollingStockCollection).toHaveBeenCalled();
+    expect(fakeMongoService.close).toHaveBeenCalled();
 
     // Verify that the request data was sanitized (removing _id)
     expect(mockCollection.updateOne).toHaveBeenCalled();
@@ -212,7 +247,7 @@ describe('Rolling Stock API - PUT', () => {
 
   it('handles errors properly', async () => {
     // Mock a database error
-    mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
+    fakeMongoService.connect.mockRejectedValue(new Error('Database connection error'));
 
     mockRequestJson.mockResolvedValue({
       roadName: 'Test',
@@ -230,5 +265,10 @@ describe('Rolling Stock API - PUT', () => {
       { error: 'Failed to update rolling stock' },
       { status: 500 }
     );
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    fakeMongoService.clearCallHistory();
   });
 }); 

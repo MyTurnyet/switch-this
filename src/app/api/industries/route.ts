@@ -1,63 +1,89 @@
-import { NextResponse } from 'next/server';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
-import { Collection } from 'mongodb';
+import { NextRequest, NextResponse } from 'next/server';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { MongoDbService } from '@/lib/services/mongodb.service';
+import { Collection, ObjectId } from 'mongodb';
 
 interface Industry {
-  _id?: string | any;
+  _id?: string | ObjectId;
   name: string;
   locationId: string;
   industryType: string;
   blockName: string;
-  tracks?: any[];
-  [key: string]: any;
+  tracks?: Array<unknown>;
+  [key: string]: unknown;
 }
 
-export async function GET() {
-  const mongoService = getMongoDbService();
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
 
+/**
+ * GET /api/industries
+ * Retrieves all industries from the database
+ */
+export async function GET(): Promise<NextResponse> {
   try {
+    // Get the MongoDB service
+    const mongoService = mongoDbProvider.getService();
+    
+    // Connect to the database
     await mongoService.connect();
-    const collection = mongoService.getIndustriesCollection();
-    const industries = await collection.find().toArray();
+    
+    // Get the industries
+    const industries = await mongoService.getIndustriesCollection().find({}).toArray();
+    
+    // Close the connection
+    await mongoService.close();
+    
+    // Return the industries
     return NextResponse.json(industries);
   } catch (error) {
-    console.error('Error fetching industries:', error);
+    console.error(`Error retrieving industries:`, error);
     return NextResponse.json(
-      { error: 'Failed to fetch industries' },
+      { error: 'Failed to retrieve industries' },
       { status: 500 }
     );
-  } finally {
-    await mongoService.close();
   }
 }
 
-export async function POST(request: Request) {
-  const mongoService = getMongoDbService();
-
+/**
+ * POST /api/industries
+ * Creates a new industry
+ */
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    // Parse the request body
     const data = await request.json();
     
+    // Validate required fields
     const validationError = validateRequiredFields(data);
     if (validationError) {
       return validationError;
     }
     
-    await mongoService.connect();
-    const collection = mongoService.getIndustriesCollection();
+    // Get the MongoDB service
+    const mongoService = mongoDbProvider.getService();
     
+    // Connect to the database
+    await mongoService.connect();
+    
+    // Ensure tracks exist
     const industryToCreate = ensureTracksExist(data);
     
+    // Insert the industry
+    const collection = mongoService.getIndustriesCollection();
     const newIndustry = await insertIndustry(collection, industryToCreate);
     
+    // Close the connection
+    await mongoService.close();
+    
+    // Return the new industry
     return NextResponse.json(newIndustry, { status: 201 });
   } catch (error) {
-    console.error('Error creating industry:', error);
+    console.error(`Error creating industry:`, error);
     return NextResponse.json(
       { error: 'Failed to create industry' },
       { status: 500 }
     );
-  } finally {
-    await mongoService.close();
   }
 }
 

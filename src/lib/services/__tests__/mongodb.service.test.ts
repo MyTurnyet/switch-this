@@ -2,6 +2,7 @@ import { MongoDbService } from '../mongodb.service';
 import { MongoClient } from 'mongodb';
 import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
 
+import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
 // Mock the mongodb module
 jest.mock('mongodb', () => {
   const mockCollection = {

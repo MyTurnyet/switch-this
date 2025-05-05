@@ -2,6 +2,7 @@ import { ExampleService } from '../example.service';
 import { MongoDbProvider } from '@/lib/services/mongodb.provider';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 
+import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
 // Create a mock MongoDB service that implements IMongoDbService
 const createMockMongoDbService = () => {
   const mockCollection = {

@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { RollingStock, Industry } from '@/app/shared/types/models';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
 
 type MongoService = {
   connect: () => Promise<void>;
@@ -24,7 +29,7 @@ type Track = {
 
 export async function POST() {
   console.log('Reset API endpoint called');
-  const mongoService = getMongoDbService() as MongoService;
+  const mongoService = mongoDbProvider.getService() as MongoService;
   
   try {
     await mongoService.connect();

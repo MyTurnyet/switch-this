@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
 
 interface RollingStock {
   _id?: string | ObjectId;
@@ -39,7 +44,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = getMongoDbService() as MongoService;
+  const mongoService = mongoDbProvider.getService() as MongoService;
   
   try {
     await mongoService.connect();
@@ -80,7 +85,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = getMongoDbService() as MongoService;
+  const mongoService = mongoDbProvider.getService() as MongoService;
   
   try {
     const updatedData = await request.json();
@@ -134,7 +139,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = getMongoDbService() as MongoService;
+  const mongoService = mongoDbProvider.getService() as MongoService;
   
   try {
     await mongoService.connect();

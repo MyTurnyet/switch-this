@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getMongoDbService } from '@/lib/services/mongodb.provider';
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { MongoDbService } from '@/lib/services/mongodb.service';
+
+
+// Create a MongoDB provider and service that will be used throughout this file
+const mongoDbProvider = new MongoDbProvider(new MongoDbService());
 
 export async function GET() {
-  const mongoService = getMongoDbService();
+  const mongoService = mongoDbProvider.getService();
 
   try {
     await mongoService.connect();
