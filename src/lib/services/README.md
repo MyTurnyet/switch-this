@@ -9,7 +9,9 @@ The MongoDB service now implements the `IMongoDbService` interface, which define
 ## Immutable Provider
 The `MongoDbProvider` is now immutable - it takes a service in its constructor and maintains a reference to that service for its entire lifecycle. If you need a different service, you should create a new provider instance.
 
-## Old Usage
+## Legacy vs. Modern Usage
+
+### Legacy Usage (Deprecated)
 
 ```typescript
 import { getMongoDbService } from '@/lib/services/mongodb.provider';
@@ -31,7 +33,7 @@ const mockService = new MongoDbService();
 setMongoDbService(mockService);
 ```
 
-## New Usage
+### Modern Usage (Recommended)
 
 ```typescript
 import { MongoDbProvider } from '@/lib/services/mongodb.provider';
@@ -53,6 +55,53 @@ await mongoService.close();
 // For testing with a different service, create a new provider
 const testService = new MongoDbService();
 const testProvider = new MongoDbProvider(testService);
+```
+
+## Dependency Injection in Services
+
+When creating services that depend on MongoDB, it's recommended to use dependency injection. Here's an example service:
+
+```typescript
+import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
+import { MongoDbService } from '@/lib/services/mongodb.service';
+
+export class MyService {
+  private readonly mongoDbProvider: MongoDbProvider;
+
+  // Accept either a provider or a service in the constructor
+  constructor(mongoDbProviderOrService: MongoDbProvider | IMongoDbService) {
+    if (mongoDbProviderOrService instanceof MongoDbProvider) {
+      this.mongoDbProvider = mongoDbProviderOrService;
+    } else {
+      // It's an IMongoDbService, so create a provider with it
+      this.mongoDbProvider = new MongoDbProvider(mongoDbProviderOrService);
+    }
+  }
+
+  // Factory method for creating with default service
+  static withDefaultService(): MyService {
+    return new MyService(new MongoDbService());
+  }
+
+  // Factory method for creating with custom service
+  static withService(mongoDbService: IMongoDbService): MyService {
+    return new MyService(mongoDbService);
+  }
+
+  // Example method using MongoDB
+  async getData(collectionName: string) {
+    const mongoService = this.mongoDbProvider.getService();
+    
+    try {
+      await mongoService.connect();
+      const collection = mongoService.getCollection(collectionName);
+      return await collection.find().toArray();
+    } finally {
+      await mongoService.close();
+    }
+  }
+}
 ```
 
 ## Creating a Custom Implementation
@@ -86,6 +135,7 @@ const provider = new MongoDbProvider(customService);
 When mocking the MongoDB service in tests, you can create a mock that implements the interface:
 
 ```typescript
+// Create a mock MongoDB service
 const mockMongoDbService: jest.Mocked<IMongoDbService> = {
   connect: jest.fn().mockResolvedValue(undefined),
   close: jest.fn().mockResolvedValue(undefined),
@@ -107,29 +157,20 @@ const anotherMockService = { /* ... */ } as unknown as jest.Mocked<IMongoDbServi
 const anotherProvider = new MongoDbProvider(anotherMockService);
 ```
 
+## Best Practices
+
+1. **Use Dependency Injection:** Always pass MongoDB services to your application classes through their constructors.
+
+2. **Program to Interfaces:** Use the `IMongoDbService` interface instead of the concrete `MongoDbService` class in your code.
+
+3. **Create New Providers for Different Services:** If you need to use a different MongoDB service, create a new provider instance.
+
+4. **Use Factory Methods:** Consider adding static factory methods to your services to simplify their creation.
+
+5. **Handle Connections Properly:** Always connect before using the database and close the connection when done, preferably in a try/finally block.
+
+6. **Mock for Testing:** Use the interface to create mocks for unit testing.
+
 ## Compatibility
-For backward compatibility, the old functions (`getMongoDbService`, `resetMongoDbService`, and `setMongoDbService`) are still available but marked as deprecated. These functions use a singleton instance of the `MongoDbProvider` class under the hood.
 
-## Mocking in Tests
-When mocking the provider in tests, you should now mock both the class and the backward compatibility functions if needed:
-
-```typescript
-jest.mock('@/lib/services/mongodb.provider', () => {
-  const mockGetService = jest.fn();
-  
-  // Mock the MongoDbProvider class
-  const MockMongoDbProvider = jest.fn().mockImplementation(() => ({
-    getService: mockGetService
-  }));
-  
-  return {
-    MongoDbProvider: MockMongoDbProvider,
-    getMongoDbService: jest.fn()
-  };
-});
-```
-
-## Migration Plan
-1. For new code, use the class-based approach with dependency injection
-2. For existing code, you can continue using the old functions until it's convenient to update
-3. When updating tests, consider switching to the class-based approach for better testability 
+The legacy functions (`getMongoDbService`, `resetMongoDbService`, and `setMongoDbService`) are still available for backward compatibility, but they are marked as deprecated and will be removed in a future release. You should migrate to the new class-based approach as soon as possible. 

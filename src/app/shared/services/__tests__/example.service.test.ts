@@ -2,10 +2,48 @@ import { ExampleService } from '../example.service';
 import { MongoDbProvider } from '@/lib/services/mongodb.provider';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 
+// Create a mock MongoDB service that implements IMongoDbService
+const createMockMongoDbService = () => {
+  const mockCollection = {
+    find: jest.fn().mockReturnThis(),
+    toArray: jest.fn().mockResolvedValue([{ id: '1', name: 'Test Item' }]),
+    insertOne: jest.fn().mockResolvedValue({ insertedId: '1' })
+  };
+
+  return {
+    connect: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    getCollection: jest.fn().mockReturnValue(mockCollection),
+    getRollingStockCollection: jest.fn().mockReturnValue(mockCollection),
+    getIndustriesCollection: jest.fn().mockReturnValue(mockCollection),
+    getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
+    getTrainRoutesCollection: jest.fn().mockReturnValue(mockCollection),
+    getLayoutStateCollection: jest.fn().mockReturnValue(mockCollection),
+    getSwitchlistsCollection: jest.fn().mockReturnValue(mockCollection),
+    toObjectId: jest.fn().mockImplementation(id => id)
+  } as unknown as jest.Mocked<IMongoDbService>;
+};
+
 // Mock the MongoDbProvider class
 jest.mock('@/lib/services/mongodb.provider', () => {
+  const originalModule = jest.requireActual('@/lib/services/mongodb.provider');
+  
+  // Mock constructor that maintains the service passed in
+  class MockMongoDbProvider {
+    private service: IMongoDbService;
+    
+    constructor(service: IMongoDbService) {
+      this.service = service;
+    }
+    
+    getService() {
+      return this.service;
+    }
+  }
+  
   return {
-    MongoDbProvider: jest.fn()
+    ...originalModule,
+    MongoDbProvider: MockMongoDbProvider
   };
 });
 
@@ -17,118 +55,87 @@ interface MockCollection {
 }
 
 describe('ExampleService', () => {
-  let exampleService: ExampleService;
-  let mockMongoDbProvider: jest.Mocked<MongoDbProvider>;
   let mockMongoDbService: jest.Mocked<IMongoDbService>;
   let mockCollection: MockCollection;
-
+  
   beforeEach(() => {
-    // Set up mock collection
-    mockCollection = {
-      find: jest.fn().mockReturnThis(),
-      toArray: jest.fn().mockResolvedValue([{ name: 'Test Item' }]),
-      insertOne: jest.fn().mockResolvedValue({ insertedId: 'new-id' })
-    };
-
-    // Set up mock MongoDB service
-    mockMongoDbService = {
-      connect: jest.fn().mockResolvedValue(undefined),
-      close: jest.fn().mockResolvedValue(undefined),
-      getCollection: jest.fn().mockReturnValue(mockCollection),
-      getRollingStockCollection: jest.fn(),
-      getIndustriesCollection: jest.fn(),
-      getLocationsCollection: jest.fn(),
-      getTrainRoutesCollection: jest.fn(),
-      getLayoutStateCollection: jest.fn(),
-      getSwitchlistsCollection: jest.fn(),
-      toObjectId: jest.fn()
-    } as unknown as jest.Mocked<IMongoDbService>;
-
-    // Set up mock MongoDB provider
-    mockMongoDbProvider = {
-      getService: jest.fn().mockReturnValue(mockMongoDbService)
-    } as unknown as jest.Mocked<MongoDbProvider>;
-
-    // Mock the constructor implementation
-    (MongoDbProvider as unknown as jest.Mock).mockImplementation(() => mockMongoDbProvider);
-
-    // Create the service with the mocked provider
-    exampleService = new ExampleService(mockMongoDbProvider);
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
+    mockMongoDbService = createMockMongoDbService();
+    mockCollection = mockMongoDbService.getCollection('test') as unknown as MockCollection;
   });
-
+  
   describe('constructor', () => {
-    it('should accept a MongoDB provider', () => {
-      // Already tested in beforeEach
-      expect(exampleService).toBeTruthy();
-    });
-
-    it('should accept a MongoDB service', () => {
-      // Create another instance with the service directly
-      const serviceWithDirectService = new ExampleService(mockMongoDbService);
+    it('should accept a MongoDbProvider', () => {
+      const mockProvider = new MongoDbProvider(mockMongoDbService);
+      const service = new ExampleService(mockProvider);
       
-      // Verify MongoDbProvider was constructed with the service
-      expect(MongoDbProvider).toHaveBeenCalledWith(mockMongoDbService);
-      expect(serviceWithDirectService).toBeTruthy();
+      expect(service).toBeInstanceOf(ExampleService);
     });
-
-    it('should provide a static factory method for default service', () => {
-      // We'll need to test this separately since it creates a real MongoDbService
-      // Just verify the method exists
-      expect(typeof ExampleService.withDefaultService).toBe('function');
+    
+    it('should accept an IMongoDbService and create a provider', () => {
+      const service = new ExampleService(mockMongoDbService);
+      
+      expect(service).toBeInstanceOf(ExampleService);
     });
   });
-
+  
+  describe('static factory methods', () => {
+    it('should create an instance with default service', () => {
+      // This is a bit tricky to test with the current mocking approach
+      // We'll just verify it returns an instance
+      const service = ExampleService.withDefaultService();
+      
+      expect(service).toBeInstanceOf(ExampleService);
+    });
+    
+    it('should create an instance with custom service', () => {
+      const service = ExampleService.withService(mockMongoDbService);
+      
+      expect(service).toBeInstanceOf(ExampleService);
+    });
+  });
+  
   describe('fetchData', () => {
-    it('should fetch data from the specified collection', async () => {
-      const result = await exampleService.fetchData('testCollection');
-
-      // Verify the MongoDB service methods were called correctly
-      expect(mockMongoDbService.connect).toHaveBeenCalled();
-      expect(mockMongoDbService.getCollection).toHaveBeenCalledWith('testCollection');
-      expect(mockMongoDbService.close).toHaveBeenCalled();
+    it('should connect, fetch data and close the connection', async () => {
+      const service = new ExampleService(mockMongoDbService);
       
-      // Verify the collection methods were called
-      expect(mockCollection.find).toHaveBeenCalled();
-      expect(mockCollection.toArray).toHaveBeenCalled();
+      const result = await service.fetchData('test');
       
-      // Verify the result is as expected
-      expect(result).toEqual([{ name: 'Test Item' }]);
+      expect(mockMongoDbService.connect).toHaveBeenCalledTimes(1);
+      expect(mockMongoDbService.getCollection).toHaveBeenCalledWith('test');
+      expect(mockCollection.find).toHaveBeenCalledTimes(1);
+      expect(mockCollection.toArray).toHaveBeenCalledTimes(1);
+      expect(mockMongoDbService.close).toHaveBeenCalledTimes(1);
+      expect(result).toEqual([{ id: '1', name: 'Test Item' }]);
+    });
+    
+    it('should close the connection even if an error occurs', async () => {
+      const service = new ExampleService(mockMongoDbService);
+      
+      // Make the find method throw an error
+      mockCollection.find.mockImplementationOnce(() => {
+        throw new Error('Test error');
+      });
+      
+      await expect(service.fetchData('test')).rejects.toThrow('Test error');
+      
+      expect(mockMongoDbService.connect).toHaveBeenCalledTimes(1);
+      expect(mockMongoDbService.close).toHaveBeenCalledTimes(1);
     });
   });
-
+  
   describe('insertData', () => {
-    it('should insert data into the specified collection', async () => {
+    it('should connect, insert data and close the connection', async () => {
+      const service = new ExampleService(mockMongoDbService);
       const data = { name: 'New Item' };
-      const result = await exampleService.insertData('testCollection', data);
-
-      // Verify the MongoDB service methods were called correctly
-      expect(mockMongoDbService.connect).toHaveBeenCalled();
-      expect(mockMongoDbService.getCollection).toHaveBeenCalledWith('testCollection');
-      expect(mockMongoDbService.close).toHaveBeenCalled();
       
-      // Verify the collection methods were called with the correct data
+      const result = await service.insertData('test', data);
+      
+      expect(mockMongoDbService.connect).toHaveBeenCalledTimes(1);
+      expect(mockMongoDbService.getCollection).toHaveBeenCalledWith('test');
       expect(mockCollection.insertOne).toHaveBeenCalledWith(data);
-      
-      // Verify the result is as expected
-      expect(result).toEqual({ insertedId: 'new-id' });
-    });
-  });
-
-  describe('static methods', () => {
-    it('should use withService static method for direct service injection', () => {
-      // Reset MongoDbProvider mock
-      (MongoDbProvider as unknown as jest.Mock).mockClear();
-
-      // Create a service with direct service injection
-      const serviceWithDirectInjection = ExampleService.withService(mockMongoDbService);
-      
-      // Verify MongoDbProvider was constructed with the service
-      expect(MongoDbProvider).toHaveBeenCalledWith(mockMongoDbService);
-      expect(serviceWithDirectInjection).toBeTruthy();
+      expect(mockMongoDbService.close).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ insertedId: '1' });
     });
   });
 }); 
