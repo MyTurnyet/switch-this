@@ -4,9 +4,19 @@ import { NextResponse } from 'next/server';
 import { LocationType } from '@/app/shared/types/models';
 
 // Mock the mongodb provider
-jest.mock('@/lib/services/mongodb.provider', () => ({
-  getMongoDbService: jest.fn()
-}));
+jest.mock('@/lib/services/mongodb.provider', () => {
+  const mockGetService = jest.fn();
+  
+  // Mock the MongoDbProvider class
+  const MockMongoDbProvider = jest.fn().mockImplementation(() => ({
+    getService: mockGetService
+  }));
+  
+  return {
+    MongoDbProvider: MockMongoDbProvider,
+    getMongoDbService: jest.fn()
+  };
+});
 
 describe('Locations API', () => {
   type MockLocation = {

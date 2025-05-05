@@ -1,10 +1,11 @@
 import { MongoClient, Collection, Db, ObjectId, Document } from 'mongodb';
 import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
+import { IMongoDbService } from './mongodb.interface';
 
 /**
  * Service for handling MongoDB connections and operations
  */
-export class MongoDbService {
+export class MongoDbService implements IMongoDbService {
   private client: MongoClient | null = null;
   private db: Db | null = null;
   private uri: string;
