@@ -106,9 +106,35 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       return routeStations.includes(industry.locationId) && isFreightIndustry;
     });
     
-    if (routeIndustries.length === 0) return null;
+    console.log("Available industries along route for assignment:", routeIndustries);
     
-    // Return a random industry
+    if (routeIndustries.length === 0) {
+      // If no freight industries found, try to find any industry along the route
+      const anyIndustryAlongRoute = industries.filter(industry => {
+        // Exclude the originating and terminating yards
+        if (industry.locationId === trainRoute.originatingYardId || 
+            industry.locationId === trainRoute.terminatingYardId) {
+          return false;
+        }
+        
+        // Include any industry at locations along the route
+        return routeStations.includes(industry.locationId);
+      });
+      
+      console.log("No freight industries found, using any industries:", anyIndustryAlongRoute);
+      
+      if (anyIndustryAlongRoute.length === 0) {
+        // If still no industries, return the terminating yard as fallback
+        console.log("No industries found along route, using terminating yard as fallback");
+        return getTerminatingYardIndustry();
+      }
+      
+      // Return a random industry from any industries found
+      const randomIndex = Math.floor(Math.random() * anyIndustryAlongRoute.length);
+      return anyIndustryAlongRoute[randomIndex];
+    }
+    
+    // Return a random industry from freight industries
     const randomIndex = Math.floor(Math.random() * routeIndustries.length);
     return routeIndustries[randomIndex];
   };
@@ -132,11 +158,30 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       );
     }
     
+    // If still not found, try with any industry that has "yard" in the name
+    if (!terminatingYardIndustry) {
+      terminatingYardIndustry = industries.find(
+        industry => industry.locationId === trainRoute.terminatingYardId && 
+                    (industry.name.toLowerCase().includes('yard'))
+      );
+    }
+    
     // If still not found, try with any industry at the terminating yard
     if (!terminatingYardIndustry) {
       terminatingYardIndustry = industries.find(
         industry => industry.locationId === trainRoute.terminatingYardId
       );
+    }
+    
+    // Final attempt: Look for any industry at any location that includes the same name as the terminating yard location
+    if (!terminatingYardIndustry && trainRoute.terminatingYardId) {
+      const terminatingLocation = locations.find(loc => loc._id === trainRoute.terminatingYardId);
+      if (terminatingLocation) {
+        const locationName = terminatingLocation.stationName.toLowerCase();
+        terminatingYardIndustry = industries.find(
+          industry => industry.name.toLowerCase().includes(locationName)
+        );
+      }
     }
     
     return terminatingYardIndustry;
@@ -160,11 +205,30 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       );
     }
     
+    // If still not found, try with any industry that has "yard" in the name
+    if (!originatingYardIndustry) {
+      originatingYardIndustry = industries.find(
+        industry => industry.locationId === trainRoute.originatingYardId && 
+                    (industry.name.toLowerCase().includes('yard'))
+      );
+    }
+    
     // If still not found, try with any industry at the originating yard
     if (!originatingYardIndustry) {
       originatingYardIndustry = industries.find(
         industry => industry.locationId === trainRoute.originatingYardId
       );
+    }
+    
+    // Final attempt: Look for any industry at any location that includes the same name as the originating yard location
+    if (!originatingYardIndustry && trainRoute.originatingYardId) {
+      const originatingLocation = locations.find(loc => loc._id === trainRoute.originatingYardId);
+      if (originatingLocation) {
+        const locationName = originatingLocation.stationName.toLowerCase();
+        originatingYardIndustry = industries.find(
+          industry => industry.name.toLowerCase().includes(locationName)
+        );
+      }
     }
     
     return originatingYardIndustry;
@@ -176,9 +240,25 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
     try {
       setBuildingTrain(true);
       
-      // Debug logging - minimal 
+      // Comprehensive debug logging
+      console.log("========== BUILD TRAIN DEBUG ==========");
+      console.log("Train Route:", trainRoute);
       console.log("Originating Yard ID:", trainRoute.originatingYardId);
       console.log("Terminating Yard ID:", trainRoute.terminatingYardId);
+      
+      // Log all available industries
+      console.log("All Industries:", industries);
+      console.log("Industries count:", industries.length);
+      industries.forEach(industry => {
+        console.log(`Industry: ${industry.name}, Type: ${industry.industryType}, Location: ${industry.locationId}`);
+      });
+      
+      // Log all available locations
+      console.log("All Locations:", locations);
+      console.log("Locations count:", locations.length);
+      locations.forEach(location => {
+        console.log(`Location: ${location.stationName}, ID: ${location._id}`);
+      });
       
       let originatingYardIndustry = getOriginatingYardIndustry();
       let terminatingYardIndustry = getTerminatingYardIndustry();
@@ -200,6 +280,8 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
             ownerId: 'system'
           };
           console.log("Created virtual originating yard industry:", originatingYardIndustry);
+        } else {
+          console.error("Could not find originating location with ID:", trainRoute.originatingYardId);
         }
       }
       
@@ -216,11 +298,15 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
             ownerId: 'system'
           };
           console.log("Created virtual terminating yard industry:", terminatingYardIndustry);
+        } else {
+          console.error("Could not find terminating location with ID:", trainRoute.terminatingYardId);
         }
       }
       
       if (!originatingYardIndustry || !terminatingYardIndustry) {
+        console.error("Failed to find or create yard industries. Origin:", originatingYardIndustry, "Termination:", terminatingYardIndustry);
         setError('Could not find originating or terminating yard industries');
+        setBuildingTrain(false);
         return;
       }
       
@@ -228,6 +314,8 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       const carsFromOriginatingYard = availableRollingStock.filter(
         car => car.currentLocation?.industryId === originatingYardIndustry._id
       );
+      
+      console.log("Cars from originating yard:", carsFromOriginatingYard);
       
       // Get cars from industries along the route
       const carsAtIndustries = availableRollingStock.filter(car => {
@@ -242,6 +330,9 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
                industry.locationId !== trainRoute.originatingYardId &&
                industry.locationId !== trainRoute.terminatingYardId;
       });
+      
+      console.log("Cars at industries along the route:", carsAtIndustries);
+      console.log("================================");
       
       // Process cars from originating yard - assign destinations
       const updatedOriginatingYardCars = carsFromOriginatingYard.map(car => {
