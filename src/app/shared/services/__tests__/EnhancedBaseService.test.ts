@@ -1,32 +1,30 @@
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ApiError } from '../apiUtils'; // We'll enhance this interface
+import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+
+// First, mock the module before any imports
+jest.mock('../apiUtils', () => ({
+  fetchWithErrorHandling: jest.fn(),
+  executeRequest: jest.fn(),
+  createApiError: jest.fn((message, status, statusText) => {
+    const error = new Error(message);
+    (error as any).status = status;
+    (error as any).statusText = statusText;
+    return error;
+  }),
+  ApiError: class ApiError extends Error {
+    status?: number;
+    statusText?: string;
+  }
+}));
+
+// Then import the mocked functions
+import { fetchWithErrorHandling, executeRequest } from '../apiUtils';
+import { EnhancedBaseService } from '../EnhancedBaseService';
 
 // Define a test model
 interface TestModel {
   _id: string;
   name: string;
 }
-
-// Mock our enhanced API utilities that we'll create
-jest.mock('../apiUtils', () => {
-  return {
-    fetchWithErrorHandling: jest.fn(),
-    executeRequest: jest.fn(),
-    createApiError: jest.fn((message, status, statusText) => {
-      const error = new Error(message) as ApiError;
-      error.status = status;
-      error.statusText = statusText;
-      return error;
-    }),
-    ApiError: class ApiError extends Error {
-      status?: number;
-      statusText?: string;
-    }
-  };
-});
-
-import { fetchWithErrorHandling, executeRequest } from '../apiUtils';
-import { EnhancedBaseService } from '../EnhancedBaseService';
 
 class TestService extends EnhancedBaseService<TestModel> {
   constructor() {
@@ -121,7 +119,7 @@ describe('EnhancedBaseService', () => {
     it('should use executeRequest to create an item', async () => {
       // Setup mock
       (executeRequest as jest.Mock).mockResolvedValueOnce(mockItem);
-      const newData = { name: 'New Item' };
+      const newData = { name: 'New Item' } as any;
       
       // Execute
       const result = await service.create(newData);
