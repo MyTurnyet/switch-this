@@ -6,7 +6,7 @@ import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { LocationService } from '@/app/shared/services/LocationService';
 import { IndustryService } from '@/app/shared/services/IndustryService';
-import { LocationType } from '@/app/shared/types/models';
+import { LocationType, IndustryType } from '@/app/shared/types/models';
 
 // Mock the services
 jest.mock('@/app/shared/services/SwitchlistService');
@@ -38,7 +38,7 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
     name: 'Test Route',
     routeNumber: 'TR-101',
     routeType: 'MIXED',
-    originatingYardId: 'yard1',
+    originatingYardId: 'loc3', // Updated to point to Echo Lake Yard
     terminatingYardId: 'yard2',
     stations: ['loc1', 'loc3', 'loc2'],
     ownerId: 'owner1'
@@ -74,7 +74,7 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
       name: 'Echo Lake Factory',
       locationId: 'loc1',
       blockName: 'ECHO',
-      industryType: 'FREIGHT',
+      industryType: IndustryType.FREIGHT,
       tracks: [],
       ownerId: 'owner1'
     },
@@ -83,7 +83,7 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
       name: 'Chicago Steel Mill',
       locationId: 'loc2',
       blockName: 'EAST',
-      industryType: 'FREIGHT',
+      industryType: IndustryType.FREIGHT,
       tracks: [],
       ownerId: 'owner1'
     },
@@ -92,7 +92,7 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
       name: 'Echo Lake Yard',
       locationId: 'loc3',
       blockName: 'ECHO',
-      industryType: 'YARD',
+      industryType: IndustryType.YARD,
       tracks: [],
       ownerId: 'owner1'
     }
@@ -108,7 +108,7 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
     note: '',
     homeYard: 'yard1',
     currentLocation: {
-      industryId: 'ind1',
+      industryId: 'ind3', // Updated to be at the yard
       trackId: 'track1'
     },
     destination: {
@@ -136,7 +136,7 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
     note: '',
     homeYard: 'yard1',
     currentLocation: {
-      industryId: 'ind1',
+      industryId: 'ind1', // This is at a location, not the yard
       trackId: 'track1'
     },
     // No destination - represents a car that's not moving
@@ -173,19 +173,35 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
     expect(screen.getByText('Switchlist Operations')).toBeInTheDocument();
     expect(screen.getByText('Test Switchlist - Test Route (TR-101)')).toBeInTheDocument();
 
-    // Check that the rolling stock is shown in the Available section
+    // Check that only the rolling stock at the originating yard is shown
     expect(screen.getByText('BNSF 12345')).toBeInTheDocument();
     expect(screen.getByText('Boxcar - Test boxcar')).toBeInTheDocument();
     
+    // Rolling stock not at the yard should not be shown
+    expect(screen.queryByText('UP 54321')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tanker - Test tanker')).not.toBeInTheDocument();
+    
+    // Check for the subtitle indicating filtering
+    expect(screen.getByText('Only showing rolling stock currently in the originating yard')).toBeInTheDocument();
+    
     // Verify the build train functionality has been removed message is shown
     expect(screen.getByText('The "Build Train" functionality has been removed')).toBeInTheDocument();
-    expect(screen.getByText('Manually assign or remove rolling stock using the panels above')).toBeInTheDocument();
+    expect(screen.getByText('Only rolling stock currently in the originating yard is shown')).toBeInTheDocument();
   });
 
   it('handles missing destinations gracefully', async () => {
-    // Mock a rolling stock item with no destination
+    // Update mockRollingStockOnLayout to be at the yard
+    const updatedMockRollingStock = {
+      ...mockRollingStockOnLayout,
+      currentLocation: {
+        industryId: 'ind3', // At the originating yard
+        trackId: 'track1'
+      }
+    };
+    
+    // Mock a rolling stock item with no destination but at the yard
     RollingStockService.prototype.getAllRollingStock = jest.fn().mockResolvedValue([
-      mockRollingStockOnLayout // Only the car without destination
+      updatedMockRollingStock
     ]);
 
     // Render the page
@@ -196,7 +212,7 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
       expect(screen.queryByText(/Loading switchlist operations data/)).not.toBeInTheDocument();
     });
 
-    // Check the rolling stock is shown
+    // Check the rolling stock is shown (now it should be because it's at the yard)
     expect(screen.getByText('UP 54321')).toBeInTheDocument();
     expect(screen.getByText('Tanker - Test tanker')).toBeInTheDocument();
   });

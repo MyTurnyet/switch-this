@@ -206,11 +206,16 @@ describe('Switchlist Operations', () => {
       expect(screen.getByText('Available Rolling Stock')).toBeInTheDocument();
     });
     
-    // Verify rolling stock is displayed
+    // Verify only rolling stock from the originating yard is displayed
     expect(screen.getByText('UP 12345')).toBeInTheDocument();
     expect(screen.getByText('BNSF 54321')).toBeInTheDocument();
-    expect(screen.getByText('CSX 67890')).toBeInTheDocument();
-    expect(screen.getByText('NS 45678')).toBeInTheDocument();
+    
+    // These should not be displayed as they're not at the originating yard
+    expect(screen.queryByText('CSX 67890')).not.toBeInTheDocument();
+    expect(screen.queryByText('NS 45678')).not.toBeInTheDocument();
+    
+    // Check for the subtitle indicating only yard rolling stock is shown
+    expect(screen.getByText('Only showing rolling stock currently in the originating yard')).toBeInTheDocument();
   });
 
   test('should display train route visualization', async () => {

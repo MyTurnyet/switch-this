@@ -5,7 +5,7 @@ import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { LocationService } from '@/app/shared/services/LocationService';
 import { IndustryService } from '@/app/shared/services/IndustryService';
-import { LocationType } from '@/app/shared/types/models';
+import { LocationType, IndustryType } from '@/app/shared/types/models';
 
 // Mock the services
 jest.mock('@/app/shared/services/SwitchlistService');
@@ -37,6 +37,13 @@ const mockTrainRoute = {
 
 const mockLocations = [
   {
+    _id: 'yard1',
+    stationName: 'Origin Yard',
+    block: 'YARD',
+    locationType: LocationType.FIDDLE_YARD,
+    ownerId: 'user1'
+  },
+  {
     _id: 'loc1',
     stationName: 'Echo Lake, WA',
     block: 'ECHO',
@@ -49,23 +56,25 @@ const mockLocations = [
     block: 'EAST',
     locationType: LocationType.OFF_LAYOUT,
     ownerId: 'user1'
-  },
-  {
-    _id: 'loc3',
-    stationName: 'Echo Lake Yard',
-    block: 'ECHO',
-    locationType: LocationType.FIDDLE_YARD,
-    ownerId: 'user1'
   }
 ];
 
 const mockIndustries = [
   {
+    _id: 'yard_ind1',
+    name: 'Origin Yard Industry',
+    locationId: 'yard1',
+    blockName: 'YARD',
+    industryType: IndustryType.YARD,
+    tracks: [],
+    ownerId: 'user1'
+  },
+  {
     _id: 'ind1',
     name: 'Echo Lake Factory',
     locationId: 'loc1',
     blockName: 'ECHO',
-    industryType: 'FREIGHT',
+    industryType: IndustryType.FREIGHT,
     tracks: [],
     ownerId: 'user1'
   },
@@ -74,7 +83,7 @@ const mockIndustries = [
     name: 'Chicago Steel Mill',
     locationId: 'loc2',
     blockName: 'EAST',
-    industryType: 'FREIGHT',
+    industryType: IndustryType.FREIGHT,
     tracks: [],
     ownerId: 'user1'
   }
@@ -91,11 +100,15 @@ const mockRollingStock = [
     note: '',
     homeYard: 'yard1',
     ownerId: 'user1',
+    currentLocation: {
+      industryId: 'yard_ind1', // Located at the yard
+      trackId: 'track1'
+    },
     destination: {
       immediateDestination: {
-        locationId: 'loc3',
-        industryId: 'ind3',
-        trackId: 'track3'
+        locationId: 'loc1',
+        industryId: 'ind1',
+        trackId: 'track1'
       },
       finalDestination: {
         locationId: 'loc2',
@@ -112,7 +125,26 @@ const mockRollingStock = [
     color: 'Black',
     note: '',
     homeYard: 'yard1',
-    ownerId: 'user1'
+    ownerId: 'user1',
+    currentLocation: {
+      industryId: 'yard_ind1', // Located at the yard
+      trackId: 'track2'
+    }
+  },
+  {
+    _id: 'rs3',
+    roadName: 'CSX',
+    roadNumber: '67890',
+    aarType: 'Gondola',
+    description: 'Test Gondola',
+    color: 'Gray',
+    note: '',
+    homeYard: 'yard1',
+    ownerId: 'user1',
+    currentLocation: {
+      industryId: 'ind1', // Not at the yard - shouldn't be shown
+      trackId: 'track3'
+    }
   }
 ];
 
@@ -168,11 +200,17 @@ describe('SwitchlistOperationsPage', () => {
       expect(screen.getByText('IN_PROGRESS')).toBeInTheDocument();
     });
     
-    // Verify rolling stock is displayed
+    // Verify only rolling stock at originating yard is displayed
     expect(screen.getByText('BNSF 12345')).toBeInTheDocument();
     expect(screen.getByText('UP 54321')).toBeInTheDocument();
     
-    // Verify the assign buttons are present
+    // Verify rolling stock not at yard is NOT displayed
+    expect(screen.queryByText('CSX 67890')).not.toBeInTheDocument();
+    
+    // Verify the filtering message is displayed
+    expect(screen.getByText('Only showing rolling stock currently in the originating yard')).toBeInTheDocument();
+    
+    // Verify the assign buttons are present (only for yard rolling stock)
     const assignButtons = screen.getAllByText('Assign');
     expect(assignButtons.length).toBe(2);
   });
@@ -224,7 +262,7 @@ describe('SwitchlistOperationsPage', () => {
     // It should be back in the available section
     expect(screen.getByText('No rolling stock assigned to this switchlist yet.')).toBeInTheDocument();
     
-    // Both rolling stock should be available again
+    // Both yard rolling stock should be available again
     const availableButtons = screen.getAllByText('Assign');
     expect(availableButtons.length).toBe(2);
   });

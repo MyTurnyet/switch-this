@@ -52,9 +52,21 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
         const trainRouteData = await trainRouteService.getTrainRouteById(switchlistData.trainRouteId);
         setTrainRoute(trainRouteData);
         
-        // In a real implementation, we would fetch assigned rolling stock from the backend
-        // For now, we'll just simulate that all rolling stock is available
-        setAvailableRollingStock(rollingStockData);
+        // Find all industries at the originating yard
+        const yardIndustries = industriesData.filter(industry => 
+          industry.locationId === trainRouteData.originatingYardId
+        );
+        
+        // Store the IDs of these industries for filtering
+        const yardIndustryIds = yardIndustries.map(industry => industry._id);
+        
+        // Filter rolling stock to only show those currently at the originating yard
+        const inYardRollingStock = rollingStockData.filter(rs => 
+          rs.currentLocation && 
+          yardIndustryIds.includes(rs.currentLocation.industryId)
+        );
+        
+        setAvailableRollingStock(inYardRollingStock);
         setAssignedRollingStock([]);
         
         setError(null);
@@ -215,10 +227,13 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
             <h2 className="text-lg font-semibold">Available Rolling Stock</h2>
+            <p className="text-xs text-gray-500">
+              Only showing rolling stock currently in the originating yard
+            </p>
           </div>
           <div className="p-4">
             {availableRollingStock.length === 0 ? (
-              <p className="text-gray-500">No rolling stock available.</p>
+              <p className="text-gray-500">No rolling stock available in the originating yard.</p>
             ) : (
               <ul className="divide-y divide-gray-200">
                 {availableRollingStock.map(rs => (
@@ -261,6 +276,7 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
           <ul className="list-disc ml-6 text-gray-600 space-y-1">
             <li>The &quot;Build Train&quot; functionality has been removed</li>
             <li>Manually assign or remove rolling stock using the panels above</li>
+            <li>Only rolling stock currently in the originating yard is shown</li>
             <li>View the complete switchlist in the Print view</li>
           </ul>
           
