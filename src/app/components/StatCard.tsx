@@ -14,7 +14,8 @@ export interface StatCardProps {
  */
 export const StatCard: React.FC<StatCardProps> = ({ count, label, isLoading = false }) => (
   <div 
-    role="article" 
+    role="article"
+    data-testid="stat-card"
     className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
   >
     <div className="text-5xl font-bold text-indigo-600 mb-2">

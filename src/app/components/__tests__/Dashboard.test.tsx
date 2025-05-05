@@ -1,206 +1,128 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { Dashboard } from '../Dashboard';
-import { ClientServices } from '../../shared/services/clientServices';
-import * as hookModule from '../../shared/hooks/useDashboardData';
+import { 
+  useLocationQueries,
+  useIndustryQueries,
+  useRollingStockQueries,
+  useTrainRouteQueries
+} from '../../shared/hooks/queries';
 
-// Mock the useDashboardData hook
-jest.mock('../../shared/hooks/useDashboardData', () => ({
-  useDashboardData: jest.fn()
+// Mock all the query hooks
+jest.mock('../../shared/hooks/queries', () => ({
+  useLocationQueries: jest.fn(),
+  useIndustryQueries: jest.fn(),
+  useRollingStockQueries: jest.fn(),
+  useTrainRouteQueries: jest.fn()
 }));
 
 describe('Dashboard', () => {
-  let mockServices: ClientServices;
+  // Mock query results with proper typing
+  const mockUseQuery = <T,>(isLoading = false, error: Error | null = null, data: T[] | null = []) => ({
+    isLoading,
+    error,
+    data
+  });
   
   beforeEach(() => {
-    // Create mock service implementations
-    mockServices = {
-      locationService: {
-        getAllLocations: jest.fn(),
-        getAll: jest.fn()
-      },
-      industryService: {
-        getAllIndustries: jest.fn(),
-        getAll: jest.fn()
-      },
-      trainRouteService: {
-        getAllTrainRoutes: jest.fn(),
-        getAll: jest.fn()
-      },
-      rollingStockService: {
-        getAllRollingStock: jest.fn(),
-        updateRollingStock: jest.fn(),
-        resetToHomeYards: jest.fn(),
-        getAll: jest.fn()
-      }
-    };
+    jest.clearAllMocks();
+    
+    // Set up default mocks for all hooks
+    (useLocationQueries as jest.Mock).mockReturnValue({
+      useLocations: () => mockUseQuery(false, null, [{ _id: '1' }])
+    });
+    
+    (useIndustryQueries as jest.Mock).mockReturnValue({
+      useIndustries: () => mockUseQuery(false, null, [{ _id: '1' }])
+    });
+    
+    (useRollingStockQueries as jest.Mock).mockReturnValue({
+      useRollingStockList: () => mockUseQuery(false, null, [{ _id: '1' }])
+    });
+    
+    (useTrainRouteQueries as jest.Mock).mockReturnValue({
+      useTrainRoutes: () => mockUseQuery(false, null, [{ _id: '1' }])
+    });
   });
 
   it('should render loading state', () => {
-    // Mock hook return value
-    (hookModule.useDashboardData as jest.Mock).mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      rollingStock: [],
-      error: null,
-      isLoading: true,
-      refreshData: jest.fn()
+    // Set loading state for locations
+    (useLocationQueries as jest.Mock).mockReturnValue({
+      useLocations: () => mockUseQuery(true, null, [])
     });
     
-    render(<Dashboard services={mockServices} />);
+    render(<Dashboard />);
     
-    expect(screen.getAllByTestId('loading-pulse')).toHaveLength(4);
+    // Should have at least one loading indicator
+    expect(screen.getAllByTestId('loading-pulse').length).toBeGreaterThanOrEqual(1);
   });
 
   it('should render data after loading', () => {
-    // Mock hook return value with data
-    (hookModule.useDashboardData as jest.Mock).mockReturnValue({
-      locations: [{ _id: '1' }],
-      industries: [{ _id: '1' }],
-      trainRoutes: [{ _id: '1' }],
-      rollingStock: [{ _id: '1' }],
-      error: null,
-      isLoading: false,
-      refreshData: jest.fn()
-    });
+    render(<Dashboard />);
     
-    render(<Dashboard services={mockServices} />);
-    
+    // Each stat card should show 1 as the count
     expect(screen.getAllByText('1')).toHaveLength(4);
   });
 
   it('should render error state', () => {
-    // Mock hook return value with error
-    (hookModule.useDashboardData as jest.Mock).mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      rollingStock: [],
-      error: 'Failed to fetch',
-      isLoading: false,
-      refreshData: jest.fn()
+    // Set error state for locations
+    (useLocationQueries as jest.Mock).mockReturnValue({
+      useLocations: () => mockUseQuery(false, new Error('Failed to fetch'), [])
     });
     
-    render(<Dashboard services={mockServices} />);
+    render(<Dashboard />);
     
     expect(screen.getByText('Connection Error')).toBeInTheDocument();
     expect(screen.getByText('Failed to fetch')).toBeInTheDocument();
   });
   
-  it('should display zeros when arrays are null', () => {
-    // Mock hook return value with null data
-    (hookModule.useDashboardData as jest.Mock).mockReturnValue({
-      locations: null,
-      industries: null,
-      trainRoutes: null,
-      rollingStock: null,
-      error: null,
-      isLoading: false,
-      refreshData: jest.fn()
+  it('should display zeros when data is empty', () => {
+    // Mock empty data for all hooks
+    (useLocationQueries as jest.Mock).mockReturnValue({
+      useLocations: () => mockUseQuery(false, null, [])
+    });
+    (useIndustryQueries as jest.Mock).mockReturnValue({
+      useIndustries: () => mockUseQuery(false, null, [])
+    });
+    (useRollingStockQueries as jest.Mock).mockReturnValue({
+      useRollingStockList: () => mockUseQuery(false, null, [])
+    });
+    (useTrainRouteQueries as jest.Mock).mockReturnValue({
+      useTrainRoutes: () => mockUseQuery(false, null, [])
     });
     
-    render(<Dashboard services={mockServices} />);
+    render(<Dashboard />);
     
     // Should display zeros for all counts
     expect(screen.getAllByText('0')).toHaveLength(4);
   });
   
-  it('should correctly pass isLoading to StatCard components', () => {
-    // Mock hook return value with loading state
-    (hookModule.useDashboardData as jest.Mock).mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      rollingStock: [],
-      error: null,
-      isLoading: true,
-      refreshData: jest.fn()
+  it('should handle null data', () => {
+    // Mock null data
+    (useLocationQueries as jest.Mock).mockReturnValue({
+      useLocations: () => mockUseQuery(false, null, null)
     });
     
-    render(<Dashboard services={mockServices} />);
+    render(<Dashboard />);
     
-    // Test that all StatCards have loading state
-    expect(screen.getAllByTestId('loading-pulse')).toHaveLength(4);
+    // Location count should be 0 with null data
+    expect(screen.getByText('Locations').nextSibling?.textContent).toBe('0');
   });
   
-  it('should display zeros in error state', () => {
-    // Mock hook return value with error
-    (hookModule.useDashboardData as jest.Mock).mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      rollingStock: [],
-      error: 'Failed to fetch',
-      isLoading: false,
-      refreshData: jest.fn()
+  it('should show individual loading states', () => {
+    // Set only one component as loading
+    (useIndustryQueries as jest.Mock).mockReturnValue({
+      useIndustries: () => mockUseQuery(true, null, [])
     });
     
-    render(<Dashboard services={mockServices} />);
+    render(<Dashboard />);
     
-    // Error state should still render the grid with zeros
-    expect(screen.getByTestId('dashboard-grid')).toBeInTheDocument();
+    // Only the industry card should be in loading state
+    const industryCard = screen.getByText('Industries').closest('[data-testid="stat-card"]');
+    expect(industryCard?.querySelector('[data-testid="loading-pulse"]')).toBeInTheDocument();
     
-    // All counts should be 0 in error state
-    const statCards = screen.getAllByText('0');
-    expect(statCards).toHaveLength(4);
-  });
-  
-  it('should pass services to useDashboardData hook', () => {
-    // Mock the hook to verify services are passed
-    const mockUseDashboardData = hookModule.useDashboardData as jest.Mock;
-    mockUseDashboardData.mockReturnValue({
-      locations: [],
-      industries: [],
-      trainRoutes: [],
-      rollingStock: [],
-      error: null,
-      isLoading: false,
-      refreshData: jest.fn()
-    });
-    
-    render(<Dashboard services={mockServices} />);
-    
-    // Verify services were passed to the hook
-    expect(mockUseDashboardData).toHaveBeenCalledWith(mockServices);
-  });
-  
-  it('should handle large count values correctly', () => {
-    // Mock hook return value with large data arrays
-    (hookModule.useDashboardData as jest.Mock).mockReturnValue({
-      locations: Array(100).fill({ _id: '1' }), // 100 locations
-      industries: Array(200).fill({ _id: '1' }), // 200 industries
-      trainRoutes: Array(150).fill({ _id: '1' }), // 150 train routes
-      rollingStock: Array(500).fill({ _id: '1' }), // 500 rolling stock items
-      error: null,
-      isLoading: false,
-      refreshData: jest.fn()
-    });
-    
-    render(<Dashboard services={mockServices} />);
-    
-    // Should display correct counts
-    expect(screen.getByText('100')).toBeInTheDocument();
-    expect(screen.getByText('200')).toBeInTheDocument();
-    expect(screen.getByText('150')).toBeInTheDocument();
-    expect(screen.getByText('500')).toBeInTheDocument();
-  });
-  
-  it('should handle edge case when hook returns undefined values', () => {
-    // Mock hook return value with undefined values
-    (hookModule.useDashboardData as jest.Mock).mockReturnValue({
-      locations: undefined,
-      industries: undefined,
-      trainRoutes: undefined,
-      rollingStock: undefined,
-      error: null,
-      isLoading: false,
-      refreshData: jest.fn()
-    });
-    
-    render(<Dashboard services={mockServices} />);
-    
-    // Should fallback to zeros for all counts
-    expect(screen.getAllByText('0')).toHaveLength(4);
+    // Location card should not be loading
+    const locationCard = screen.getByText('Locations').closest('[data-testid="stat-card"]');
+    expect(locationCard?.querySelector('[data-testid="loading-pulse"]')).toBeNull();
   });
 }); 
