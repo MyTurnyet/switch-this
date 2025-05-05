@@ -165,18 +165,13 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
       <div className="mb-6">
         <button
           onClick={handleBuildTrain}
-          disabled={assignedRollingStock.length > 0 || switchlist?.status === 'COMPLETED'}
-          className={`px-4 py-2 rounded-md 
-            ${assignedRollingStock.length > 0 || switchlist?.status === 'COMPLETED' 
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-              : 'bg-primary-600 text-white hover:bg-primary-700'}`}
+          disabled={true}
+          className="px-4 py-2 rounded-md bg-gray-300 text-gray-500 cursor-not-allowed"
         >
-          {assignedRollingStock.length > 0 ? 'Train has been built.' : 'Build Train functionality has been removed.'}
+          Build Train functionality has been removed.
         </button>
         <p className="text-sm text-gray-500 mt-1">
-          {switchlist?.status === 'COMPLETED' 
-            ? 'This switchlist has been completed.' 
-            : 'Build Train functionality has been removed.'}
+          Build Train functionality has been removed.
         </p>
       </div>
       

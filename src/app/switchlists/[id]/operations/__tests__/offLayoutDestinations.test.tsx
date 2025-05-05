@@ -177,7 +177,7 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
     expect(screen.getByText('BNSF 12345')).toBeInTheDocument();
     expect(screen.getByText('Boxcar - Test boxcar')).toBeInTheDocument();
     
-    // Updated to match the new UI text after the build train functionality was removed
+    // Verify the build train functionality has been removed message is shown
     expect(screen.getByText('The "Build Train" functionality has been removed')).toBeInTheDocument();
     expect(screen.getByText('Manually assign or remove rolling stock using the panels above')).toBeInTheDocument();
   });

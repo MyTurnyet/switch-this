@@ -185,12 +185,18 @@ describe('Switchlist Operations', () => {
     (RollingStockService.prototype.updateRollingStock as jest.Mock).mockResolvedValue(undefined);
   });
 
-  test('should display the build train button as disabled', async () => {
+  test('should display the build train button as disabled with removed functionality message', async () => {
     render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
     
     await waitFor(() => {
-      expect(screen.getAllByText('Build Train functionality has been removed.').length).toBeGreaterThan(0);
+      const buttons = screen.getAllByText('Build Train functionality has been removed.');
+      expect(buttons[0]).toBeInTheDocument();
+      expect(buttons[0]).toBeDisabled();
     });
+    
+    // Also check that the explanatory message is displayed
+    const explanationText = screen.getAllByText('Build Train functionality has been removed.');
+    expect(explanationText.length).toBe(2); // One for the button, one for the paragraph below
   });
 
   test('should display available rolling stock', async () => {
