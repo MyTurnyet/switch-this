@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
 
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service that will be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 interface RollingStock {
   _id?: string | ObjectId;
@@ -30,22 +29,13 @@ interface RollingStock {
       trackId?: string;
     };
   };
-  [key: string]: any;
-}
-
-interface MongoService {
-  connect: () => Promise<void>;
-  close: () => Promise<void>;
-  getRollingStockCollection: () => Collection;
-  toObjectId: (id: string) => ObjectId;
+  [key: string]: unknown;
 }
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService() as MongoService;
-  
   try {
     await mongoService.connect();
     const collection = mongoService.getRollingStockCollection();
@@ -68,7 +58,7 @@ export async function GET(
   }
 }
 
-async function findRollingStockById(collection: Collection, id: string, mongoService: MongoService) {
+async function findRollingStockById(collection: Collection, id: string, mongoService: IMongoDbService) {
   return await collection.findOne({ 
     _id: mongoService.toObjectId(id) 
   });
@@ -85,8 +75,6 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService() as MongoService;
-  
   try {
     const updatedData = await request.json();
     
@@ -123,7 +111,7 @@ async function updateRollingStock(
   collection: Collection, 
   id: string, 
   data: Partial<RollingStock>, 
-  mongoService: MongoService
+  mongoService: IMongoDbService
 ) {
   return await collection.updateOne(
     { _id: mongoService.toObjectId(id) },
@@ -139,8 +127,6 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService() as MongoService;
-  
   try {
     await mongoService.connect();
     const collection = mongoService.getRollingStockCollection();
@@ -163,7 +149,7 @@ export async function DELETE(
   }
 }
 
-async function deleteRollingStock(collection: Collection, id: string, mongoService: MongoService) {
+async function deleteRollingStock(collection: Collection, id: string, mongoService: IMongoDbService) {
   return await collection.deleteOne({ 
     _id: mongoService.toObjectId(id) 
   });

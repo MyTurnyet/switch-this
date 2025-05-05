@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
-import { Collection, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 
 interface Industry {
   _id?: string | ObjectId;
@@ -13,8 +13,8 @@ interface Industry {
   [key: string]: unknown;
 }
 
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service that will be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 /**
  * GET /api/industries
@@ -22,9 +22,6 @@ const mongoDbProvider = new MongoDbProvider(new MongoDbService());
  */
 export async function GET(): Promise<NextResponse> {
   try {
-    // Get the MongoDB service
-    const mongoService = mongoDbProvider.getService();
-    
     // Connect to the database
     await mongoService.connect();
     
@@ -60,18 +57,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return validationError;
     }
     
-    // Get the MongoDB service
-    const mongoService = mongoDbProvider.getService();
-    
     // Connect to the database
     await mongoService.connect();
     
-    // Ensure tracks exist
-    const industryToCreate = ensureTracksExist(data);
+    // Ensure tracks exist and prepare for insertion
+    const industryToCreate = {
+      ...data,
+      tracks: data.tracks || []
+    };
+    
+    // Remove _id if it exists to let MongoDB generate one
+    if ('_id' in industryToCreate) {
+      delete industryToCreate._id;
+    }
     
     // Insert the industry
     const collection = mongoService.getIndustriesCollection();
-    const newIndustry = await insertIndustry(collection, industryToCreate);
+    const result = await collection.insertOne(industryToCreate);
+    
+    const newIndustry = {
+      ...industryToCreate,
+      _id: result.insertedId
+    };
     
     // Close the connection
     await mongoService.close();
@@ -117,20 +124,4 @@ function validateRequiredFields(data: Partial<Industry>): NextResponse | null {
   }
   
   return null;
-}
-
-function ensureTracksExist(data: Partial<Industry>): Industry {
-  return {
-    ...data as Industry,
-    tracks: data.tracks || []
-  };
-}
-
-async function insertIndustry(collection: Collection, industryToCreate: Industry): Promise<Industry> {
-  const result = await collection.insertOne(industryToCreate);
-  
-  return {
-    ...industryToCreate,
-    _id: result.insertedId
-  };
 } 

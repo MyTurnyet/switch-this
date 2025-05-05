@@ -1,22 +1,20 @@
 import { NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
-import { Collection } from 'mongodb';
+import { Collection, Document, ObjectId } from 'mongodb';
 
 
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service that will be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
-interface LayoutState {
-  _id?: string | any;
+interface LayoutState extends Document {
+  _id?: ObjectId;
   updatedAt: Date;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // GET - retrieves the latest layout state
 export async function GET() {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     await mongoService.connect();
     const collection = mongoService.getLayoutStateCollection();
@@ -50,8 +48,6 @@ function handleNoStateFound() {
 
 // POST - saves the current layout state
 export async function POST(request: Request) {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     const data = await request.json();
     
@@ -61,7 +57,9 @@ export async function POST(request: Request) {
     const stateToSave = addTimeStamp(data);
     
     if (data._id) {
-      await upsertExistingState(collection, data._id, stateToSave);
+      // Convert string ID to ObjectId if necessary
+      const objectId = typeof data._id === 'string' ? mongoService.toObjectId(data._id) : data._id;
+      await upsertExistingState(collection, objectId, stateToSave);
     } else {
       await insertNewState(collection, stateToSave);
     }
@@ -82,10 +80,10 @@ function addTimeStamp(data: Partial<LayoutState>): LayoutState {
   return {
     ...data,
     updatedAt: new Date()
-  };
+  } as LayoutState;
 }
 
-async function upsertExistingState(collection: Collection, id: string | any, stateToSave: LayoutState): Promise<void> {
+async function upsertExistingState(collection: Collection, id: ObjectId, stateToSave: LayoutState): Promise<void> {
   await collection.updateOne(
     { _id: id },
     { $set: stateToSave },

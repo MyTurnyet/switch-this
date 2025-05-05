@@ -1,80 +1,60 @@
-import { GET, PUT, DELETE } from '../route';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
-import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
 import { NextResponse } from 'next/server';
+import { jest } from '@jest/globals';
+import { GET, PUT, DELETE } from '../route';
 import { LocationType } from '@/app/shared/types/models';
 
-import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
-// Using FakeMongoDbService from test utils instead of custom mocks
+// Define the types first
+type MockLocation = {
+  _id: string;
+  stationName: string;
+  block: string;
+  ownerId: string;
+  locationType?: LocationType;
+  description?: string;
+};
 
-// Now mock the MongoDB provider
-// MongoDB provider mocking is now handled by createMongoDbTestSetup()
+type MockCollection = {
+  find: jest.Mock;
+  findOne: jest.Mock;
+  insertOne: jest.Mock;
+  updateOne: jest.Mock;
+  deleteOne: jest.Mock;
+  toArray: jest.Mock;
+  countDocuments?: jest.Mock;
+};
 
+type MockMongoService = {
+  connect: jest.Mock;
+  close: jest.Mock;
+  getLocationsCollection: jest.Mock;
+  toObjectId: jest.Mock;
+  getIndustriesCollection: jest.Mock;
+};
 
+// Define a global fakeMongoService for use in mocks
+let fakeMongoService: MockMongoService;
 
-// Using FakeMongoDbService from test utils instead of custom mocks
+// Mock the Next.js Response object
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: jest.fn()
+  }
+}));
 
-// Now mock the MongoDB provider
-// Mock removed and replaced with proper declaration
-
-
-
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
-
-// Mock the mongodb provider
-// Using FakeMongoDbService from test utils instead of custom mocks
-
-// Mock removed and replaced with proper declaration
+// Mock the mongodb service
+jest.mock('@/lib/services/mongodb.service', () => {
+  return {
+    MongoDbService: jest.fn().mockImplementation(() => {
+      return fakeMongoService;
+    })
+  };
+});
 
 describe('Location ID API', () => {
-  type MockLocation = {
-    _id: string;
-    stationName: string;
-    block: string;
-    ownerId: string;
-    locationType?: LocationType;
-    description?: string;
-  };
-
-  // Define common mock types
-  type MockCollection = {
-    find: jest.Mock;
-    findOne: jest.Mock;
-    insertOne: jest.Mock;
-    updateOne: jest.Mock;
-    deleteOne: jest.Mock;
-    toArray: jest.Mock;
-  };
-
-  type MockMongoService = {
-    connect: jest.Mock;
-    close: jest.Mock;
-    getLocationsCollection: jest.Mock;
-    toObjectId: jest.Mock;
-    getIndustriesCollection: jest.Mock;
-  };
-
-  let fakeMongoService: MockMongoService;
   let mockCollection: MockCollection;
   let mockLocation: MockLocation;
 
   beforeEach(() => {
-  // Setup mock collections for this test
-  beforeEach(() => {
-    // Configure the fake service collections
-    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
-    const industriesCollection = fakeMongoService.getIndustriesCollection();
-    const locationsCollection = fakeMongoService.getLocationsCollection();
-    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
-    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
-    
-    // Configure collection methods as needed for specific tests
-    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
-  });
-
     // Set up mock location data
     mockLocation = {
       _id: 'loc1',
@@ -85,26 +65,27 @@ describe('Location ID API', () => {
       description: 'A beautiful lake'
     };
 
-    // Set up mock MongoDB service and collection
+    // Set up mock MongoDB collection
     mockCollection = {
       find: jest.fn().mockReturnThis(),
       findOne: jest.fn().mockResolvedValue(mockLocation),
       insertOne: jest.fn().mockResolvedValue({ insertedId: 'new-loc-id' }),
       updateOne: jest.fn().mockResolvedValue({ matchedCount: 1 }),
       deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
-      toArray: jest.fn().mockResolvedValue([mockLocation])
+      toArray: jest.fn().mockResolvedValue([mockLocation]),
+      countDocuments: jest.fn().mockResolvedValue(0)
     };
 
+    // Set up mock MongoDB service
     fakeMongoService = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
       getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
       toObjectId: jest.fn().mockImplementation((id) => id), // Simple pass-through for tests
-      getIndustriesCollection: jest.fn().mockReturnValue({ countDocuments: jest.fn().mockResolvedValue(0) })
+      getIndustriesCollection: jest.fn().mockReturnValue({ 
+        countDocuments: jest.fn().mockResolvedValue(0) 
+      })
     };
-
-    const mockProvider = new MongoDbProvider(fakeMongoService);
-  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
 
     // Mock NextResponse.json
     (NextResponse.json as jest.Mock) = jest.fn().mockImplementation((data) => ({ data }));

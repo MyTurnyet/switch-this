@@ -1,80 +1,45 @@
 import { PUT } from '../route';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
+import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 
-import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
-// Using FakeMongoDbService from test utils instead of custom mocks
-
-// Now mock the MongoDB provider
-// MongoDB provider mocking is now handled by createMongoDbTestSetup()
-
-
-
-// Using FakeMongoDbService from test utils instead of custom mocks
-
-// Now mock the MongoDB provider
-// Mock removed and replaced with proper declaration
-
-
-
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
-
-// Mock the mongodb provider
-// Using FakeMongoDbService from test utils instead of custom mocks
-
-// Mock removed and replaced with proper declaration
+// Mock the MongoDB service
+jest.mock('@/lib/services/mongodb.service', () => ({
+  MongoDbService: jest.fn().mockImplementation(() => {
+    return new FakeMongoDbService();
+  })
+}));
 
 describe('Rolling Stock API - PUT', () => {
-  type MockMongoService = {
-    connect: jest.Mock;
-    close: jest.Mock;
-    getRollingStockCollection: jest.Mock;
-    toObjectId: jest.Mock;
-  };
-
   type MockCollection = {
     updateOne: jest.Mock;
   };
 
-  let fakeMongoService: MockMongoService;
+  let fakeMongoService: FakeMongoDbService;
   let mockCollection: MockCollection;
   let mockRequestJson: jest.Mock;
   let mockRequest: NextRequest;
   let mockParams: { id: string };
   
   beforeEach(() => {
-  // Setup mock collections for this test
-  beforeEach(() => {
-    // Configure the fake service collections
-    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
-    const industriesCollection = fakeMongoService.getIndustriesCollection();
-    const locationsCollection = fakeMongoService.getLocationsCollection();
-    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
-    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
-    
-    // Configure collection methods as needed for specific tests
-    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
-  });
-
-    // Set up mock MongoDB service and collection
+    // Set up mock collection
     mockCollection = {
       updateOne: jest.fn().mockResolvedValue({ matchedCount: 1 })
     };
 
-    fakeMongoService = {
-      connect: jest.fn().mockResolvedValue(undefined),
-      close: jest.fn().mockResolvedValue(undefined),
-      getRollingStockCollection: jest.fn().mockReturnValue(mockCollection),
-      toObjectId: jest.fn().mockImplementation((id: string) => new ObjectId(id))
-    };
-
-    const mockProvider = new MongoDbProvider(fakeMongoService);
-  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
+    // Use FakeMongoDbService
+    fakeMongoService = new FakeMongoDbService();
+    fakeMongoService.isConnected = true;
+    
+    // Configure mocks
+    jest.spyOn(fakeMongoService, 'getRollingStockCollection').mockReturnValue(mockCollection as any);
+    jest.spyOn(fakeMongoService, 'toObjectId').mockImplementation((id: string) => new ObjectId(id));
+    
+    // Mock the MongoDbService constructor
+    jest.mock('@/lib/services/mongodb.service', () => ({
+      MongoDbService: jest.fn().mockImplementation(() => fakeMongoService)
+    }));
 
     // Set up mock request
     mockRequestJson = jest.fn();

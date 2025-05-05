@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
 
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service that will be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 // GET handler
 export async function GET() {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     await mongoService.connect();
     const collection = mongoService.getSwitchlistsCollection();
@@ -31,8 +28,6 @@ export async function GET() {
 
 // POST handler
 export async function POST(request: NextRequest) {
-  const mongoService = mongoDbProvider.getService();
-  
   try {
     const body = await request.json();
     

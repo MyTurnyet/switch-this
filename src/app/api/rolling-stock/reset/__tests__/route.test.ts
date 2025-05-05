@@ -1,28 +1,63 @@
 import { POST } from '../route';
 import { NextResponse } from 'next/server';
-import { MongoDbService } from '@/lib/services/mongodb.service';
+import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 
-// Using FakeMongoDbService from test utils instead of custom mocks
+// Set up mock database collections
+const rollingStockCollection = {
+  find: jest.fn().mockReturnThis(),
+  toArray: jest.fn().mockResolvedValue([
+    // Mock rolling stock
+    {
+      _id: '1',
+      roadName: 'BNSF',
+      roadNumber: '1234',
+      aarType: 'XM',
+      description: 'Boxcar',
+      color: 'RED',
+      homeYard: 'yard1',
+      ownerId: '1',
+    },
+    // Additional mocked rolling stock...
+  ]),
+  updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
+};
 
-// Now mock the MongoDB provider
-// MongoDB provider mocking is now handled by createMongoDbTestSetup()
+const industriesCollection = {
+  find: jest.fn().mockReturnThis(),
+  toArray: jest.fn().mockResolvedValue([
+    // Mock industries
+    {
+      _id: 'yard1',
+      name: 'BNSF Yard',
+      industryType: 'YARD',
+      tracks: [
+        {
+          _id: 'track1',
+          name: 'Track 1',
+          maxCars: 4,
+          capacity: 4,
+          length: 100,
+          placedCars: ['4', '5'],
+          acceptedCarTypes: ['XM', 'GS', 'FM'],
+        },
+        // Additional tracks...
+      ],
+    },
+    // Additional industries...
+  ]),
+  updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
+};
 
+// Create a fake MongoDB service instance
+const fakeMongoService = new FakeMongoDbService();
+fakeMongoService.isConnected = true;
 
-
-// Using FakeMongoDbService from test utils instead of custom mocks
-
-// Now mock the MongoDB provider
-// Mock removed and replaced with proper declaration
-
-
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
-import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
-
-import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Configure the mocks
+jest.spyOn(fakeMongoService, 'connect').mockResolvedValue();
+jest.spyOn(fakeMongoService, 'close').mockResolvedValue();
+jest.spyOn(fakeMongoService, 'getRollingStockCollection').mockReturnValue(rollingStockCollection as any);
+jest.spyOn(fakeMongoService, 'getIndustriesCollection').mockReturnValue(industriesCollection as any);
+jest.spyOn(fakeMongoService, 'toObjectId').mockImplementation(id => id as any);
 
 // Mock NextResponse
 jest.mock('next/server', () => ({
@@ -34,138 +69,14 @@ jest.mock('next/server', () => ({
   },
 }));
 
-// Mock MongoDB service provider
-jest.mock('@/lib/services/mongodb.provider', () => {
-  return {
-    MongoDbProvider: jest.fn().mockImplementation(() => ({
-    getService: jest.fn().mockReturnValue(fakeMongoService)
-  })),
-  };
-});
+// Mock MongoDB service - now with fakeMongoService already initialized
+jest.mock('@/lib/services/mongodb.service', () => ({
+  MongoDbService: jest.fn().mockImplementation(() => fakeMongoService)
+}));
 
 describe('Rolling Stock Reset API', () => {
-  let fakeMongoService: jest.Mocked<MongoDbService>;
-  
   beforeEach(() => {
-  // Setup mock collections for this test
-  beforeEach(() => {
-    // Configure the fake service collections
-    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
-    const industriesCollection = fakeMongoService.getIndustriesCollection();
-    const locationsCollection = fakeMongoService.getLocationsCollection();
-    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
-    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
-    
-    // Configure collection methods as needed for specific tests
-    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
-  });
-
     jest.clearAllMocks();
-    
-    // Create mock collections
-    const rollingStockCollection = {
-      find: jest.fn().mockReturnThis(),
-      toArray: jest.fn().mockResolvedValue([
-        // Mock rolling stock
-        {
-          _id: '1',
-          roadName: 'BNSF',
-          roadNumber: '1234',
-          aarType: 'XM',
-          description: 'Boxcar',
-          color: 'RED',
-          homeYard: 'yard1',
-          ownerId: '1',
-        },
-        {
-          _id: '2',
-          roadName: 'UP',
-          roadNumber: '5678',
-          aarType: 'GS',
-          description: 'Gondola',
-          color: 'GREEN',
-          homeYard: 'yard1',
-          ownerId: '1',
-        },
-        {
-          _id: '3',
-          roadName: 'CSX',
-          roadNumber: '9012',
-          aarType: 'FM',
-          description: 'Flatcar',
-          color: 'BLUE',
-          homeYard: 'yard2',
-          ownerId: '1',
-        },
-      ]),
-      updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
-    };
-    
-    const industriesCollection = {
-      find: jest.fn().mockReturnThis(),
-      toArray: jest.fn().mockResolvedValue([
-        // Mock industries
-        {
-          _id: 'yard1',
-          name: 'BNSF Yard',
-          industryType: 'YARD',
-          tracks: [
-            {
-              _id: 'track1',
-              name: 'Track 1',
-              maxCars: 4,
-              capacity: 4,
-              length: 100,
-              placedCars: ['4', '5'],
-              acceptedCarTypes: ['XM', 'GS', 'FM'],
-            },
-            {
-              _id: 'track2',
-              name: 'Track 2',
-              maxCars: 4,
-              capacity: 4,
-              length: 100,
-              placedCars: [],
-              acceptedCarTypes: ['XM'],
-            },
-          ],
-        },
-        {
-          _id: 'yard2',
-          name: 'UP Yard',
-          industryType: 'YARD',
-          tracks: [
-            {
-              _id: 'track3',
-              name: 'Track 3',
-              maxCars: 4,
-              capacity: 4,
-              length: 100,
-              placedCars: ['6'],
-              acceptedCarTypes: ['FM'],
-            },
-          ],
-        },
-      ]),
-      updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
-    };
-    
-    // Create mock MongoDB service
-    fakeMongoService = {
-      connect: jest.fn().mockResolvedValue(undefined),
-      close: jest.fn().mockResolvedValue(undefined),
-      getCollection: jest.fn(),
-      getRollingStockCollection: jest.fn().mockReturnValue(rollingStockCollection),
-      getIndustriesCollection: jest.fn().mockReturnValue(industriesCollection),
-      getLocationsCollection: jest.fn(),
-      getTrainRoutesCollection: jest.fn(),
-      getLayoutStateCollection: jest.fn(),
-      toObjectId: jest.fn(id => id)
-    } as unknown as jest.Mocked<MongoDbService>;
-    
-    // Mock the getMongoDbService to return our mock
-    const mockProvider = new MongoDbProvider(fakeMongoService);
-  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
   });
 
   it('should reset rolling stock to their home yards on the least occupied tracks', async () => {
@@ -198,7 +109,7 @@ describe('Rolling Stock Reset API', () => {
 
   it('should handle errors gracefully', async () => {
     // Mock the connect method to throw an error
-    fakeMongoService.connect.mockRejectedValueOnce(new Error('Database connection failed'));
+    (fakeMongoService.connect as jest.Mock).mockRejectedValueOnce(new Error('Database connection failed'));
 
     // Call the API route handler
     await POST();
@@ -215,6 +126,5 @@ describe('Rolling Stock Reset API', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-    fakeMongoService.clearCallHistory();
   });
 }); 

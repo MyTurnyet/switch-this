@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { LocationType } from '@/app/shared/types/models';
 
 
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service that will be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 // Helper to create a response with CORS headers
 function createResponseWithCors(body: unknown, status = 200) {
@@ -21,8 +21,6 @@ function createResponseWithCors(body: unknown, status = 200) {
 }
 
 export async function GET() {
-  const mongoService = mongoDbProvider.getService();
-
   try {
     await mongoService.connect();
     const collection = mongoService.getLocationsCollection();
@@ -55,8 +53,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const mongoService = mongoDbProvider.getService();
-
   try {
     const data = await request.json();
     

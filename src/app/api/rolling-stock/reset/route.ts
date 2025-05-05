@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
 import { RollingStock, Industry } from '@/app/shared/types/models';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
 
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
-
-type MongoService = {
-  connect: () => Promise<void>;
-  close: () => Promise<void>;
-  getRollingStockCollection: () => Collection;
-  getIndustriesCollection: () => Collection;
-  toObjectId: (id: string) => ObjectId;
-};
+// Create a MongoDB service to be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 type Track = {
   _id: string | ObjectId;
@@ -29,7 +20,6 @@ type Track = {
 
 export async function POST() {
   console.log('Reset API endpoint called');
-  const mongoService = mongoDbProvider.getService() as MongoService;
   
   try {
     await mongoService.connect();
@@ -70,7 +60,7 @@ async function fetchData(rollingStockCollection: Collection, industriesCollectio
   return { allRollingStock, allIndustries };
 }
 
-async function clearAllPlacedCars(industriesCollection: Collection, allIndustries: Industry[], mongoService: MongoService) {
+async function clearAllPlacedCars(industriesCollection: Collection, allIndustries: Industry[], mongoService: IMongoDbService) {
   const updatePromises = allIndustries.map(industry => 
     industriesCollection.updateOne(
       { _id: typeof industry._id === 'string' ? mongoService.toObjectId(industry._id) : industry._id },
@@ -120,7 +110,7 @@ async function assignCarsToHomeTracks(
   industryTracks: Map<string, { trackId: string; carCount: number; acceptedCarTypes?: string[] }[]>,
   rollingStockCollection: Collection,
   industriesCollection: Collection,
-  mongoService: MongoService
+  mongoService: IMongoDbService
 ) {
   for (const car of allRollingStock) {
     const homeIndustryId = ensureStringId(car.homeYard);
@@ -181,7 +171,7 @@ async function updateCarLocation(
   industryId: string,
   trackId: string,
   rollingStockCollection: Collection,
-  mongoService: MongoService
+  mongoService: IMongoDbService
 ) {
   await rollingStockCollection.updateOne(
     { _id: typeof car._id === 'string' ? mongoService.toObjectId(car._id) : car._id },
@@ -201,7 +191,7 @@ async function addCarToTrack(
   industryId: string,
   trackId: string,
   industriesCollection: Collection,
-  mongoService: MongoService
+  mongoService: IMongoDbService
 ) {
   await industriesCollection.updateOne(
     { 

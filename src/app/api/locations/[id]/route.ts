@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
+import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection } from 'mongodb';
 import { LocationType } from '@/app/shared/types/models';
-import { MongoDbService } from '@/lib/services/mongodb.service';
 
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+// Create a MongoDB service that will be used throughout this file
+const mongoService: IMongoDbService = new MongoDbService();
 
 // Helper functions
 function createNotFoundResponse() {
@@ -55,7 +53,7 @@ function createSuccessResponse() {
   );
 }
 
-async function findLocationById(collection: Collection, id: string, mongoService: MongoDbService) {
+async function findLocationById(collection: Collection, id: string, mongoService: IMongoDbService) {
   const locationId = mongoService.toObjectId(id);
   return await collection.findOne({ _id: locationId });
 }
@@ -65,8 +63,6 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-
   try {
     await mongoService.connect();
     const collection = mongoService.getLocationsCollection();
@@ -109,8 +105,6 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-
   try {
     const data = await request.json();
     
@@ -179,8 +173,6 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService = mongoDbProvider.getService();
-
   try {
     // Validate the id parameter
     if (!params.id || params.id.trim() === '') {
