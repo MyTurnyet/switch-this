@@ -271,4 +271,41 @@ describe('Switchlist Operations - Build Train', () => {
       expect(foundTerminatingYardDestination).toBe(true);
     });
   });
+
+  test('should display train summary after building a train', async () => {
+    render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Build Train')).toBeInTheDocument();
+    });
+    
+    // Click the build train button
+    fireEvent.click(screen.getByText('Build Train'));
+    
+    // Check for train summary heading
+    await waitFor(() => {
+      expect(screen.getByText('Train Summary')).toBeInTheDocument();
+    });
+    
+    // Verify the summary contains information about cars assigned
+    await waitFor(() => {
+      expect(screen.getByText(/cars assigned from Starting Yard/)).toBeInTheDocument();
+      expect(screen.getByText(/cars picked up from industries along the route/)).toBeInTheDocument();
+    });
+  });
+  
+  test('should display train route visualization', async () => {
+    render(<SwitchlistOperationsPage params={{ id: 'switchlist1' }} />);
+    
+    // Verify the train route component appears
+    await waitFor(() => {
+      expect(screen.getByText('Train Route')).toBeInTheDocument();
+    });
+    
+    // Check for station names
+    expect(screen.getByText('Starting Yard')).toBeInTheDocument();
+    expect(screen.getByText('Echo Lake, WA')).toBeInTheDocument();
+    expect(screen.getByText('Pine Ridge, OR')).toBeInTheDocument();
+    expect(screen.getByText('Ending Yard')).toBeInTheDocument();
+  });
 }); 
