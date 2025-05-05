@@ -2,18 +2,20 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import SwitchlistOperationsPage from '../page';
 import { SwitchlistService } from '@/app/shared/services/SwitchlistService';
-import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { RollingStockService } from '@/app/shared/services/RollingStockService';
+import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { LocationService } from '@/app/shared/services/LocationService';
 import { IndustryService } from '@/app/shared/services/IndustryService';
-import { LocationType, IndustryType } from '@/app/shared/types/models';
+import { OperationsService } from '@/app/shared/services/OperationsService';
+import { LocationType, IndustryType, TrainRoute, Industry, RollingStock } from '@/app/shared/types/models';
 
-// Mock the services
+// Mock the service classes
 jest.mock('@/app/shared/services/SwitchlistService');
-jest.mock('@/app/shared/services/TrainRouteService');
 jest.mock('@/app/shared/services/RollingStockService');
+jest.mock('@/app/shared/services/TrainRouteService');
 jest.mock('@/app/shared/services/LocationService');
 jest.mock('@/app/shared/services/IndustryService');
+jest.mock('@/app/shared/services/OperationsService');
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -153,11 +155,36 @@ describe('Switchlist Operations - Off-Layout Destinations', () => {
     LocationService.prototype.getAllLocations = jest.fn().mockResolvedValue(mockLocations);
     IndustryService.prototype.getAllIndustries = jest.fn().mockResolvedValue(mockIndustries);
     
-    // Mock RollingStockService to return mock data, but with empty assigned cars by default
+    // Mock RollingStockService to return mock data
     RollingStockService.prototype.getAllRollingStock = jest.fn().mockResolvedValue([
       mockRollingStockWithOffLayoutDestination,
       mockRollingStockOnLayout
     ]);
+    
+    // Mock OperationsService to correctly return the mocked rolling stock
+    // This is what was missing - we need to mock the OperationsService implementation
+    OperationsService.prototype.getCarsInOriginatingYard = jest.fn().mockImplementation(
+      (trainRoute: TrainRoute, industries: Industry[], rollingStock: RollingStock[]) => {
+        // For the first test, return the rolling stock with off-layout destination
+        if (rollingStock.some((rs: RollingStock) => rs._id === 'rs1')) {
+          return [mockRollingStockWithOffLayoutDestination];
+        }
+        // For the second test, return the rolling stock that's at the yard
+        if (rollingStock.some((rs: RollingStock) => rs._id === 'rs2' && rs.currentLocation?.industryId === 'ind3')) {
+          return [rollingStock.find((rs: RollingStock) => rs._id === 'rs2')];
+        }
+        return [];
+      }
+    );
+    
+    OperationsService.prototype.getOriginatingYardIndustries = jest.fn().mockImplementation(
+      (trainRoute: TrainRoute, industries: Industry[]) => {
+        return industries.filter((industry: Industry) => 
+          industry.locationId === trainRoute.originatingYardId && 
+          industry.industryType === IndustryType.YARD
+        );
+      }
+    );
   });
 
   it('shows rolling stock information correctly on the operations page', async () => {

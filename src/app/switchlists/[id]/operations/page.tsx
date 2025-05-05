@@ -9,6 +9,7 @@ import { LocationService } from '@/app/shared/services/LocationService';
 import { IndustryService } from '@/app/shared/services/IndustryService';
 import { Switchlist, RollingStock, TrainRoute, Industry } from '@/app/shared/types/models';
 import { Location } from '@/shared/types/models';
+import { OperationsService } from '@/app/shared/services/OperationsService';
 
 export default function SwitchlistOperationsPage({ params }: { params: { id: string } }) {
   const [switchlist, setSwitchlist] = useState<Switchlist | null>(null);
@@ -25,7 +26,25 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
   const trainRouteService = new TrainRouteService();
   const locationService = new LocationService();
   const industryService = new IndustryService();
+  const operationsService = new OperationsService();
   
+  const getCarsInOriginatingYard = (trainRoute: TrainRoute, industries: Industry[], rollingStock: RollingStock[]): RollingStock[] => {
+    try {
+      if (!trainRoute || !industries.length || !rollingStock.length) {
+        return [];
+      }
+      // Use the OperationsService to get rolling stock in the originating yard
+      return operationsService.getCarsInOriginatingYard(
+        trainRoute,
+        industries,
+        rollingStock
+      );
+    } catch (error) {
+      console.error('Error getting cars in originating yard:', error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -52,21 +71,16 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
         const trainRouteData = await trainRouteService.getTrainRouteById(switchlistData.trainRouteId);
         setTrainRoute(trainRouteData);
         
-        // Find all industries at the originating yard
-        const yardIndustries = industriesData.filter(industry => 
-          industry.locationId === trainRouteData.originatingYardId
-        );
+        if (trainRouteData) {
+          const inYardRollingStock = getCarsInOriginatingYard(
+            trainRouteData,
+            industriesData,
+            rollingStockData
+          );
+          
+          setAvailableRollingStock(inYardRollingStock);
+        }
         
-        // Store the IDs of these industries for filtering
-        const yardIndustryIds = yardIndustries.map(industry => industry._id);
-        
-        // Filter rolling stock to only show those currently at the originating yard
-        const inYardRollingStock = rollingStockData.filter(rs => 
-          rs.currentLocation && 
-          yardIndustryIds.includes(rs.currentLocation.industryId)
-        );
-        
-        setAvailableRollingStock(inYardRollingStock);
         setAssignedRollingStock([]);
         
         setError(null);
@@ -194,7 +208,7 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
             <h2 className="text-lg font-semibold">Assigned Rolling Stock</h2>
           </div>
           <div className="p-4">
-            {assignedRollingStock.length === 0 ? (
+            {!assignedRollingStock || assignedRollingStock.length === 0 ? (
               <p className="text-gray-500">No rolling stock assigned to this switchlist yet.</p>
             ) : (
               <ul className="divide-y divide-gray-200">
@@ -232,7 +246,7 @@ export default function SwitchlistOperationsPage({ params }: { params: { id: str
             </p>
           </div>
           <div className="p-4">
-            {availableRollingStock.length === 0 ? (
+            {!availableRollingStock || availableRollingStock.length === 0 ? (
               <p className="text-gray-500">No rolling stock available in the originating yard.</p>
             ) : (
               <ul className="divide-y divide-gray-200">
