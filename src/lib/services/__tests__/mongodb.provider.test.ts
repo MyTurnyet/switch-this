@@ -1,5 +1,4 @@
 import { MongoDbProvider, getMongoDbService, resetMongoDbService, setMongoDbService } from '../mongodb.provider';
-import { MongoDbService } from '../mongodb.service';
 import { IMongoDbService } from '../mongodb.interface';
 import { Collection, Document, ObjectId } from 'mongodb';
 
@@ -144,11 +143,11 @@ jest.mock('../mongodb.service', () => {
 
 describe('MongoDb Provider', () => {
   let mongoDbProvider: MongoDbProvider;
-  let mockMongoService: MongoDbService;
+  let mockMongoService: IMongoDbService;
   
   beforeEach(() => {
     jest.clearAllMocks();
-    mockMongoService = new MongoDbService();
+    mockMongoService = new FakeMongoDbService();
     mongoDbProvider = new MongoDbProvider(mockMongoService);
   });
   
@@ -159,8 +158,7 @@ describe('MongoDb Provider', () => {
       expect(service).toBeTruthy();
       expect(service.connect).toBeDefined();
       expect(service.getIndustriesCollection).toBeDefined();
-      // MongoDbService constructor should be called once for our initial service
-      expect(MongoDbService).toHaveBeenCalledTimes(1);
+      // No need to check MongoDbService constructor since we're using the Fake
     });
     
     it('should return the same MongoDB service instance on subsequent calls', () => {
@@ -168,7 +166,6 @@ describe('MongoDb Provider', () => {
       const service2 = mongoDbProvider.getService();
       
       expect(service1).toBe(service2);
-      expect(MongoDbService).toHaveBeenCalledTimes(1);
     });
     
     it('should create a new provider when a new service is needed', () => {
@@ -176,7 +173,7 @@ describe('MongoDb Provider', () => {
       const firstService = firstProvider.getService();
       
       // Create a new service and provider
-      const newMockService = new MongoDbService();
+      const newMockService = new FakeMongoDbService();
       const secondProvider = new MongoDbProvider(newMockService);
       const secondService = secondProvider.getService();
       
@@ -185,12 +182,10 @@ describe('MongoDb Provider', () => {
       // But each provider should consistently return its own service
       expect(firstProvider.getService()).toBe(firstService);
       expect(secondProvider.getService()).toBe(secondService);
-      
-      expect(MongoDbService).toHaveBeenCalledTimes(2);
     });
     
     it('should accept a service in the constructor', () => {
-      const customService = new MongoDbService();
+      const customService = new FakeMongoDbService();
       const providerWithInjection = new MongoDbProvider(customService);
       
       const service = providerWithInjection.getService();
