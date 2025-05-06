@@ -1,40 +1,51 @@
 import { jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
-import { ObjectId } from 'mongodb';
+import type { UpdateResult, DeleteResult } from 'mongodb';
 import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 
 // Define a properly typed mock Response interface
 interface MockResponse {
   body: string;
-  parsedBody: any;
+  parsedBody: Record<string, unknown>;
   status: number;
   headers: Record<string, string>;
+  json: () => Promise<Record<string, unknown>>;
+}
+
+// Extend FakeMongoDbService type for test purposes
+interface ExtendedFakeMongoDbService extends FakeMongoDbService {
+  clearCallHistory?: () => void;
 }
 
 // Create a fake MongoDB service instance
-const fakeMongoService = new FakeMongoDbService();
+const fakeMongoService = new FakeMongoDbService() as ExtendedFakeMongoDbService;
+
+// Add clearCallHistory method if it doesn't exist
+if (!fakeMongoService.clearCallHistory) {
+  fakeMongoService.clearCallHistory = jest.fn();
+}
 
 // Mock Response constructor
-global.Response = jest.fn().mockImplementation((body, options) => {
+jest.spyOn(global, 'Response').mockImplementation((body, options = {}) => {
   const parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
   return {
     body,
     parsedBody,
-    status: options?.status || 200,
-    headers: options?.headers || {},
+    status: (options as ResponseInit)?.status || 200,
+    headers: (options as ResponseInit)?.headers || {},
     json: async () => parsedBody
-  } as MockResponse;
+  } as unknown as Response;
 });
 
 // Mock MongoDB ObjectId
 jest.mock('mongodb', () => {
-  const original = jest.requireActual('mongodb');
+  const mockObjectId = jest.fn().mockImplementation((id) => ({
+    toString: () => id || 'mock-id',
+    toHexString: () => id || 'mock-id'
+  }));
+  
   return {
-    ...original,
-    ObjectId: jest.fn().mockImplementation((id) => ({
-      toString: () => id || 'mock-id',
-      toHexString: () => id || 'mock-id'
-    }))
+    ObjectId: mockObjectId
   };
 });
 
@@ -48,9 +59,9 @@ jest.mock('@/lib/services/mongodb.service', () => {
 });
 
 // Declare route handler variables
-let GET: (req: NextRequest, context: any) => Promise<Response>;
-let PUT: (req: NextRequest, context: any) => Promise<Response>;
-let DELETE: (req: NextRequest, context: any) => Promise<Response>;
+let GET: (req: NextRequest, context: { params: Record<string, string> }) => Promise<Response>;
+let PUT: (req: NextRequest, context: { params: Record<string, string> }) => Promise<Response>;
+let DELETE: (req: NextRequest, context: { params: Record<string, string> }) => Promise<Response>;
 
 // Load the route handlers module in isolation
 jest.isolateModules(() => {
@@ -98,8 +109,8 @@ describe('Train Route API Endpoints', () => {
       
       // Assert
       expect(fakeMongoService.connect).toHaveBeenCalled();
-      expect(response.parsedBody).toEqual(mockTrainRoute);
-      expect(response.status).toBe(200);
+      expect((response as unknown as MockResponse).parsedBody).toEqual(mockTrainRoute);
+      expect((response as unknown as MockResponse).status).toBe(200);
       expect(fakeMongoService.close).toHaveBeenCalled();
     });
     
@@ -115,8 +126,8 @@ describe('Train Route API Endpoints', () => {
       );
       
       // Assert
-      expect(response.parsedBody).toEqual({ error: 'Train route not found' });
-      expect(response.status).toBe(404);
+      expect((response as unknown as MockResponse).parsedBody).toEqual({ error: 'Train route not found' });
+      expect((response as unknown as MockResponse).status).toBe(404);
       expect(fakeMongoService.close).toHaveBeenCalled();
     });
     
@@ -131,8 +142,8 @@ describe('Train Route API Endpoints', () => {
       );
       
       // Assert
-      expect(response.parsedBody).toEqual({ error: 'Failed to fetch train route' });
-      expect(response.status).toBe(500);
+      expect((response as unknown as MockResponse).parsedBody).toEqual({ error: 'Failed to fetch train route' });
+      expect((response as unknown as MockResponse).status).toBe(500);
     });
   });
   
@@ -149,7 +160,7 @@ describe('Train Route API Endpoints', () => {
       };
       
       const mockRequest = {
-        json: jest.fn().mockResolvedValue(trainRouteData)
+        json: jest.fn().mockResolvedValue(trainRouteData as unknown)
       } as unknown as NextRequest;
       
       const mockUpdatedTrainRoute = {
@@ -165,7 +176,14 @@ describe('Train Route API Endpoints', () => {
       
       const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
       // Mock updateOne to return 1 matched document
-      jest.spyOn(trainRoutesCollection, 'updateOne').mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 });
+      jest.spyOn(trainRoutesCollection, 'updateOne').mockResolvedValueOnce({
+        matchedCount: 1,
+        modifiedCount: 1,
+        acknowledged: true,
+        upsertedCount: 0,
+        upsertedId: null
+      } as unknown as UpdateResult);
+      
       jest.spyOn(trainRoutesCollection, 'findOne').mockResolvedValueOnce(mockUpdatedTrainRoute);
       
       // Act
@@ -181,27 +199,35 @@ describe('Train Route API Endpoints', () => {
         expect.objectContaining({ _id: expect.anything() }),
         expect.objectContaining({ $set: expect.anything() })
       );
-      expect(response.parsedBody).toEqual(mockUpdatedTrainRoute);
-      expect(response.status).toBe(200);
+      expect((response as unknown as MockResponse).parsedBody).toEqual(mockUpdatedTrainRoute);
+      expect((response as unknown as MockResponse).status).toBe(200);
       expect(fakeMongoService.close).toHaveBeenCalled();
     });
     
     it('should return 404 when the train route does not exist', async () => {
       // Arrange
+      const mockUpdateData = {
+        name: 'Updated Route',
+        routeNumber: 'TR102',
+        routeType: 'PASSENGER',
+        originatingYardId: '123456789012345678901234',
+        terminatingYardId: '123456789012345678901234',
+        stations: ['123456789012345678901234']
+      };
+      
       const mockRequest = {
-        json: jest.fn().mockResolvedValue({
-          name: 'Updated Route',
-          routeNumber: 'TR102',
-          routeType: 'PASSENGER',
-          originatingYardId: '123456789012345678901234',
-          terminatingYardId: '123456789012345678901234',
-          stations: ['123456789012345678901234']
-        })
+        json: jest.fn().mockResolvedValue(mockUpdateData as unknown)
       } as unknown as NextRequest;
       
       const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
       // Mock matchedCount: 0 to indicate no document was found
-      jest.spyOn(trainRoutesCollection, 'updateOne').mockResolvedValueOnce({ matchedCount: 0, modifiedCount: 0 });
+      jest.spyOn(trainRoutesCollection, 'updateOne').mockResolvedValueOnce({
+        matchedCount: 0,
+        modifiedCount: 0,
+        acknowledged: true,
+        upsertedCount: 0,
+        upsertedId: null
+      } as unknown as UpdateResult);
       
       // Act
       const response = await PUT(
@@ -210,15 +236,15 @@ describe('Train Route API Endpoints', () => {
       );
       
       // Assert
-      expect(response.parsedBody).toEqual({ error: 'Train route not found' });
-      expect(response.status).toBe(404);
+      expect((response as unknown as MockResponse).parsedBody).toEqual({ error: 'Train route not found' });
+      expect((response as unknown as MockResponse).status).toBe(404);
       expect(fakeMongoService.close).toHaveBeenCalled();
     });
     
     it('should handle errors', async () => {
       // Arrange
       const mockRequest = {
-        json: jest.fn().mockRejectedValue(new Error('Invalid JSON'))
+        json: jest.fn().mockRejectedValue(new Error('Invalid JSON') as unknown)
       } as unknown as NextRequest;
       
       // Act
@@ -228,8 +254,8 @@ describe('Train Route API Endpoints', () => {
       );
       
       // Assert
-      expect(response.parsedBody).toEqual({ error: 'Failed to update train route' });
-      expect(response.status).toBe(500);
+      expect((response as unknown as MockResponse).parsedBody).toEqual({ error: 'Failed to update train route' });
+      expect((response as unknown as MockResponse).status).toBe(500);
     });
   });
   
@@ -238,7 +264,10 @@ describe('Train Route API Endpoints', () => {
       // Arrange
       const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
       // Mock deletedCount: 1 to indicate document was deleted
-      jest.spyOn(trainRoutesCollection, 'deleteOne').mockResolvedValueOnce({ deletedCount: 1 });
+      jest.spyOn(trainRoutesCollection, 'deleteOne').mockResolvedValueOnce({
+        deletedCount: 1,
+        acknowledged: true
+      } as unknown as DeleteResult);
       
       // Act
       const response = await DELETE(
@@ -251,8 +280,8 @@ describe('Train Route API Endpoints', () => {
       expect(trainRoutesCollection.deleteOne).toHaveBeenCalledWith(
         expect.objectContaining({ _id: expect.anything() })
       );
-      expect(response.parsedBody).toEqual({ success: true });
-      expect(response.status).toBe(200);
+      expect((response as unknown as MockResponse).parsedBody).toEqual({ success: true });
+      expect((response as unknown as MockResponse).status).toBe(200);
       expect(fakeMongoService.close).toHaveBeenCalled();
     });
     
@@ -260,7 +289,10 @@ describe('Train Route API Endpoints', () => {
       // Arrange
       const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
       // Mock deletedCount: 0 to indicate no document was found/deleted
-      jest.spyOn(trainRoutesCollection, 'deleteOne').mockResolvedValueOnce({ deletedCount: 0 });
+      jest.spyOn(trainRoutesCollection, 'deleteOne').mockResolvedValueOnce({
+        deletedCount: 0,
+        acknowledged: true
+      } as unknown as DeleteResult);
       
       // Act
       const response = await DELETE(
@@ -269,8 +301,8 @@ describe('Train Route API Endpoints', () => {
       );
       
       // Assert
-      expect(response.parsedBody).toEqual({ error: 'Train route not found' });
-      expect(response.status).toBe(404);
+      expect((response as unknown as MockResponse).parsedBody).toEqual({ error: 'Train route not found' });
+      expect((response as unknown as MockResponse).status).toBe(404);
       expect(fakeMongoService.close).toHaveBeenCalled();
     });
     
@@ -285,15 +317,13 @@ describe('Train Route API Endpoints', () => {
       );
       
       // Assert
-      expect(response.parsedBody).toEqual({ error: 'Failed to delete train route' });
-      expect(response.status).toBe(500);
+      expect((response as unknown as MockResponse).parsedBody).toEqual({ error: 'Failed to delete train route' });
+      expect((response as unknown as MockResponse).status).toBe(500);
     });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    if (fakeMongoService.clearCallHistory) {
-      fakeMongoService.clearCallHistory();
-    }
+    fakeMongoService.clearCallHistory();
   });
 }); 
