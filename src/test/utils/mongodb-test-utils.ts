@@ -10,123 +10,98 @@ export interface MockDocument extends Document {
 }
 
 /**
- * FakeMongoDbService implements IMongoDbService for testing
- * 
- * A proper Fake test double that maintains some state and behavior,
- * but doesn't depend on the real MongoDB implementation.
- * This can be used in all tests instead of mocking MongoDbService.
+ * Creates a mock collection for testing
+ */
+export function createMockCollection(): jest.Mocked<Collection> {
+  return {
+    findOne: jest.fn(),
+    find: jest.fn().mockReturnThis(),
+    toArray: jest.fn(),
+    insertOne: jest.fn(),
+    insertMany: jest.fn(),
+    updateOne: jest.fn(),
+    deleteOne: jest.fn(),
+    countDocuments: jest.fn(),
+    aggregate: jest.fn().mockReturnThis(),
+  } as unknown as jest.Mocked<Collection>;
+}
+
+/**
+ * Creates a mock MongoDB service for testing
+ */
+export function createMockMongoService(): jest.Mocked<IMongoDbService> {
+  // Create a single mock collection to be returned from any collection getter
+  const mockCollection = createMockCollection();
+  
+  return {
+    connect: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    getCollection: jest.fn().mockReturnValue(mockCollection),
+    toObjectId: jest.fn().mockImplementation((id: string) => new ObjectId(id)),
+    getRollingStockCollection: jest.fn().mockReturnValue(mockCollection),
+    getIndustriesCollection: jest.fn().mockReturnValue(mockCollection),
+    getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
+    getTrainRoutesCollection: jest.fn().mockReturnValue(mockCollection),
+    getLayoutStateCollection: jest.fn().mockReturnValue(mockCollection),
+    getSwitchlistsCollection: jest.fn().mockReturnValue(mockCollection),
+  } as unknown as jest.Mocked<IMongoDbService>;
+}
+
+/**
+ * Fake MongoDB service for testing
+ * Implements IMongoDbService with mocked methods
  */
 export class FakeMongoDbService implements IMongoDbService {
-  isConnected = false;
-  collections: Record<string, Collection<MockDocument>> = {};
-  
-  // Track method calls for verification in tests
-  callHistory: { method: string; args: unknown[] }[] = [];
-  
-  clearCallHistory() {
-    this.callHistory = [];
-  }
-  
-  recordCall(method: string, ...args: unknown[]) {
-    this.callHistory.push({ method, args });
-  }
-  
-  async connect(): Promise<void> {
-    this.recordCall('connect');
-    this.isConnected = true;
-    return Promise.resolve();
-  }
-  
-  async close(): Promise<void> {
-    this.recordCall('close');
-    this.isConnected = false;
-    return Promise.resolve();
-  }
-  
-  getCollection<T extends Document = Document>(collectionName: string): Collection<T> {
-    this.recordCall('getCollection', collectionName);
-    
-    if (!this.isConnected) {
-      throw new Error('Not connected to MongoDB');
-    }
-    
+  // Track collections to ensure consistency in tests
+  private collections: Record<string, jest.Mocked<Collection<Document>>> = {};
+
+  public connect = jest.fn().mockResolvedValue(undefined);
+  public close = jest.fn().mockResolvedValue(undefined);
+
+  public getCollection<T extends Document = Document>(collectionName: string): jest.Mocked<Collection<T>> {
     if (!this.collections[collectionName]) {
-      this.collections[collectionName] = this.createMockCollection(collectionName);
+      this.collections[collectionName] = createMockCollection<T>();
     }
-    
-    return this.collections[collectionName] as unknown as Collection<T>;
+    return this.collections[collectionName] as unknown as jest.Mocked<Collection<T>>;
   }
-  
-  toObjectId(id: string): ObjectId {
-    this.recordCall('toObjectId', id);
-    if (!id || id.length !== 24) {
-      throw new Error('Invalid ObjectId');
+
+  public toObjectId(id: string): ObjectId {
+    if (id && id.match(/^[0-9a-fA-F]{24}$/)) {
+      return new ObjectId(id);
     }
-    return new ObjectId(id);
+    throw new Error(`Invalid ObjectId format: ${id}`);
   }
-  
-  getRollingStockCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getRollingStockCollection');
-    return this.getCollection<T>('rollingStock');
+
+  public getRollingStockCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
+    return this.getCollection<T>('rolling-stock');
   }
-  
-  getIndustriesCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getIndustriesCollection');
+
+  public getIndustriesCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
     return this.getCollection<T>('industries');
   }
-  
-  getLocationsCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getLocationsCollection');
+
+  public getLocationsCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
     return this.getCollection<T>('locations');
   }
-  
-  getTrainRoutesCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getTrainRoutesCollection');
-    return this.getCollection<T>('trainRoutes');
+
+  public getTrainRoutesCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
+    return this.getCollection<T>('train-routes');
   }
-  
-  getLayoutStateCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getLayoutStateCollection');
-    return this.getCollection<T>('layoutState');
+
+  public getLayoutStateCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
+    return this.getCollection<T>('layout-state');
   }
-  
-  getSwitchlistsCollection<T extends Document = Document>(): Collection<T> {
-    this.recordCall('getSwitchlistsCollection');
+
+  public getSwitchlistsCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
     return this.getCollection<T>('switchlists');
   }
-  
-  // Helper method to create mock collections
-  private createMockCollection(name: string): Collection<MockDocument> {
-    const mockDocuments: MockDocument[] = [];
-    
-    // Create a basic mock implementation of a MongoDB collection
-    return {
-      // Basic find implementation
-      find: jest.fn().mockImplementation(() => ({
-        toArray: jest.fn().mockResolvedValue(mockDocuments)
-      })),
-      // Basic insertOne implementation
-      insertOne: jest.fn().mockImplementation((doc: MockDocument) => {
-        const newDoc = { ...doc, _id: new ObjectId() };
-        mockDocuments.push(newDoc);
-        return Promise.resolve({ insertedId: newDoc._id });
-      }),
-      // Basic findOne implementation
-      findOne: jest.fn().mockImplementation(() => {
-        return Promise.resolve(mockDocuments[0] || null);
-      }),
-      // Basic updateOne implementation
-      updateOne: jest.fn().mockImplementation(() => {
-        return Promise.resolve({ matchedCount: 1, modifiedCount: 1 });
-      }),
-      // Basic deleteOne implementation
-      deleteOne: jest.fn().mockImplementation(() => {
-        return Promise.resolve({ deletedCount: 1 });
-      }),
-      // Other collection methods as needed
-      collectionName: name
-    } as unknown as Collection<MockDocument>;
-  }
+}
+
+/**
+ * Create a fake MongoDB service instance for testing
+ */
+export function createFakeMongoDbService(): FakeMongoDbService {
+  return new FakeMongoDbService();
 }
 
 /**
