@@ -27,7 +27,14 @@ export const useRollingStockQueries = () => {
   const useRollingStockItem = (id: string) => {
     return useQuery<RollingStock, Error>({
       queryKey: QUERY_KEYS.ROLLING_STOCK_ITEM(id),
-      queryFn: () => rollingStockService.getById(id),
+      queryFn: async () => {
+        const allItems = await rollingStockService.getAllRollingStock();
+        const item = allItems.find(item => item._id === id);
+        if (!item) {
+          throw new Error(`Rolling stock with id ${id} not found`);
+        }
+        return item;
+      },
       enabled: !!id,
     });
   };
@@ -37,7 +44,21 @@ export const useRollingStockQueries = () => {
    */
   const useCreateRollingStock = () => {
     return useMutation<RollingStock, Error, Omit<RollingStock, '_id'>>({
-      mutationFn: (newItem) => rollingStockService.create(newItem),
+      mutationFn: async (newItem) => {
+        const response = await fetch('/api/rolling-stock', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newItem),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create rolling stock item');
+        }
+        
+        return response.json();
+      },
       onSuccess: () => {
         // Invalidate relevant queries
         queryClient.invalidateQueries({ 
@@ -56,7 +77,8 @@ export const useRollingStockQueries = () => {
       Error, 
       { id: string; rollingStock: Partial<RollingStock> }
     >({
-      mutationFn: ({ id, rollingStock }) => rollingStockService.update(id, rollingStock),
+      mutationFn: ({ id, rollingStock }) => 
+        rollingStockService.updateRollingStock(id, rollingStock as RollingStock),
       onSuccess: (_, variables) => {
         // Invalidate both collection and individual queries
         INVALIDATION_MAP['rollingStock:update'].forEach((queryKey) => {

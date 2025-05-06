@@ -27,7 +27,14 @@ export const useIndustryQueries = () => {
   const useIndustry = (id: string) => {
     return useQuery<Industry, Error>({
       queryKey: QUERY_KEYS.INDUSTRY(id),
-      queryFn: () => industryService.getById(id),
+      queryFn: async () => {
+        const industries = await industryService.getAllIndustries();
+        const industry = industries.find(ind => ind._id === id);
+        if (!industry) {
+          throw new Error(`Industry with id ${id} not found`);
+        }
+        return industry;
+      },
       enabled: !!id,
     });
   };
@@ -37,7 +44,7 @@ export const useIndustryQueries = () => {
    */
   const useCreateIndustry = () => {
     return useMutation<Industry, Error, Omit<Industry, '_id'>>({
-      mutationFn: (newIndustry) => industryService.create(newIndustry),
+      mutationFn: (newIndustry) => industryService.createIndustry(newIndustry as Partial<Industry>),
       onSuccess: () => {
         // Invalidate relevant queries
         INVALIDATION_MAP['industry:create'].forEach((queryKey) => {
@@ -52,11 +59,11 @@ export const useIndustryQueries = () => {
    */
   const useUpdateIndustry = () => {
     return useMutation<
-      void, 
+      Industry, 
       Error, 
       { id: string; industry: Partial<Industry> }
     >({
-      mutationFn: ({ id, industry }) => industryService.update(id, industry),
+      mutationFn: ({ id, industry }) => industryService.updateIndustry(id, industry),
       onSuccess: (_, variables) => {
         // Invalidate both collection and individual queries
         INVALIDATION_MAP['industry:update'].forEach((queryKey) => {
@@ -74,7 +81,7 @@ export const useIndustryQueries = () => {
    */
   const useDeleteIndustry = () => {
     return useMutation<void, Error, string>({
-      mutationFn: (id) => industryService.delete(id),
+      mutationFn: (id) => industryService.deleteIndustry(id),
       onSuccess: (_, id) => {
         // Invalidate relevant queries
         INVALIDATION_MAP['industry:delete'].forEach((queryKey) => {

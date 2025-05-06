@@ -1,34 +1,7 @@
 import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
-import { Collection, ObjectId } from 'mongodb';
-import { CarDestination } from '@/app/shared/types/models';
-
-interface RollingStock {
-  _id?: string | ObjectId;
-  roadName: string;
-  roadNumber: string;
-  aarType: string;
-  description: string;
-  homeYard: string;
-  currentLocation?: {
-    industryId: string;
-    trackId: string;
-  };
-  destination?: {
-    immediateDestination: {
-      locationId: string;
-      industryId: string;
-      trackId: string;
-    };
-    finalDestination?: {
-      locationId: string;
-      industryId: string;
-      trackId?: string;
-    };
-  };
-  [key: string]: unknown;
-}
+import { ObjectId } from 'mongodb';
 
 // Common headers for all responses
 const corsHeaders = {
@@ -153,7 +126,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     delete updateData._id; // Remove _id from update data
     
     // Update the rolling stock
-    const result = await collection.updateOne(
+    await collection.updateOne(
       { _id: new ObjectId(id) },
       { $set: updateData }
     );
@@ -225,14 +198,31 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     
     // Delete the rolling stock
-    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+    await collection.deleteOne({ _id: new ObjectId(id) });
     
     // Also remove this rolling stock from any tracks it might be placed on
     const industriesCollection = mongoService.getIndustriesCollection();
-    await industriesCollection.updateMany(
-      { 'tracks.placedCars': id },
-      { $pull: { 'tracks.$.placedCars': id } }
-    );
+    
+    // Use a different approach - iterate all matching industries and update them
+    // Find all industries with this car in their tracks
+    const industriesWithCar = await industriesCollection.find({ 'tracks.placedCars': id }).toArray();
+    
+    // For each industry, update all tracks that contain this car
+    for (const industry of industriesWithCar) {
+      // Update each track in the industry that contains this car
+      if (industry.tracks && Array.isArray(industry.tracks)) {
+        for (let i = 0; i < industry.tracks.length; i++) {
+          const track = industry.tracks[i];
+          if (track.placedCars && track.placedCars.includes(id)) {
+            // Update this specific track by pulling the car from the array
+            await industriesCollection.updateOne(
+              { _id: industry._id, 'tracks.id': track.id },
+              { '$pull': { 'tracks.$.placedCars': id } as any }
+            );
+          }
+        }
+      }
+    }
     
     // Return the result
     return new Response(

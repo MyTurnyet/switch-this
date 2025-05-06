@@ -27,7 +27,14 @@ export const useTrainRouteQueries = () => {
   const useTrainRoute = (id: string) => {
     return useQuery<TrainRoute, Error>({
       queryKey: QUERY_KEYS.TRAIN_ROUTE(id),
-      queryFn: () => trainRouteService.getById(id),
+      queryFn: async () => {
+        const routes = await trainRouteService.getAllTrainRoutes();
+        const route = routes.find(route => route._id === id);
+        if (!route) {
+          throw new Error(`Train route with id ${id} not found`);
+        }
+        return route;
+      },
       enabled: !!id,
     });
   };
@@ -37,7 +44,21 @@ export const useTrainRouteQueries = () => {
    */
   const useCreateTrainRoute = () => {
     return useMutation<TrainRoute, Error, Omit<TrainRoute, '_id'>>({
-      mutationFn: (newRoute) => trainRouteService.create(newRoute),
+      mutationFn: async (newRoute) => {
+        const response = await fetch('/api/train-routes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newRoute),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create train route');
+        }
+        
+        return response.json();
+      },
       onSuccess: () => {
         // Invalidate relevant queries
         queryClient.invalidateQueries({ 
@@ -52,11 +73,12 @@ export const useTrainRouteQueries = () => {
    */
   const useUpdateTrainRoute = () => {
     return useMutation<
-      void, 
+      TrainRoute, 
       Error, 
       { id: string; trainRoute: Partial<TrainRoute> }
     >({
-      mutationFn: ({ id, trainRoute }) => trainRouteService.update(id, trainRoute),
+      mutationFn: ({ id, trainRoute }) => 
+        trainRouteService.updateTrainRoute(id, trainRoute as TrainRoute),
       onSuccess: (_, variables) => {
         // Invalidate both collection and individual queries
         INVALIDATION_MAP['trainRoute:update'].forEach((queryKey) => {
@@ -74,16 +96,22 @@ export const useTrainRouteQueries = () => {
    */
   const useDeleteTrainRoute = () => {
     return useMutation<void, Error, string>({
-      mutationFn: (id) => trainRouteService.delete(id),
+      mutationFn: async (id) => {
+        const response = await fetch(`/api/train-routes/${id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to delete train route with id ${id}`);
+        }
+      },
       onSuccess: (_, id) => {
         // Invalidate relevant queries
-        queryClient.invalidateQueries({ 
-          queryKey: QUERY_KEYS.TRAIN_ROUTES 
+        INVALIDATION_MAP['trainRoute:delete'].forEach((queryKey) => {
+          queryClient.invalidateQueries({ queryKey });
         });
         // Remove the specific item from the cache
-        queryClient.removeQueries({ 
-          queryKey: QUERY_KEYS.TRAIN_ROUTE(id) 
-        });
+        queryClient.removeQueries({ queryKey: QUERY_KEYS.TRAIN_ROUTE(id) });
       },
     });
   };

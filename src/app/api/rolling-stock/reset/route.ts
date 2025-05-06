@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
     const resetPromises = rollingStock.map(car => {
       // Safely convert id to string if it's an ObjectId
       const carId = typeof car._id === 'object' && car._id !== null 
-        ? car._id.toString() 
-        : car._id;
+        ? car._id
+        : new ObjectId(car._id as string);
         
       return rollingStockCollection.updateOne(
         { _id: carId },
@@ -169,25 +169,29 @@ async function assignCarsToHomeTracks(
     if (industryTracksList) {
       const leastOccupiedTrack = findLeastOccupiedTrack(industryTracksList, car.aarType);
 
-      console.log(`Assigning car ${car.roadName} ${car.roadNumber} (ID: ${car._id}) to industry ID: ${homeIndustryId}, track ID: ${leastOccupiedTrack.trackId}`);
+      if (leastOccupiedTrack) {
+        console.log(`Assigning car ${car.roadName} ${car.roadNumber} (ID: ${car._id}) to industry ID: ${homeIndustryId}, track ID: ${leastOccupiedTrack.trackId}`);
 
-      await updateCarLocation(
-        car, 
-        homeIndustryId, 
-        leastOccupiedTrack.trackId, 
-        rollingStockCollection, 
-        mongoService
-      );
+        await updateCarLocation(
+          car, 
+          homeIndustryId, 
+          leastOccupiedTrack.trackId, 
+          rollingStockCollection, 
+          mongoService
+        );
 
-      await addCarToTrack(
-        car._id, 
-        homeIndustryId, 
-        leastOccupiedTrack.trackId, 
-        industriesCollection, 
-        mongoService
-      );
+        await addCarToTrack(
+          car._id, 
+          homeIndustryId, 
+          leastOccupiedTrack.trackId, 
+          industriesCollection, 
+          mongoService
+        );
 
-      leastOccupiedTrack.carCount++;
+        leastOccupiedTrack.carCount++;
+      } else {
+        console.warn(`No eligible track found for car ${car.roadName} ${car.roadNumber} (ID: ${car._id}) in industry ${homeIndustryId}`);
+      }
     } else {
       console.warn(`No industry with ID ${homeIndustryId} found for car ${car.roadName} ${car.roadNumber} (ID: ${car._id})`);
     }
@@ -228,7 +232,7 @@ async function addCarToTrack(
       "tracks._id": typeof trackId === 'string' ? mongoService.toObjectId(trackId) : trackId
     },
     { 
-      $push: { "tracks.$.placedCars": ensureStringId(carId) }
+      '$push': { "tracks.$.placedCars": ensureStringId(carId) } as any
     }
   );
 }

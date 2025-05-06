@@ -27,7 +27,14 @@ export const useLocationQueries = () => {
   const useLocation = (id: string) => {
     return useQuery<Location, Error>({
       queryKey: QUERY_KEYS.LOCATION(id),
-      queryFn: () => locationService.getById(id),
+      queryFn: async () => {
+        const locations = await locationService.getAllLocations();
+        const location = locations.find(loc => loc._id === id);
+        if (!location) {
+          throw new Error(`Location with id ${id} not found`);
+        }
+        return location;
+      },
       enabled: !!id,
     });
   };
@@ -36,8 +43,24 @@ export const useLocationQueries = () => {
    * Create a new location
    */
   const useCreateLocation = () => {
+    // The LocationService doesn't have an explicit create method,
+    // so we'll implement a generic approach
     return useMutation<Location, Error, Omit<Location, '_id'>>({
-      mutationFn: (newLocation) => locationService.create(newLocation),
+      mutationFn: async (newLocation) => {
+        const response = await fetch('/api/locations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newLocation),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create location');
+        }
+        
+        return response.json();
+      },
       onSuccess: () => {
         // Invalidate relevant queries
         INVALIDATION_MAP['location:create'].forEach((queryKey) => {
@@ -56,7 +79,19 @@ export const useLocationQueries = () => {
       Error, 
       { id: string; location: Partial<Location> }
     >({
-      mutationFn: ({ id, location }) => locationService.update(id, location),
+      mutationFn: async ({ id, location }) => {
+        const response = await fetch(`/api/locations/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(location),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update location with id ${id}`);
+        }
+      },
       onSuccess: (_, variables) => {
         // Invalidate both collection and individual queries
         INVALIDATION_MAP['location:update'].forEach((queryKey) => {
@@ -74,7 +109,15 @@ export const useLocationQueries = () => {
    */
   const useDeleteLocation = () => {
     return useMutation<void, Error, string>({
-      mutationFn: (id) => locationService.delete(id),
+      mutationFn: async (id) => {
+        const response = await fetch(`/api/locations/${id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to delete location with id ${id}`);
+        }
+      },
       onSuccess: (_, id) => {
         // Invalidate relevant queries
         INVALIDATION_MAP['location:delete'].forEach((queryKey) => {
