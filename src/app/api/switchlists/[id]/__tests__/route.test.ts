@@ -253,20 +253,22 @@ describe('Switchlist By ID API Routes', () => {
   describe('DELETE', () => {
     it('should delete a switchlist', async () => {
       const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+      jest.spyOn(switchlistsCollection, 'findOne').mockResolvedValueOnce({ _id: '123456789012345678901234' });
       jest.spyOn(switchlistsCollection, 'deleteOne').mockResolvedValueOnce({ deletedCount: 1 });
       
       const mockRequest = {} as NextRequest;
       const response = await DELETE(mockRequest, { params: mockParams });
       
       expect(fakeMongoService.connect).toHaveBeenCalled();
+      expect(switchlistsCollection.findOne).toHaveBeenCalled();
       expect(switchlistsCollection.deleteOne).toHaveBeenCalled();
-      expect(response.parsedBody).toEqual({ success: true });
+      expect(response.parsedBody).toEqual({ message: 'Switchlist deleted successfully' });
       expect(response.status).toBe(200);
     });
     
     it('should return 404 if switchlist to delete not found', async () => {
       const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
-      jest.spyOn(switchlistsCollection, 'deleteOne').mockResolvedValueOnce({ deletedCount: 0 });
+      jest.spyOn(switchlistsCollection, 'findOne').mockResolvedValueOnce(null);
       
       const mockRequest = {} as NextRequest;
       const response = await DELETE(mockRequest, { params: mockParams });
@@ -278,6 +280,7 @@ describe('Switchlist By ID API Routes', () => {
     it('should handle errors during deletion', async () => {
       const mockError = new Error('Database error');
       const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+      jest.spyOn(switchlistsCollection, 'findOne').mockResolvedValueOnce({ _id: '123456789012345678901234' });
       jest.spyOn(switchlistsCollection, 'deleteOne').mockRejectedValueOnce(mockError);
       
       const mockRequest = {} as NextRequest;

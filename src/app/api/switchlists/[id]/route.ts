@@ -190,6 +190,19 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await mongoService.connect();
     const collection = mongoService.getSwitchlistsCollection();
     
+    // Check if the switchlist exists first
+    const switchlist = await collection.findOne({ _id: id });
+    
+    if (!switchlist) {
+      return new Response(
+        JSON.stringify({ error: 'Switchlist not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
     const result = await collection.deleteOne({ _id: id });
     
     if (result.deletedCount === 0) {
@@ -203,7 +216,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ message: 'Switchlist deleted successfully' }),
       { 
         status: 200,
         headers: { 'Content-Type': 'application/json' }
