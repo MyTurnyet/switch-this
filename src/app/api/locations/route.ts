@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { LocationType } from '@/app/shared/types/models';
@@ -8,16 +7,19 @@ import { LocationType } from '@/app/shared/types/models';
 const mongoService: IMongoDbService = new MongoDbService();
 
 // Helper to create a response with CORS headers
-function createResponseWithCors(body: unknown, status = 200) {
-  return NextResponse.json(body, {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+function createResponse(body: unknown, status = 200) {
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+      }
     }
-  });
+  );
 }
 
 export async function GET() {
@@ -40,10 +42,10 @@ export async function GET() {
       return location;
     });
     
-    return createResponseWithCors(enhancedLocations);
+    return createResponse(enhancedLocations);
   } catch (error) {
     console.error('Error fetching locations:', error);
-    return createResponseWithCors(
+    return createResponse(
       { error: 'Failed to fetch locations' },
       500
     );
@@ -58,15 +60,15 @@ export async function POST(request: Request) {
     
     // Validate required fields
     if (!data.stationName) {
-      return createResponseWithCors({ error: 'Station name is required' }, 400);
+      return createResponse({ error: 'Station name is required' }, 400);
     }
     
     if (!data.block) {
-      return createResponseWithCors({ error: 'Block is required' }, 400);
+      return createResponse({ error: 'Block is required' }, 400);
     }
     
     if (!Object.values(LocationType).includes(data.locationType)) {
-      return createResponseWithCors({ error: 'Valid location type is required' }, 400);
+      return createResponse({ error: 'Valid location type is required' }, 400);
     }
     
     // Set default ownerId if missing
@@ -87,10 +89,10 @@ export async function POST(request: Request) {
     // Fetch the newly created location for the response
     const insertedLocation = await collection.findOne({ _id: result.insertedId });
     
-    return createResponseWithCors(insertedLocation);
+    return createResponse(insertedLocation);
   } catch (error) {
     console.error('Error creating location:', error);
-    return createResponseWithCors(
+    return createResponse(
       { error: error instanceof Error ? error.message : 'Failed to create location' },
       500
     );
@@ -100,8 +102,8 @@ export async function POST(request: Request) {
 }
 
 // Add OPTIONS method for preflight requests
-export async function OPTIONS() {
-  return new NextResponse(null, {
+export function OPTIONS() {
+  return new Response(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',

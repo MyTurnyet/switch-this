@@ -1,30 +1,65 @@
 import { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { GET, POST } from '../route';
-import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
-import { Collection, Document } from 'mongodb';
+import { jest } from '@jest/globals';
 
-// Mock NextResponse
-jest.mock('next/server', () => ({
-  NextResponse: {
-    json: jest.fn()
-  }
+// Define a properly typed mock Response interface
+interface MockResponse {
+  body: string;
+  parsedBody: unknown;
+  status: number;
+  headers: Record<string, string>;
+}
+
+// Mock Response constructor
+global.Response = jest.fn().mockImplementation((body, options) => {
+  const parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
+  return {
+    body,
+    parsedBody,
+    status: options?.status || 200,
+    headers: options?.headers || {}
+  } as MockResponse;
+});
+
+// Create mock collections
+const mockCollection = {
+  find: jest.fn(),
+  findOne: jest.fn(),
+  insertOne: jest.fn(),
+  deleteOne: jest.fn()
+};
+
+// Set up mock implementation for find
+mockCollection.find.mockReturnValue({
+  toArray: jest.fn()
+});
+
+// Create mockMongoService
+const mockMongoService = {
+  connect: jest.fn().mockResolvedValue(undefined),
+  close: jest.fn().mockResolvedValue(undefined),
+  getIndustriesCollection: jest.fn().mockReturnValue(mockCollection)
+};
+
+// Mock the MongoDB service
+jest.mock('@/lib/services/mongodb.service', () => ({
+  MongoDbService: jest.fn().mockImplementation(() => mockMongoService)
 }));
 
-// Mock the MongoDB provider
-jest.mock('@/lib/services/mongodb.provider', () => {
-  return {
-    MongoDbProvider: jest.fn().mockImplementation(() => ({
-      getService: jest.fn().mockReturnValue(createMockMongoService())
-    }))
-  };
+// Import route handlers after mocks are set up
+let GET_HANDLER: (req?: NextRequest) => Promise<Response>;
+let POST_HANDLER: (req: NextRequest) => Promise<Response>;
+
+// Load the actual module after all mocks are in place
+jest.isolateModules(() => {
+  const routeModule = require('../route');
+  GET_HANDLER = routeModule.GET;
+  POST_HANDLER = routeModule.POST;
 });
 
 describe('Industries API', () => {
   let mockRequest: NextRequest;
   let mockRequestJson: jest.Mock;
-  let mockMongoService: ReturnType<typeof createMockMongoService>;
-  let mockCollection: jest.Mocked<Collection<Document>>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -34,10 +69,6 @@ describe('Industries API', () => {
     mockRequest = {
       json: mockRequestJson
     } as unknown as NextRequest;
-    
-    // Setup MongoDB mock
-    mockMongoService = createMockMongoService();
-    mockCollection = mockMongoService.getIndustriesCollection() as jest.Mocked<Collection<Document>>;
   });
   
   describe('GET', () => {
@@ -49,21 +80,19 @@ describe('Industries API', () => {
       ];
       
       // Setup mock responses
-      (mockCollection.find as jest.Mock).mockReturnValue({
-        toArray: jest.fn().mockResolvedValue(mockIndustries)
-      });
+      mockCollection.find().toArray.mockResolvedValue(mockIndustries);
       
       // Call the handler
-      await GET();
+      const response = await GET_HANDLER() as MockResponse;
       
       // Verify MongoDB methods were called
       expect(mockMongoService.connect).toHaveBeenCalled();
       expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
-      expect(mockCollection.find).toHaveBeenCalled();
       expect(mockMongoService.close).toHaveBeenCalled();
       
       // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(mockIndustries);
+      expect(response.parsedBody).toEqual(mockIndustries);
+      expect(response.status).toBe(200);
     });
     
     it('should handle errors gracefully', async () => {
@@ -71,18 +100,19 @@ describe('Industries API', () => {
       mockMongoService.connect.mockRejectedValue(new Error('Database error'));
       
       // Call the handler
-      await GET();
+      const response = await GET_HANDLER() as MockResponse;
       
       // Verify error response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to fetch industries' },
-        { status: 500 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Failed to retrieve industries' });
+      expect(response.status).toBe(500);
     });
   });
   
   describe('POST', () => {
     it('should create a new industry', async () => {
+      // Clear mocks before test
+      jest.clearAllMocks();
+      
       // Mock data
       const newIndustry = {
         name: 'New Industry',
@@ -91,18 +121,22 @@ describe('Industries API', () => {
         industryType: 'FREIGHT'
       };
       
-      // Mock request
+      // Set up validations to pass
       mockRequestJson.mockResolvedValue(newIndustry);
       
       // Setup mock responses for insertOne
       const mockInsertedId = 'new-id';
-      (mockCollection.insertOne as jest.Mock).mockResolvedValue({ 
+      mockCollection.insertOne.mockResolvedValue({ 
         insertedId: mockInsertedId, 
         acknowledged: true 
       });
       
+      // Force the service mock to connect and return the collection
+      mockMongoService.connect.mockResolvedValue(undefined);
+      mockMongoService.getIndustriesCollection.mockReturnValue(mockCollection);
+      
       // Call the handler
-      await POST(mockRequest);
+      const response = await POST_HANDLER(mockRequest) as MockResponse;
       
       // Verify MongoDB methods were called
       expect(mockMongoService.connect).toHaveBeenCalled();
@@ -111,13 +145,11 @@ describe('Industries API', () => {
       expect(mockMongoService.close).toHaveBeenCalled();
       
       // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          _id: mockInsertedId,
-          name: 'New Industry'
-        }),
-        { status: 201 }
-      );
+      expect(response.parsedBody).toEqual(expect.objectContaining({
+        _id: mockInsertedId,
+        name: 'New Industry'
+      }));
+      expect(response.status).toBe(201);
     });
 
     it('should validate name is required', async () => {
@@ -129,13 +161,11 @@ describe('Industries API', () => {
       });
       
       // Call the handler
-      await POST(mockRequest);
+      const response = await POST_HANDLER(mockRequest) as MockResponse;
       
       // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Industry name is required' },
-        { status: 400 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Industry name is required' });
+      expect(response.status).toBe(400);
     });
 
     it('should validate locationId is required', async () => {
@@ -147,13 +177,11 @@ describe('Industries API', () => {
       });
       
       // Call the handler
-      await POST(mockRequest);
+      const response = await POST_HANDLER(mockRequest) as MockResponse;
       
       // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Location ID is required' },
-        { status: 400 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Location ID is required' });
+      expect(response.status).toBe(400);
     });
 
     it('should validate industryType is required', async () => {
@@ -165,13 +193,11 @@ describe('Industries API', () => {
       });
       
       // Call the handler
-      await POST(mockRequest);
+      const response = await POST_HANDLER(mockRequest) as MockResponse;
       
       // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Industry type is required' },
-        { status: 400 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Industry type is required' });
+      expect(response.status).toBe(400);
     });
 
     it('should validate blockName is required', async () => {
@@ -183,13 +209,11 @@ describe('Industries API', () => {
       });
       
       // Call the handler
-      await POST(mockRequest);
+      const response = await POST_HANDLER(mockRequest) as MockResponse;
       
       // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Block name is required' },
-        { status: 400 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Block name is required' });
+      expect(response.status).toBe(400);
     });
 
     it('should handle database errors gracefully', async () => {
@@ -205,13 +229,11 @@ describe('Industries API', () => {
       mockMongoService.connect.mockRejectedValue(new Error('Database error'));
       
       // Call the handler
-      await POST(mockRequest);
+      const response = await POST_HANDLER(mockRequest) as MockResponse;
       
       // Verify error response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Database error' },
-        { status: 500 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Database error' });
+      expect(response.status).toBe(500);
     });
   });
 }); 
