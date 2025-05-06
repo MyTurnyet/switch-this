@@ -121,9 +121,9 @@ describe('useLocationQueries', () => {
       const mockedUseServices = useServices as jest.Mock;
       mockedUseServices.mockReturnValue({
         locationService: {
-          getAll: jest.fn(),
+          getAll: jest.fn().mockResolvedValue([mockLocation]),
           getAllLocations: jest.fn(),
-          getById: jest.fn().mockResolvedValue(mockLocation),
+          getById: jest.fn(),
           create: jest.fn(),
           update: jest.fn(),
           delete: jest.fn(),

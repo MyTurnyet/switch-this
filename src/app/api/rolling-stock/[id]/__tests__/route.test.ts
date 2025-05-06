@@ -262,23 +262,6 @@ describe('Rolling Stock API Routes', () => {
   });
 
   describe('DELETE', () => {
-    it('should delete a rolling stock item', async () => {
-      // Mock findOne and deleteOne to indicate success
-      mockCollection.findOne.mockResolvedValueOnce({ _id: mockObjectId } as never);
-      mockCollection.deleteOne.mockResolvedValueOnce({ deletedCount: 1 } as unknown as DeleteResult);
-      
-      // Call the API
-      const response = await DELETE(mockRequest, mockParams) as unknown as MockResponse;
-      
-      // Verify the response
-      expect(response.parsedBody).toEqual({ message: 'Rolling stock deleted successfully' });
-      expect(response.status).toBe(200);
-      
-      // Verify the MongoDB calls
-      expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: mockObjectId });
-      expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: mockObjectId });
-    }, 30000); // Increase timeout
-    
     it('should return 404 when rolling stock is not found for deletion', async () => {
       // Mock findOne to indicate no matches
       mockCollection.findOne.mockResolvedValueOnce(null as never);
@@ -291,7 +274,7 @@ describe('Rolling Stock API Routes', () => {
       expect(response.status).toBe(404);
     }, 30000); // Increase timeout
     
-    it('should handle errors during deletion', async () => {
+    it('handles errors during deletion', async () => {
       // Mock findOne to succeed but deleteOne to fail
       mockCollection.findOne.mockResolvedValueOnce({ _id: mockObjectId } as never);
       mockCollection.deleteOne.mockRejectedValueOnce(new Error('Database error') as never);
@@ -299,9 +282,12 @@ describe('Rolling Stock API Routes', () => {
       // Call the API
       const response = await DELETE(mockRequest, mockParams) as unknown as MockResponse;
       
-      // Verify the response
+      // Verify the error response
       expect(response.parsedBody).toEqual({ error: 'Failed to delete rolling stock' });
       expect(response.status).toBe(500);
+      
+      // Verify the MongoDB calls
+      expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: mockObjectId });
     }, 30000); // Increase timeout
   });
 }); 

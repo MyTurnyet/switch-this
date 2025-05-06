@@ -28,7 +28,8 @@ export const useLocationQueries = () => {
     return useQuery<Location, Error>({
       queryKey: QUERY_KEYS.LOCATION(id),
       queryFn: async () => {
-        const locations = await locationService.getAllLocations();
+        if (!id) throw new Error('Location ID is required');
+        const locations = await locationService.getAll();
         const location = locations.find(loc => loc._id === id);
         if (!location) {
           throw new Error(`Location with id ${id} not found`);
