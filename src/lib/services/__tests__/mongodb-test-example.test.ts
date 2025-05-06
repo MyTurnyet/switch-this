@@ -1,16 +1,49 @@
-import { MongoDbProvider } from '../mongodb.provider';
-import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
+import { FakeMongoService } from '../__mocks__/FakeMongoService';
 import { ObjectId } from 'mongodb';
 
 describe('MongoDB Testing Example', () => {
-  it('demonstrates how to mock the MongoDB service', async () => {
-    // Create a mock MongoDB service
-    const mockMongoService = createMockMongoService();
+  it('demonstrates how to use the FakeMongoService', async () => {
+    // Create a FakeMongoService instance
+    const fakeMongoService = new FakeMongoService();
     
-    // Create a provider with the mock service
-    const provider = new MongoDbProvider(mockMongoService);
+    // Spy on connect method
+    jest.spyOn(fakeMongoService, 'connect');
     
-    // Set up the mock to return specific data
+    // Set up the mock data
+    const mockLocation = {
+      _id: new ObjectId('507f1f77bcf86cd799439011'),
+      stationName: 'Test Station',
+      locationType: 'ON_LAYOUT'
+    };
+    
+    // Get the mock collection and configure its behavior - connect first
+    await fakeMongoService.connect();
+    const locationsCollection = fakeMongoService.getLocationsCollection();
+    (locationsCollection.findOne as jest.Mock).mockResolvedValue(mockLocation);
+    
+    // Perform the operation
+    const filter = { _id: new ObjectId('507f1f77bcf86cd799439011') };
+    const location = await locationsCollection.findOne(filter);
+    
+    // Assertions
+    expect(fakeMongoService.connect).toHaveBeenCalled();
+    expect(locationsCollection.findOne).toHaveBeenCalledWith(filter);
+    
+    // Verify returned data
+    expect(location).toEqual(expect.objectContaining({
+      stationName: 'Test Station',
+      locationType: 'ON_LAYOUT'
+    }));
+  });
+  
+  it('demonstrates using the FakeMongoService helper methods', async () => {
+    // Create a FakeMongoService instance
+    const fakeMongoService = new FakeMongoService();
+    
+    // Connect first to ensure we can get collections
+    await fakeMongoService.connect();
+    
+    // Set up the mock data
     const mockLocation = {
       _id: new ObjectId('507f1f77bcf86cd799439011'),
       stationName: 'Test Station',
@@ -18,29 +51,23 @@ describe('MongoDB Testing Example', () => {
     };
     
     // Get the mock collection and configure its behavior
-    const mockCollection = mockMongoService.getLocationsCollection();
-    // Use jest.fn() directly to set the mock implementation
-    (mockCollection.findOne as jest.Mock).mockResolvedValue(mockLocation);
-    
-    // Use the provider in the code being tested
-    const service = provider.getService();
-    await service.connect();
+    const locationsCollection = fakeMongoService.getLocationsCollection();
+    (locationsCollection.findOne as jest.Mock).mockResolvedValue(mockLocation);
     
     // Perform the operation
-    const locationsCollection = service.getLocationsCollection();
-    // Use a proper MongoDB filter object instead of a string
     const filter = { _id: new ObjectId('507f1f77bcf86cd799439011') };
     const location = await locationsCollection.findOne(filter);
     
     // Assertions
-    expect(service.connect).toHaveBeenCalled();
-    expect(service.getLocationsCollection).toHaveBeenCalled();
-    expect(mockCollection.findOne).toHaveBeenCalled();
+    expect(locationsCollection.findOne).toHaveBeenCalledWith(filter);
     
     // Verify returned data
     expect(location).toEqual(expect.objectContaining({
       stationName: 'Test Station',
       locationType: 'ON_LAYOUT'
     }));
+    
+    // Clean up when done
+    await fakeMongoService.close();
   });
 }); 

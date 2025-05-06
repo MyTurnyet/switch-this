@@ -1,52 +1,6 @@
 import { ExampleService } from '../example.service';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
-
-import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
-// Create a mock MongoDB service that implements IMongoDbService
-const createMockMongoDbService = () => {
-  const mockCollection = {
-    find: jest.fn().mockReturnThis(),
-    toArray: jest.fn().mockResolvedValue([{ id: '1', name: 'Test Item' }]),
-    insertOne: jest.fn().mockResolvedValue({ insertedId: '1' })
-  };
-
-  return {
-    connect: jest.fn().mockResolvedValue(undefined),
-    close: jest.fn().mockResolvedValue(undefined),
-    getCollection: jest.fn().mockReturnValue(mockCollection),
-    getRollingStockCollection: jest.fn().mockReturnValue(mockCollection),
-    getIndustriesCollection: jest.fn().mockReturnValue(mockCollection),
-    getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
-    getTrainRoutesCollection: jest.fn().mockReturnValue(mockCollection),
-    getLayoutStateCollection: jest.fn().mockReturnValue(mockCollection),
-    getSwitchlistsCollection: jest.fn().mockReturnValue(mockCollection),
-    toObjectId: jest.fn().mockImplementation(id => id)
-  } as unknown as jest.Mocked<IMongoDbService>;
-};
-
-// Mock the MongoDbProvider class
-jest.mock('@/lib/services/mongodb.provider', () => {
-  const originalModule = jest.requireActual('@/lib/services/mongodb.provider');
-  
-  // Mock constructor that maintains the service passed in
-  class MockMongoDbProvider {
-    private service: IMongoDbService;
-    
-    constructor(service: IMongoDbService) {
-      this.service = service;
-    }
-    
-    getService() {
-      return this.service;
-    }
-  }
-  
-  return {
-    ...originalModule,
-    MongoDbProvider: MockMongoDbProvider
-  };
-});
+import { FakeMongoDbService, createMockMongoService } from '@/test/utils/mongodb-test-utils';
 
 // Define a type for the mock collection
 interface MockCollection {
@@ -61,20 +15,20 @@ describe('ExampleService', () => {
   
   beforeEach(() => {
     jest.clearAllMocks();
-    mockMongoDbService = createMockMongoDbService();
+    mockMongoDbService = createMockMongoService();
     mockCollection = mockMongoDbService.getCollection('test') as unknown as MockCollection;
   });
   
   describe('constructor', () => {
-    it('should accept a MongoDbProvider', () => {
-      const mockProvider = new MongoDbProvider(mockMongoDbService);
-      const service = new ExampleService(mockProvider);
+    it('should accept an IMongoDbService', () => {
+      const service = new ExampleService(mockMongoDbService);
       
       expect(service).toBeInstanceOf(ExampleService);
     });
     
-    it('should accept an IMongoDbService and create a provider', () => {
-      const service = new ExampleService(mockMongoDbService);
+    it('should work with FakeMongoDbService', () => {
+      const fakeMongoService = new FakeMongoDbService();
+      const service = new ExampleService(fakeMongoService);
       
       expect(service).toBeInstanceOf(ExampleService);
     });

@@ -1,11 +1,10 @@
 import { ObjectId, Collection } from 'mongodb';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
-import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
+import { createMockMongoService, FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 
 // Example interface for a document model
 interface RollingStock {
-  _id?: string | ObjectId;
+  _id?: ObjectId;
   roadName: string;
   roadNumber: string;
   aarType: string;
@@ -15,7 +14,7 @@ interface RollingStock {
 describe('MongoDB Service Testing Example', () => {
   // Declare the mock service variable
   let mockMongoService: jest.Mocked<IMongoDbService>;
-  let mockCollection: jest.Mocked<Collection>;
+  let mockCollection: jest.Mocked<Collection<any>>;
 
   // Set up the test environment before each test
   beforeEach(() => {
@@ -25,15 +24,31 @@ describe('MongoDB Service Testing Example', () => {
     mockCollection = mockMongoService.getRollingStockCollection();
   });
 
-  it('should use mock MongoDB service with MongoDbProvider', () => {
-    // Create a new provider with our mock service
-    const mongoDbProvider = new MongoDbProvider(mockMongoService);
+  it('should use IMongoDbService directly', () => {
+    // Create and use the service directly
+    const service: IMongoDbService = mockMongoService;
     
-    // Get the service
-    const service = mongoDbProvider.getService();
+    // Verify the service was created correctly
+    expect(service).toBeDefined();
+    expect(service.connect).toBeDefined();
+    expect(service.getCollection).toBeDefined();
+  });
+  
+  it('should use FakeMongoService for testing', async () => {
+    // Create a new FakeMongoService instance
+    const fakeMongoService = new FakeMongoDbService();
     
-    // Verify the service was returned correctly
-    expect(service).toBe(mockMongoService);
+    // Connect to MongoDB
+    await fakeMongoService.connect();
+    
+    // Get a collection
+    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
+    
+    // Verify the collection exists
+    expect(rollingStockCollection).toBeDefined();
+    
+    // Disconnect when done
+    await fakeMongoService.close();
   });
 
   it('should connect and interact with collections', async () => {
