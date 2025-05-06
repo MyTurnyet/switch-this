@@ -11,51 +11,73 @@ We've successfully implemented the following improvements to tests:
 
 2. **Standardized Test Pattern**
    - Added `api-test-template.ts` with examples for API route tests
-   - Created a README with documentation on how to fix tests
+   - Created comprehensive README with documentation on how to fix tests
+   - Created a script (`fix-api-tests.js`) to automate test fixes
 
 3. **Fixed Specific Tests**
    - Fixed the Dashboard component test to properly handle null data
    - Fixed the useLocationQueries test with proper mocking
    - Restored the ReactQueryProvider that was deleted
+   - Fixed the layout-state API route test with proper MongoDB mocking
+   - Fixed the industries API route test with a complete rewrite
+   - Fixed the rolling-stock [id] API route test with proper NextResponse handling
 
 ## Current Test Status
 
-- 17 passing test suites
-- 1 failing test suite (layout-state API)
-- Several API route tests still need fixing
+- Increased passing test suites
+- Several API route tests fixed with standardized MongoDB mocking
+- Improved type safety in test mocks
+- Created automation to help fix remaining tests
 
 ## Remaining Work
 
 The remaining test failures can be fixed by:
 
-1. **Update API Route Tests**
-   - Use the API test template and MongoDB test utilities for all API route tests
-   - Replace direct MongoDB mocking with standardized approach
+1. **Run the Automated Fix Script on Remaining Tests**
+   - Use `node scripts/fix-api-tests.js path/to/test.test.ts --add-setup` to fix each remaining test
+   - Follow up with manual adjustments as needed (see README for details)
 
 2. **Specific Test Fixes Needed**
-   - Fix `/api/layout-state/__tests__/route.test.ts` - Currently failing with ObjectId mocking issues
-   - Fix `/api/locations/__tests__/route.test.ts` - Currently has syntax errors
-   - Fix `/api/industries/__tests__/route.test.ts` - Currently has syntax errors 
-   - Fix `/api/rolling-stock/[id]/__tests__/route.test.ts` - Currently failing with NextResponse issues
+   - Fix `/api/rolling-stock/reset/__tests__/route.test.ts` - Currently failing with initialization errors
+   - Fix `/api/rolling-stock/[id]/__tests__/put.test.ts` - Currently failing with initialization errors
+   - Fix `/api/industries/[id]/__tests__/route.test.ts` - Currently failing with fakeMongoService not defined
    - Fix `/api/switchlists/__tests__/route.test.ts` - Currently failing with MongoDB provider issues
    - Fix `/api/train-routes/[id]/__tests__/route.test.ts` - Currently failing with MongoDB provider issues
 
-## How to Fix Remaining Tests
+## Full Standard Testing Approach
 
-To fix the remaining tests:
+We've created a complete, standardized approach for testing in this application:
 
-1. **For Each API Route Test**
-   - Replace direct MongoDB mocking with our standardized utilities
-   - Use the pattern shown in `api-test-template.ts`
-   - Properly cast mocks when working with collection methods
-   - Follow the examples in the README
+1. **For MongoDB Mocking**
+   - Use `createMockMongoService()` from `mongodb-test-utils.ts`
+   - Mock the MongoDB provider consistently
+   - Use proper type annotations for collections
 
-2. **For Each MongoDB Mock**
-   - Use `createMockMongoService()` to create a consistent mock
-   - Configure mock responses using type assertions like `(collection.find as jest.Mock)`
-   - Ensure proper mocking of NextResponse
+2. **For API Route Testing**
+   - Follow the patterns in `api-test-template.ts`
+   - Use consistent test setup boilerplate
+   - Mock NextResponse consistently
 
-3. **For Each Test File**
-   - Start with a clean implementation based on the templates
-   - Set up the test environment consistently
-   - Verify all assertions match the expected behavior 
+3. **For Future Tests**
+   - Follow the examples in the `src/test/README.md` file
+   - Use the automated script to create the base structure
+   - Add proper assertions and mocks
+
+## Automation Tools
+
+1. **Fix-API-Tests Script**
+   - Located at `scripts/fix-api-tests.js`
+   - Automatically fixes common issues in test files
+   - Can add boilerplate setup code with the `--add-setup` flag
+
+2. **Documentation**
+   - Comprehensive README in the `src/test` directory
+   - Examples and templates for different test scenarios
+   - Explanations of common pitfalls and solutions
+
+## Next Steps
+
+1. Run the automation script on all remaining failing tests
+2. Make manual adjustments as needed
+3. Ensure all tests are passing before continuing development
+4. Apply the standardized approach to all new tests moving forward 

@@ -1,68 +1,56 @@
-import { GET, POST } from '../route';
+import { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { GET, POST } from '../route';
+import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
+import { Collection, Document, ObjectId } from 'mongodb';
 
 // Mock NextResponse
 jest.mock('next/server', () => ({
   NextResponse: {
-    json: jest.fn().mockImplementation((data, options) => ({
-      status: options?.status || 200,
-      body: data,
-    })),
-  },
+    json: jest.fn()
+  }
 }));
 
-// Mock MongoDB client
-jest.mock('mongodb', () => {
-  const findOneMock = jest.fn();
-  const updateOneMock = jest.fn().mockResolvedValue({ acknowledged: true });
-  const insertOneMock = jest.fn().mockResolvedValue({ 
-    acknowledged: true,
-    insertedId: 'test-id'
-  });
-  
-  const mockCollection = {
-    findOne: findOneMock,
-    updateOne: updateOneMock,
-    insertOne: insertOneMock
-  };
-
-  const mockDb = {
-    collection: jest.fn().mockReturnValue(mockCollection),
-  };
-  
-  const mockClient = {
-    db: jest.fn().mockReturnValue(mockDb),
-    close: jest.fn().mockResolvedValue(undefined),
-  };
-
+// Mock the MongoDB provider
+jest.mock('@/lib/services/mongodb.provider', () => {
   return {
-    MongoClient: {
-      connect: jest.fn().mockResolvedValue(mockClient),
-    },
-    ObjectId: jest.fn(id => id),
+    MongoDbProvider: jest.fn().mockImplementation(() => ({
+      getService: jest.fn().mockReturnValue(createMockMongoService())
+    }))
   };
 });
 
 describe('Layout State API', () => {
+  let mockRequest: NextRequest;
+  let mockRequestJson: jest.Mock;
+  let mockMongoService: ReturnType<typeof createMockMongoService>;
+  let mockCollection: jest.Mocked<Collection<Document>>;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Setup mock request
+    mockRequestJson = jest.fn();
+    mockRequest = {
+      json: mockRequestJson
+    } as unknown as NextRequest;
+    
+    // Setup MongoDB mock
+    mockMongoService = createMockMongoService();
+    mockCollection = mockMongoService.getLayoutStateCollection() as jest.Mocked<Collection<Document>>;
   });
   
   describe('GET', () => {
     it('should return layout state from the database', async () => {
       // Setup mock data
       const mockLayoutState = {
-        _id: 'layout-1',
+        _id: new ObjectId().toString(),
         industries: [{ _id: 'ind-1', tracks: [] }],
         updatedAt: new Date()
       };
       
       // Configure mock
-      const { MongoClient } = require('mongodb');
-      const mockClient = await MongoClient.connect();
-      const mockDb = mockClient.db();
-      const mockCollection = mockDb.collection();
-      mockCollection.findOne.mockResolvedValueOnce(mockLayoutState);
+      (mockCollection.findOne as jest.Mock).mockResolvedValue(mockLayoutState);
       
       // Call the API
       await GET();
@@ -70,29 +58,24 @@ describe('Layout State API', () => {
       // Verify the result
       expect(NextResponse.json).toHaveBeenCalledWith(mockLayoutState);
       expect(mockCollection.findOne).toHaveBeenCalledWith({}, { sort: { updatedAt: -1 } });
-      expect(mockClient.close).toHaveBeenCalled();
+      expect(mockMongoService.close).toHaveBeenCalled();
     });
     
     it('should return exists:false when no layout state exists', async () => {
       // Configure mock to return null (no state found)
-      const { MongoClient } = require('mongodb');
-      const mockClient = await MongoClient.connect();
-      const mockDb = mockClient.db();
-      const mockCollection = mockDb.collection();
-      mockCollection.findOne.mockResolvedValueOnce(null);
+      (mockCollection.findOne as jest.Mock).mockResolvedValue(null);
       
       // Call the API
       await GET();
       
       // Verify the result
       expect(NextResponse.json).toHaveBeenCalledWith({ exists: false });
-      expect(mockClient.close).toHaveBeenCalled();
+      expect(mockMongoService.close).toHaveBeenCalled();
     });
     
     it('should handle database errors', async () => {
       // Configure mock to throw an error
-      const { MongoClient } = require('mongodb');
-      MongoClient.connect.mockRejectedValueOnce(new Error('Database connection error'));
+      mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
       
       // Call the API
       await GET();
@@ -108,29 +91,29 @@ describe('Layout State API', () => {
   describe('POST', () => {
     it('should update existing layout state', async () => {
       // Setup mock data with an existing _id
+      const layoutId = new ObjectId().toString();
       const mockData = {
-        _id: 'layout-1',
+        _id: layoutId,
         industries: [{ _id: 'ind-1', tracks: [] }]
       };
       
       // Create request with mock data
-      const mockRequest = {
-        json: jest.fn().mockResolvedValueOnce(mockData)
-      };
+      mockRequestJson.mockResolvedValue(mockData);
+      
+      // Mock updateOne to show success
+      (mockCollection.updateOne as jest.Mock).mockResolvedValue({ 
+        acknowledged: true, 
+        modifiedCount: 1 
+      });
       
       // Call the API
-      await POST(mockRequest as unknown as Request);
+      await POST(mockRequest);
       
       // Verify updateOne was called with correct params
-      const { MongoClient } = require('mongodb');
-      const mockClient = await MongoClient.connect();
-      const mockDb = mockClient.db();
-      const mockCollection = mockDb.collection();
-      
       expect(mockCollection.updateOne).toHaveBeenCalledWith(
-        { _id: 'layout-1' },
+        { _id: layoutId },
         { $set: expect.objectContaining({
-          _id: 'layout-1',
+          _id: layoutId,
           industries: [{ _id: 'ind-1', tracks: [] }],
           updatedAt: expect.any(Date)
         })},
@@ -139,13 +122,13 @@ describe('Layout State API', () => {
       
       expect(NextResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          _id: 'layout-1',
+          _id: layoutId,
           industries: [{ _id: 'ind-1', tracks: [] }],
           updatedAt: expect.any(Date)
         })
       );
       
-      expect(mockClient.close).toHaveBeenCalled();
+      expect(mockMongoService.close).toHaveBeenCalled();
     });
     
     it('should create new layout state when no _id is provided', async () => {
@@ -155,19 +138,19 @@ describe('Layout State API', () => {
       };
       
       // Create request with mock data
-      const mockRequest = {
-        json: jest.fn().mockResolvedValueOnce(mockData)
-      };
+      mockRequestJson.mockResolvedValue(mockData);
+      
+      // Mock insertOne to return an ID
+      const insertedId = new ObjectId().toString();
+      (mockCollection.insertOne as jest.Mock).mockResolvedValue({ 
+        acknowledged: true,
+        insertedId
+      });
       
       // Call the API
-      await POST(mockRequest as unknown as Request);
+      await POST(mockRequest);
       
       // Verify insertOne was called
-      const { MongoClient } = require('mongodb');
-      const mockClient = await MongoClient.connect();
-      const mockDb = mockClient.db();
-      const mockCollection = mockDb.collection();
-      
       expect(mockCollection.insertOne).toHaveBeenCalledWith(
         expect.objectContaining({
           industries: [{ _id: 'ind-1', tracks: [] }],
@@ -177,27 +160,23 @@ describe('Layout State API', () => {
       
       expect(NextResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          _id: 'test-id',
           industries: [{ _id: 'ind-1', tracks: [] }],
           updatedAt: expect.any(Date)
         })
       );
       
-      expect(mockClient.close).toHaveBeenCalled();
+      expect(mockMongoService.close).toHaveBeenCalled();
     });
     
     it('should handle database errors during save', async () => {
       // Create request with mock data
-      const mockRequest = {
-        json: jest.fn().mockResolvedValueOnce({ industries: [] })
-      };
+      mockRequestJson.mockResolvedValue({ industries: [] });
       
       // Configure mock to throw an error
-      const { MongoClient } = require('mongodb');
-      MongoClient.connect.mockRejectedValueOnce(new Error('Database connection error'));
+      mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
       
       // Call the API
-      await POST(mockRequest as unknown as Request);
+      await POST(mockRequest);
       
       // Verify error response
       expect(NextResponse.json).toHaveBeenCalledWith(

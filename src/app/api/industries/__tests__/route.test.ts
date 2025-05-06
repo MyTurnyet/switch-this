@@ -1,45 +1,119 @@
+import { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { GET, POST } from '../route';
-import { MongoDbService } from '@/lib/services/mongodb.service';
-
-// Using FakeMongoDbService from test utils instead of custom mocks
-
-// Now mock the MongoDB provider
-// MongoDB provider mocking is now handled by createMongoDbTestSetup()
-
-
-
-// Using FakeMongoDbService from test utils instead of custom mocks
-
-// Now mock the MongoDB provider
-// Mock removed and replaced with proper declaration
-
-
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
-import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
-
-import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
+import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
+import { Collection, Document } from 'mongodb';
 
 // Mock NextResponse
-// Using FakeMongoDbService from test utils instead of custom mocks
-
 jest.mock('next/server', () => ({
   NextResponse: {
     json: jest.fn()
   }
 }));
 
-// Mock MongoDbService provider
-// Mock removed and replaced with proper declaration
+// Mock the MongoDB provider
+jest.mock('@/lib/services/mongodb.provider', () => {
+  return {
+    MongoDbProvider: jest.fn().mockImplementation(() => ({
+      getService: jest.fn().mockReturnValue(createMockMongoService())
+    }))
+  };
+});
+
+describe('Industries API', () => {
+  let mockRequest: NextRequest;
+  let mockRequestJson: jest.Mock;
+  let mockMongoService: ReturnType<typeof createMockMongoService>;
+  let mockCollection: jest.Mocked<Collection<Document>>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Setup mock request
+    mockRequestJson = jest.fn();
+    mockRequest = {
+      json: mockRequestJson
+    } as unknown as NextRequest;
+    
+    // Setup MongoDB mock
+    mockMongoService = createMockMongoService();
+    mockCollection = mockMongoService.getIndustriesCollection() as jest.Mocked<Collection<Document>>;
+  });
+  
+  describe('GET', () => {
+    it('should return all industries', async () => {
+      // Mock industries data
+      const mockIndustries = [
+        { _id: '1', name: 'Industry 1', locationId: 'loc1', blockName: 'Block A', industryType: 'FREIGHT' },
+        { _id: '2', name: 'Industry 2', locationId: 'loc2', blockName: 'Block B', industryType: 'PASSENGER' }
+      ];
+      
+      // Setup mock responses
+      (mockCollection.find as jest.Mock).mockReturnValue({
+        toArray: jest.fn().mockResolvedValue(mockIndustries)
+      });
+      
+      // Call the handler
+      await GET();
+      
+      // Verify MongoDB methods were called
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
+      expect(mockCollection.find).toHaveBeenCalled();
+      expect(mockMongoService.close).toHaveBeenCalled();
+      
+      // Verify response
+      expect(NextResponse.json).toHaveBeenCalledWith(mockIndustries);
+    });
+    
+    it('should handle errors gracefully', async () => {
+      // Setup mock to throw an error
+      mockMongoService.connect.mockRejectedValue(new Error('Database error'));
+      
+      // Call the handler
+      await GET();
+      
+      // Verify error response
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Failed to fetch industries' },
+        { status: 500 }
+      );
+    });
+  });
+  
+  describe('POST', () => {
+    it('should create a new industry', async () => {
+      // Mock data
+      const newIndustry = {
+        name: 'New Industry',
+        locationId: 'loc1',
+        blockName: 'Block A',
+        industryType: 'FREIGHT'
+      };
+      
+      // Mock request
+      mockRequestJson.mockResolvedValue(newIndustry);
+      
+      // Setup mock responses for insertOne
+      const mockInsertedId = 'new-id';
+      (mockCollection.insertOne as jest.Mock).mockResolvedValue({ 
+        insertedId: mockInsertedId, 
+        acknowledged: true 
+      });
+      
+      // Call the handler
+      await POST(mockRequest);
+      
+      // Verify MongoDB methods were called
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
+      expect(mockCollection.insertOne).toHaveBeenCalledWith(expect.objectContaining(newIndustry));
+      expect(mockMongoService.close).toHaveBeenCalled();
       
       // Verify response
       expect(NextResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          _id: 'new-id',
+          _id: mockInsertedId,
           name: 'New Industry'
         }),
         { status: 201 }
@@ -48,16 +122,14 @@ jest.mock('next/server', () => ({
 
     it('should validate name is required', async () => {
       // Mock request with missing name
-      const mockRequest = {
-        json: jest.fn().mockResolvedValueOnce({
-          locationId: 'loc1',
-          blockName: 'Block A',
-          industryType: 'FREIGHT'
-        })
-      };
+      mockRequestJson.mockResolvedValue({
+        locationId: 'loc1',
+        blockName: 'Block A',
+        industryType: 'FREIGHT'
+      });
       
-      // Call the API
-      await POST(mockRequest as unknown as Request);
+      // Call the handler
+      await POST(mockRequest);
       
       // Verify response
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -68,16 +140,14 @@ jest.mock('next/server', () => ({
 
     it('should validate locationId is required', async () => {
       // Mock request with missing locationId
-      const mockRequest = {
-        json: jest.fn().mockResolvedValueOnce({
-          name: 'New Industry',
-          blockName: 'Block A',
-          industryType: 'FREIGHT'
-        })
-      };
+      mockRequestJson.mockResolvedValue({
+        name: 'New Industry',
+        blockName: 'Block A',
+        industryType: 'FREIGHT'
+      });
       
-      // Call the API
-      await POST(mockRequest as unknown as Request);
+      // Call the handler
+      await POST(mockRequest);
       
       // Verify response
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -88,16 +158,14 @@ jest.mock('next/server', () => ({
 
     it('should validate industryType is required', async () => {
       // Mock request with missing industryType
-      const mockRequest = {
-        json: jest.fn().mockResolvedValueOnce({
-          name: 'New Industry',
-          locationId: 'loc1',
-          blockName: 'Block A'
-        })
-      };
+      mockRequestJson.mockResolvedValue({
+        name: 'New Industry',
+        locationId: 'loc1',
+        blockName: 'Block A'
+      });
       
-      // Call the API
-      await POST(mockRequest as unknown as Request);
+      // Call the handler
+      await POST(mockRequest);
       
       // Verify response
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -108,16 +176,14 @@ jest.mock('next/server', () => ({
 
     it('should validate blockName is required', async () => {
       // Mock request with missing blockName
-      const mockRequest = {
-        json: jest.fn().mockResolvedValueOnce({
-          name: 'New Industry',
-          locationId: 'loc1',
-          industryType: 'FREIGHT'
-        })
-      };
+      mockRequestJson.mockResolvedValue({
+        name: 'New Industry',
+        locationId: 'loc1',
+        industryType: 'FREIGHT'
+      });
       
-      // Call the API
-      await POST(mockRequest as unknown as Request);
+      // Call the handler
+      await POST(mockRequest);
       
       // Verify response
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -128,25 +194,22 @@ jest.mock('next/server', () => ({
 
     it('should handle database errors gracefully', async () => {
       // Mock request
-      const mockRequest = {
-        json: jest.fn().mockResolvedValueOnce({
-          name: 'New Industry',
-          locationId: 'loc1',
-          blockName: 'Block A',
-          industryType: 'FREIGHT'
-        })
-      };
+      mockRequestJson.mockResolvedValue({
+        name: 'New Industry',
+        locationId: 'loc1',
+        blockName: 'Block A',
+        industryType: 'FREIGHT'
+      });
       
-      // Get the mock collection and override the insertOne method to reject
-      const mockCollection = fakeMongoService.getIndustriesCollection();
-      (mockCollection.insertOne as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('Insert error')));
+      // Setup mock to throw an error
+      mockMongoService.connect.mockRejectedValue(new Error('Database error'));
       
-      // Call the API
-      await POST(mockRequest as unknown as Request);
+      // Call the handler
+      await POST(mockRequest);
       
-      // Verify response
+      // Verify error response
       expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to create industry' },
+        { error: 'Database error' },
         { status: 500 }
       );
     });
