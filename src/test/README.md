@@ -10,241 +10,89 @@ The `mongodb-test-utils.ts` file provides standardized utilities for mocking Mon
 - `createMockMongoService()`: Creates a mock MongoDB service that implements the `IMongoDbService` interface
 - `FakeMongoDbService`: A class that implements the `IMongoDbService` interface with jest mocks
 
-## API Test Template
+## API Route Testing
 
-The `api-test-template.ts` file provides example patterns for testing API routes:
+### API Test Template
 
-- `setupNextResponseMock()`: Sets up mocks for NextResponse
-- `setupMongoDbProviderMock()`: Sets up mocks for the MongoDB provider
-- `exampleApiTestSetup()`: Creates a complete test setup for API routes
-- `exampleGetRouteTest()`: Shows how to test GET API routes
-- `examplePostRouteTest()`: Shows how to test POST API routes
+The `api-test-template.ts` file provides example patterns for testing API routes.
 
-## How to Fix Tests
+### API Route Test Utils
 
-1. **Use the Automated Script**
+The `api-route-test-utils.ts` file provides utility functions for testing Next.js API routes:
 
-   We've created a script to help replace old MongoDB mocking patterns:
+- `setupApiRouteTest()`: Sets up NextResponse and MongoDB mocks for API route testing
+- `createMockNextRequest()`: Creates a mock Next.js request object
+- `createMockRouteParams()`: Creates mock route parameters for routes with dynamic segments
 
-   ```bash
-   node scripts/fix-api-tests.js path/to/your/test.test.ts
-   ```
+## Common Problems and Solutions
 
-   Add the `--add-setup` flag to automatically add the test setup boilerplate:
+### NextResponse Mocking Issues
 
-   ```bash
-   node scripts/fix-api-tests.js path/to/your/test.test.ts --add-setup
-   ```
+A common issue in the tests is correctly mocking the NextResponse.json method. The proper approach is:
 
-2. **Standardized Import Pattern**
+1. Mock NextResponse.json **before** importing route handlers
+2. Use the mockJson function in assertions
 
-   ```typescript
-   import { NextRequest } from 'next/server';
-   import { NextResponse } from 'next/server';
-   import { GET, POST } from '../route';
-   import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
-   import { Collection, Document, ObjectId } from 'mongodb';
-   ```
-
-3. **Standardized Mocking Pattern**
-
-   ```typescript
-   // Mock NextResponse
-   jest.mock('next/server', () => ({
-     NextResponse: {
-       json: jest.fn()
-     }
-   }));
-
-   // Mock the MongoDB provider
-   jest.mock('@/lib/services/mongodb.provider', () => {
-     return {
-       MongoDbProvider: jest.fn().mockImplementation(() => ({
-         getService: jest.fn().mockReturnValue(createMockMongoService())
-       }))
-     };
-   });
-   ```
-
-4. **Standardized Test Setup**
-
-   ```typescript
-   let mockRequest: NextRequest;
-   let mockRequestJson: jest.Mock;
-   let mockMongoService: ReturnType<typeof createMockMongoService>;
-   let mockCollection: jest.Mocked<Collection<Document>>;
-
-   beforeEach(() => {
-     jest.clearAllMocks();
-     
-     // Setup mock request
-     mockRequestJson = jest.fn();
-     mockRequest = {
-       json: mockRequestJson
-     } as unknown as NextRequest;
-     
-     // Setup MongoDB mock
-     mockMongoService = createMockMongoService();
-     mockCollection = mockMongoService.getCollection('your-collection-name') as jest.Mocked<Collection<Document>>;
-     
-     // Or use the specific getter method:
-     // mockCollection = mockMongoService.getIndustriesCollection() as jest.Mocked<Collection<Document>>;
-   });
-   ```
-
-5. **Mocking Collection Methods**
-
-   ```typescript
-   // Setup mock responses
-   (mockCollection.find as jest.Mock).mockReturnValue({
-     toArray: jest.fn().mockResolvedValue(mockData)
-   });
-   
-   // Mock findOne
-   (mockCollection.findOne as jest.Mock).mockResolvedValue(mockItem);
-   
-   // Mock insertOne
-   (mockCollection.insertOne as jest.Mock).mockResolvedValue({ 
-     insertedId: 'new-id', 
-     acknowledged: true 
-   });
-   
-   // Mock updateOne
-   (mockCollection.updateOne as jest.Mock).mockResolvedValue({ 
-     matchedCount: 1,
-     modifiedCount: 1,
-     acknowledged: true 
-   });
-   
-   // Mock deleteOne
-   (mockCollection.deleteOne as jest.Mock).mockResolvedValue({ 
-     deletedCount: 1,
-     acknowledged: true 
-   });
-   ```
-
-6. **Handling API Responses**
-
-   ```typescript
-   // Call the API handler
-   await GET(mockRequest);
-   
-   // Verify response
-   expect(NextResponse.json).toHaveBeenCalledWith(
-     mockData,
-     expect.any(Object) // Optional status/headers
-   );
-   
-   // Verify with specific options
-   expect(NextResponse.json).toHaveBeenCalledWith(
-     { message: 'Success' },
-     { status: 201 }
-   );
-   ```
-
-7. **Testing Error Handling**
-
-   ```typescript
-   // Setup mock to throw an error
-   mockMongoService.connect.mockRejectedValue(new Error('Database error'));
-   
-   // Call the API handler
-   await GET(mockRequest);
-   
-   // Verify error response
-   expect(NextResponse.json).toHaveBeenCalledWith(
-     { error: 'Error message' },
-     { status: 500 }
-   );
-   ```
-
-## Common Pitfalls
-
-1. **Type Assertions**: Always use type assertions with the mock collections to satisfy the TypeScript compiler:
-   ```typescript
-   mockCollection = mockMongoService.getCollection('collection-name') as jest.Mocked<Collection<Document>>;
-   ```
-
-2. **Mock Method Chaining**: When mocking methods that return a chainable object (like `find()`), make sure to mock the entire chain:
-   ```typescript
-   (mockCollection.find as jest.Mock).mockReturnValue({
-     toArray: jest.fn().mockResolvedValue([/* data */])
-   });
-   ```
-
-3. **Verify MongoDB Service Methods**: Don't forget to verify all the MongoDB service methods:
-   ```typescript
-   expect(mockMongoService.connect).toHaveBeenCalled();
-   expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
-   expect(mockMongoService.close).toHaveBeenCalled();
-   ```
-
-4. **Mocking Request Body**: When testing POST/PUT endpoints, don't forget to mock the request body:
-   ```typescript
-   mockRequestJson.mockResolvedValue({ name: 'New Item' });
-   ```
-
-## Example Test
-
-Here's a complete example of a test for a GET API route:
-
+Example:
 ```typescript
-import { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { GET } from '../route';
-import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
-import { Collection, Document } from 'mongodb';
-
 // Mock NextResponse
+const mockJson = jest.fn();
 jest.mock('next/server', () => ({
   NextResponse: {
-    json: jest.fn()
+    json: mockJson
   }
 }));
 
-// Mock the MongoDB provider
-jest.mock('@/lib/services/mongodb.provider', () => {
-  return {
-    MongoDbProvider: jest.fn().mockImplementation(() => ({
-      getService: jest.fn().mockReturnValue(createMockMongoService())
-    }))
-  };
-});
+// Import route handlers after mocking
+import { GET, POST } from '../route';
 
-describe('API Route Test', () => {
-  let mockRequest: NextRequest;
-  let mockMongoService: ReturnType<typeof createMockMongoService>;
-  let mockCollection: jest.Mocked<Collection<Document>>;
+// In your test
+expect(mockJson).toHaveBeenCalledWith({ data: 'example' });
+```
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    
-    // Setup mock request
-    mockRequest = {} as NextRequest;
-    
-    // Setup MongoDB mock
-    mockMongoService = createMockMongoService();
-    mockCollection = mockMongoService.getCollection('test-collection') as jest.Mocked<Collection<Document>>;
-  });
+### MongoDB Mocking Issues
 
-  it('should return data successfully', async () => {
-    // Mock data
-    const mockData = [{ _id: '1', name: 'Test' }];
-    
-    // Setup mock response
-    (mockCollection.find as jest.Mock).mockReturnValue({
-      toArray: jest.fn().mockResolvedValue(mockData)
-    });
-    
-    // Call the API
-    await GET(mockRequest);
-    
-    // Verify MongoDB methods
-    expect(mockMongoService.connect).toHaveBeenCalled();
-    expect(mockMongoService.close).toHaveBeenCalled();
-    
-    // Verify response
-    expect(NextResponse.json).toHaveBeenCalledWith(mockData);
-  });
-});
-``` 
+When mocking MongoDB, use the following approach:
+
+1. Create a fake MongoDB service instance with `FakeMongoDbService`
+2. Mock the MongoDB provider to use your fake service
+3. Use jest.spyOn() to customize collection method responses
+
+Example:
+```typescript
+// Create a fake service
+const fakeMongoService = new FakeMongoDbService();
+
+// Mock the provider
+jest.mock('@/lib/services/mongodb.provider', () => ({
+  MongoDbProvider: jest.fn().mockImplementation(() => ({
+    getService: jest.fn().mockReturnValue(fakeMongoService)
+  }))
+}));
+
+// In your test
+const mockCollection = fakeMongoService.getCollection('collection-name');
+jest.spyOn(mockCollection, 'findOne').mockResolvedValue({ _id: '123', name: 'Example' });
+```
+
+## Automated Test Fixing
+
+For quickly fixing test files, use the `fix-api-tests.js` script:
+
+```bash
+# Fix an existing test file
+node scripts/fix-api-tests.js path/to/test/file.test.ts
+
+# Create a new test file with standard boilerplate
+node scripts/fix-api-tests.js path/to/test/file.test.ts --add-setup
+```
+
+The script will:
+1. Fix NextResponse mocking issues
+2. Ensure MongoDB mocking follows best practices
+3. Add standardized boilerplate code with the `--add-setup` flag
+4. Create a backup of your original file
+
+## Complete Testing Example
+
+See the file `TEST_FIX_SUMMARY.md` in the project root for a complete example of correctly testing an API route. 
