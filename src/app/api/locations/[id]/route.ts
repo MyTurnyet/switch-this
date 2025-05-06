@@ -1,54 +1,43 @@
-import { NextResponse } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection } from 'mongodb';
 import { LocationType } from '@/app/shared/types/models';
 
-// Create a MongoDB service that will be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+// Common headers
+const corsHeaders = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+};
 
 // Helper functions
 function createNotFoundResponse() {
-  return NextResponse.json(
-    { error: 'Location not found' },
+  return new Response(
+    JSON.stringify({ error: 'Location not found' }),
     { 
       status: 404,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
-      }
+      headers: corsHeaders
     }
   );
 }
 
 function createInvalidInputResponse(message: string) {
-  return NextResponse.json(
-    { error: message },
+  return new Response(
+    JSON.stringify({ error: message }),
     { 
       status: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
-      }
+      headers: corsHeaders
     }
   );
 }
 
 function createSuccessResponse() {
-  return NextResponse.json(
-    { success: true }, 
+  return new Response(
+    JSON.stringify({ success: true }), 
     { 
       status: 200, 
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
-      } 
+      headers: corsHeaders
     }
   );
 }
@@ -63,6 +52,8 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
     await mongoService.connect();
     const collection = mongoService.getLocationsCollection();
@@ -73,26 +64,20 @@ export async function GET(
       return createNotFoundResponse();
     }
     
-    return NextResponse.json(location, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+    return new Response(
+      JSON.stringify(location),
+      {
+        status: 200,
+        headers: corsHeaders
       }
-    });
+    );
   } catch (error) {
     console.error('Error fetching location:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch location' },
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch location' }),
       { 
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
-        }
+        headers: corsHeaders
       }
     );
   } finally {
@@ -105,6 +90,8 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
     const data = await request.json();
     
@@ -141,26 +128,20 @@ export async function PUT(
     
     const updatedLocation = await findLocationById(collection, params.id, mongoService);
     
-    return NextResponse.json(updatedLocation, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+    return new Response(
+      JSON.stringify(updatedLocation),
+      {
+        status: 200,
+        headers: corsHeaders
       }
-    });
+    );
   } catch (error) {
     console.error('Error updating location:', error);
-    return NextResponse.json(
-      { error: 'Failed to update location' },
+    return new Response(
+      JSON.stringify({ error: 'Failed to update location' }),
       { 
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
-        }
+        headers: corsHeaders
       }
     );
   } finally {
@@ -173,12 +154,17 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
     // Validate the id parameter
     if (!params.id || params.id.trim() === '') {
-      return NextResponse.json(
-        { error: 'Invalid location ID' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: 'Invalid location ID' }),
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       );
     }
 
@@ -193,9 +179,12 @@ export async function DELETE(
       locationId = mongoService.toObjectId(params.id);
     } catch (error) {
       console.error('Invalid ObjectId format:', error);
-      return NextResponse.json(
-        { error: 'Invalid location ID format' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: 'Invalid location ID format' }),
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       );
     }
     
@@ -209,19 +198,14 @@ export async function DELETE(
     const referencedIndustries = await industriesCollection.countDocuments({ locationId: params.id });
     
     if (referencedIndustries > 0) {
-      return NextResponse.json(
-        { 
+      return new Response(
+        JSON.stringify({ 
           error: 'Cannot delete location: it is being used by industries',
           referencedCount: referencedIndustries
-        },
+        }),
         { 
           status: 409, // Conflict
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
-          }
+          headers: corsHeaders
         }
       );
     }
@@ -237,16 +221,11 @@ export async function DELETE(
     return createSuccessResponse();
   } catch (error) {
     console.error('Error deleting location:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to delete location' },
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Failed to delete location' }),
       { 
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
-        }
+        headers: corsHeaders
       }
     );
   } finally {
@@ -268,29 +247,19 @@ export async function POST(
   }
   
   // Otherwise, return method not allowed
-  return NextResponse.json(
-    { error: 'Method not allowed' },
+  return new Response(
+    JSON.stringify({ error: 'Method not allowed' }),
     { 
       status: 405,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
-      }
+      headers: corsHeaders
     }
   );
 }
 
-// Add an OPTIONS method handler to handle preflight requests
+// Handle OPTIONS requests for CORS preflight
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With',
-      'Access-Control-Max-Age': '86400' // 24 hours
-    }
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders
   });
 } 

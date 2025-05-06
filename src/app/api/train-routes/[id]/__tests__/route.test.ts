@@ -160,8 +160,10 @@ describe('Train Route API Endpoints', () => {
       };
       
       const mockRequest = {
-        json: jest.fn().mockResolvedValue(trainRouteData as unknown)
+        json: jest.fn()
       } as unknown as NextRequest;
+      // Use direct type assertion for the mock
+      (mockRequest.json as jest.Mock).mockResolvedValue(trainRouteData);
       
       const mockUpdatedTrainRoute = {
         _id: '123456789012345678901234',
@@ -216,8 +218,10 @@ describe('Train Route API Endpoints', () => {
       };
       
       const mockRequest = {
-        json: jest.fn().mockResolvedValue(mockUpdateData as unknown)
+        json: jest.fn()
       } as unknown as NextRequest;
+      // Use direct type assertion for the mock
+      (mockRequest.json as jest.Mock).mockResolvedValue(mockUpdateData);
       
       const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
       // Mock matchedCount: 0 to indicate no document was found
@@ -243,9 +247,12 @@ describe('Train Route API Endpoints', () => {
     
     it('should handle errors', async () => {
       // Arrange
+      const mockError = new Error('Invalid JSON');
       const mockRequest = {
-        json: jest.fn().mockRejectedValue(new Error('Invalid JSON') as unknown)
+        json: jest.fn()
       } as unknown as NextRequest;
+      // Use direct type assertion for the mock
+      (mockRequest.json as jest.Mock).mockRejectedValue(mockError);
       
       // Act
       const response = await PUT(
@@ -324,6 +331,8 @@ describe('Train Route API Endpoints', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-    fakeMongoService.clearCallHistory();
+    if (fakeMongoService.clearCallHistory) {
+      fakeMongoService.clearCallHistory();
+    }
   });
 }); 

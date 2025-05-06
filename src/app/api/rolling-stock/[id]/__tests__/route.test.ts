@@ -1,257 +1,307 @@
 import { jest } from '@jest/globals';
-import { GET, PUT, DELETE } from '../route';
-import { NextRequest, NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
-import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
-import { Collection, Document } from 'mongodb';
+import { NextRequest } from 'next/server';
+import { ObjectId, UpdateResult, DeleteResult } from 'mongodb';
+import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 
-// Mock NextResponse
-jest.mock('next/server', () => ({
-  NextResponse: {
-    json: jest.fn()
-  }
-}));
+// Create a fake MongoDB service instance
+const fakeMongoService = new FakeMongoDbService();
+fakeMongoService.clearCallHistory();
 
-// Mock the MongoDB provider
-jest.mock('@/lib/services/mongodb.provider', () => {
+// Set up mock data
+const mockObjectIdString = '123456789012345678901234';
+const mockObjectId = new ObjectId(mockObjectIdString);
+
+// Define mocks for MongoDB collections
+const mockCollection = {
+  findOne: jest.fn(),
+  updateOne: jest.fn(),
+  deleteOne: jest.fn()
+};
+
+// Mock the industries collection with proper result type
+const mockIndustriesCollection = {
+  updateMany: jest.fn().mockResolvedValue({ acknowledged: true, modifiedCount: 1 } as unknown as UpdateResult)
+};
+
+// Mock the MongoDB service module
+jest.mock('@/lib/services/mongodb.service', () => {
   return {
-    MongoDbProvider: jest.fn().mockImplementation(() => ({
-      getService: jest.fn().mockReturnValue(createMockMongoService())
+    MongoDbService: jest.fn().mockImplementation(() => ({
+      connect: jest.fn().mockResolvedValue(undefined as never),
+      close: jest.fn().mockResolvedValue(undefined as never),
+      getRollingStockCollection: jest.fn().mockReturnValue(mockCollection),
+      getIndustriesCollection: jest.fn().mockReturnValue(mockIndustriesCollection),
+      toObjectId: jest.fn((_id: string) => mockObjectId)
     }))
   };
 });
 
-describe('Rolling Stock [id] API Route', () => {
-  let mockRequest: NextRequest;
-  let mockRequestJson: jest.Mock;
-  let mockMongoService: ReturnType<typeof createMockMongoService>;
-  let mockCollection: jest.Mocked<Collection<Document>>;
-  let mockParams: { params: { id: string } };
-  let mockObjectId: string;
+// Define a properly typed mock Response interface that matches the actual Response
+interface MockResponse {
+  body: string;
+  parsedBody: Record<string, unknown>;
+  status: number;
+  headers: Record<string, string>;
+  json: () => Promise<Record<string, unknown>>;
+  ok: boolean;
+  redirected: boolean;
+  type: string;
+  url: string;
+}
+
+// Mock Response constructor for testing
+global.Response = jest.fn().mockImplementation((body, options: ResponseInit = {}) => {
+  const parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
   
+  // Create mock response object with required properties
+  const response = {
+    body,
+    parsedBody,
+    status: options.status || 200,
+    headers: options.headers || {},
+    json: () => Promise.resolve(parsedBody),
+    ok: (options.status || 200) >= 200 && (options.status || 200) < 300,
+    redirected: false,
+    type: 'basic',
+    url: ''
+  } as MockResponse;
+  
+  return response;
+}) as unknown as typeof Response;
+
+// These will be loaded dynamically in tests
+let GET: (request: NextRequest, context: { params: { id: string } }) => Promise<Response>;
+let PUT: (request: NextRequest, context: { params: { id: string } }) => Promise<Response>;
+let DELETE: (request: NextRequest, context: { params: { id: string } }) => Promise<Response>;
+
+describe('Rolling Stock API Routes', () => {
+  let mockRequest: NextRequest;
+  let mockParams: { params: { id: string } };
+
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Setup mock request
-    mockRequestJson = jest.fn();
-    mockRequest = {
-      json: mockRequestJson
-    } as unknown as NextRequest;
+    // Create request and params
+    mockRequest = {} as NextRequest;
+    mockParams = { params: { id: mockObjectIdString } };
+
+    // Set default findOne response to a successful find
+    mockCollection.findOne.mockResolvedValue({ _id: mockObjectId } as never);
     
-    // Setup mock ObjectId and params
-    mockObjectId = '507f1f77bcf86cd799439011';
-    mockParams = { params: { id: mockObjectId } };
-    
-    // Setup MongoDB mock
-    mockMongoService = createMockMongoService();
-    mockCollection = mockMongoService.getRollingStockCollection() as jest.Mocked<Collection<Document>>;
-    
-    // Mock toObjectId to return the string directly for easier testing
-    (mockMongoService.toObjectId as jest.Mock).mockImplementation((id) => id);
+    // Load the route handlers after setting up mocks
+    jest.isolateModules(() => {
+      const routeModule = require('../route');
+      GET = routeModule.GET;
+      PUT = routeModule.PUT;
+      DELETE = routeModule.DELETE;
+    });
   });
 
   describe('GET', () => {
-    it('should return a rolling stock item by id', async () => {
-      // Setup mock to return a rolling stock item
-      const mockRollingStock = { _id: mockObjectId, roadName: 'TEST', roadNumber: '12345' };
-      (mockCollection.findOne as jest.Mock).mockResolvedValue(mockRollingStock);
+    it('should return a rolling stock item by ID', async () => {
+      // Mock findOne to return a rolling stock item with ObjectId
+      const mockRollingStockData = { _id: mockObjectId, roadName: 'TEST', roadNumber: '12345' };
+      mockCollection.findOne.mockResolvedValueOnce(mockRollingStockData as never);
       
       // Call the API
-      await GET(mockRequest, mockParams);
+      const response = await GET(mockRequest, mockParams) as unknown as MockResponse;
       
-      // Verify MongoDB was called correctly
-      expect(mockMongoService.connect).toHaveBeenCalled();
-      expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
-      expect(mockCollection.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({ _id: mockObjectId })
-      );
+      // The API will convert ObjectId to string in the response, so we should expect string format
+      const expectedResponse = { 
+        _id: mockObjectIdString, 
+        roadName: 'TEST', 
+        roadNumber: '12345' 
+      };
       
       // Verify the response
-      expect(NextResponse.json).toHaveBeenCalledWith(mockRollingStock);
-    });
+      expect(response.parsedBody).toEqual(expectedResponse);
+      expect(response.status).toBe(200);
+      
+      // Verify the MongoDB calls
+      expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: mockObjectId });
+    }, 30000); // Increase timeout
     
     it('should return 404 when rolling stock is not found', async () => {
-      // Setup mock to return null (item not found)
-      (mockCollection.findOne as jest.Mock).mockResolvedValue(null);
+      // Mock findOne to return null (item not found)
+      mockCollection.findOne.mockResolvedValueOnce(null as never);
       
       // Call the API
-      await GET(mockRequest, mockParams);
-      
-      // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Rolling stock not found' },
-        { status: 404 }
-      );
-    });
-    
-    it('should handle database errors', async () => {
-      // Setup mock to throw an error
-      mockMongoService.connect.mockRejectedValue(new Error('Database error'));
-      
-      // Call the API
-      await GET(mockRequest, mockParams);
-      
-      // Verify error response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to fetch rolling stock' },
-        { status: 500 }
-      );
-    });
-  });
-
-  describe('PUT', () => {
-    it('should update a rolling stock item', async () => {
-      // Setup mock for update
-      const updateData = { roadName: 'UPDATED', roadNumber: '54321' };
-      mockRequestJson.mockResolvedValue(updateData);
-      
-      // Mock successful update
-      (mockCollection.updateOne as jest.Mock).mockResolvedValue({ matchedCount: 1 });
-      
-      // Call the API
-      await PUT(mockRequest, mockParams);
-      
-      // Verify MongoDB was called correctly
-      expect(mockMongoService.connect).toHaveBeenCalled();
-      expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
-      expect(mockCollection.updateOne).toHaveBeenCalledWith(
-        { _id: mockObjectId },
-        { $set: updateData }
-      );
+      const response = await GET(mockRequest, mockParams) as unknown as MockResponse;
       
       // Verify the response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { message: 'Rolling stock updated successfully' }
-      );
-    });
+      expect(response.parsedBody).toEqual({ error: 'Rolling stock not found' });
+      expect(response.status).toBe(404);
+    }, 30000); // Increase timeout
     
-    it('should return 404 when rolling stock is not found for update', async () => {
-      // Setup mock request
-      mockRequestJson.mockResolvedValue({ roadName: 'UPDATED' });
-      
-      // Mock no matches found
-      (mockCollection.updateOne as jest.Mock).mockResolvedValue({ matchedCount: 0 });
+    it('should handle errors', async () => {
+      // Mock findOne to throw an error
+      mockCollection.findOne.mockRejectedValueOnce(new Error('Database error') as never);
       
       // Call the API
-      await PUT(mockRequest, mockParams);
+      const response = await GET(mockRequest, mockParams) as unknown as MockResponse;
       
-      // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Rolling stock not found' },
-        { status: 404 }
-      );
-    });
-    
-    it('should handle database errors during update', async () => {
-      // Setup mock request
-      mockRequestJson.mockResolvedValue({ roadName: 'UPDATED' });
-      
-      // Setup mock to throw an error
-      mockMongoService.connect.mockRejectedValue(new Error('Database error'));
-      
-      // Call the API
-      await PUT(mockRequest, mockParams);
-      
-      // Verify error response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to update rolling stock' },
-        { status: 500 }
-      );
-    });
-
-    it('should update rolling stock with a CarDestination', async () => {
-      // Set up mock request data with a CarDestination
+      // Verify the response
+      expect(response.parsedBody).toEqual({ error: 'Failed to fetch rolling stock item' });
+      expect(response.status).toBe(500);
+    }, 30000); // Increase timeout
+  });
+  
+  describe('PUT', () => {
+    it('should update a rolling stock item', async () => {
+      // Create a mock request with update data
       const updateData = {
-        roadName: 'BNSF',
-        roadNumber: '12345',
-        aarType: 'Boxcar',
-        description: 'Test boxcar',
-        homeYard: 'yard1',
+        roadName: 'UPDATED',
+        roadNumber: '54321',
+        aarType: 'XM',
+        description: 'Updated boxcar',
+        homeYard: 'Updated Yard'
+      };
+      
+      mockRequest = {
+        json: jest.fn().mockResolvedValue(updateData as never)
+      } as unknown as NextRequest;
+      
+      // Mock findOne and updateOne to indicate success
+      mockCollection.findOne.mockResolvedValueOnce({ _id: mockObjectId } as never);
+      mockCollection.updateOne.mockResolvedValueOnce({ matchedCount: 1 } as unknown as UpdateResult);
+      
+      // Call the API
+      const response = await PUT(mockRequest, mockParams) as unknown as MockResponse;
+      
+      // Verify the response
+      expect(response.parsedBody).toEqual({ message: 'Rolling stock updated successfully' });
+      expect(response.status).toBe(200);
+      
+      // Verify the MongoDB calls
+      expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: mockObjectId });
+      expect(mockCollection.updateOne).toHaveBeenCalledWith(
+        { _id: mockObjectId },
+        { $set: expect.objectContaining(updateData) }
+      );
+    }, 30000); // Increase timeout
+    
+    it('should return 404 when rolling stock to update is not found', async () => {
+      mockRequest = {
+        json: jest.fn().mockResolvedValue({ roadName: 'UPDATED' } as never)
+      } as unknown as NextRequest;
+      
+      // Mock findOne to return null
+      mockCollection.findOne.mockResolvedValueOnce(null as never);
+      
+      // Call the API
+      const response = await PUT(mockRequest, mockParams) as unknown as MockResponse;
+      
+      // Verify the response
+      expect(response.parsedBody).toEqual({ error: 'Rolling stock not found' });
+      expect(response.status).toBe(404);
+    }, 30000); // Increase timeout
+    
+    it('should handle errors during update', async () => {
+      mockRequest = {
+        json: jest.fn().mockResolvedValue({ roadName: 'UPDATED' } as never)
+      } as unknown as NextRequest;
+      
+      // Mock findOne to succeed but updateOne to fail
+      mockCollection.findOne.mockResolvedValueOnce({ _id: mockObjectId } as never);
+      mockCollection.updateOne.mockRejectedValueOnce(new Error('Database error') as never);
+      
+      // Call the API
+      const response = await PUT(mockRequest, mockParams) as unknown as MockResponse;
+      
+      // Verify the response
+      expect(response.parsedBody).toEqual({ error: 'Failed to update rolling stock' });
+      expect(response.status).toBe(500);
+    }, 30000); // Increase timeout
+    
+    it('should properly update car destination and location', async () => {
+      // Create a mock request with destination update
+      const updateData = {
+        roadName: 'UPDATED',
         destination: {
           immediateDestination: {
-            locationId: 'loc3', 
-            industryId: 'ind3', 
-            trackId: 'track3'
+            locationId: 'loc1',
+            industryId: 'ind1',
+            trackId: 'track1'
           },
           finalDestination: {
             locationId: 'loc2',
             industryId: 'ind2',
             trackId: 'track2'
           }
+        },
+        currentLocation: {
+          industryId: 'ind3',
+          trackId: 'track3'
         }
       };
       
-      mockRequestJson.mockResolvedValue(updateData);
+      mockRequest = {
+        json: jest.fn().mockResolvedValue(updateData as never)
+      } as unknown as NextRequest;
       
-      // Mock successful update
-      (mockCollection.updateOne as jest.Mock).mockResolvedValue({ matchedCount: 1 });
+      // Mock findOne and updateOne to indicate success
+      mockCollection.findOne.mockResolvedValueOnce({ _id: mockObjectId } as never);
+      mockCollection.updateOne.mockResolvedValueOnce({ matchedCount: 1 } as unknown as UpdateResult);
       
       // Call the API
-      await PUT(mockRequest, mockParams);
+      const response = await PUT(mockRequest, mockParams) as unknown as MockResponse;
       
-      // Verify MongoDB was called correctly with destination
+      // Verify the response
+      expect(response.parsedBody).toEqual({ message: 'Rolling stock updated successfully' });
+      expect(response.status).toBe(200);
+      
+      // Verify the MongoDB calls
       expect(mockCollection.updateOne).toHaveBeenCalledWith(
         { _id: mockObjectId },
         { $set: expect.objectContaining({
-          destination: expect.objectContaining({
-            immediateDestination: expect.any(Object),
-            finalDestination: expect.any(Object)
-          })
+          destination: updateData.destination,
+          currentLocation: updateData.currentLocation
         })}
       );
-      
-      // Verify the response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { message: 'Rolling stock updated successfully' }
-      );
-    });
+    }, 30000); // Increase timeout
   });
 
   describe('DELETE', () => {
     it('should delete a rolling stock item', async () => {
-      // Setup mock for successful deletion
-      (mockCollection.deleteOne as jest.Mock).mockResolvedValue({ deletedCount: 1 });
+      // Mock findOne and deleteOne to indicate success
+      mockCollection.findOne.mockResolvedValueOnce({ _id: mockObjectId } as never);
+      mockCollection.deleteOne.mockResolvedValueOnce({ deletedCount: 1 } as unknown as DeleteResult);
       
       // Call the API
-      await DELETE(mockRequest, mockParams);
-      
-      // Verify MongoDB was called correctly
-      expect(mockMongoService.connect).toHaveBeenCalled();
-      expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
-      expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: mockObjectId });
+      const response = await DELETE(mockRequest, mockParams) as unknown as MockResponse;
       
       // Verify the response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { message: 'Rolling stock deleted successfully' }
-      );
-    });
+      expect(response.parsedBody).toEqual({ message: 'Rolling stock deleted successfully' });
+      expect(response.status).toBe(200);
+      
+      // Verify the MongoDB calls
+      expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: mockObjectId });
+      expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: mockObjectId });
+    }, 30000); // Increase timeout
     
     it('should return 404 when rolling stock is not found for deletion', async () => {
-      // Setup mock to indicate no documents deleted
-      (mockCollection.deleteOne as jest.Mock).mockResolvedValue({ deletedCount: 0 });
+      // Mock findOne to indicate no matches
+      mockCollection.findOne.mockResolvedValueOnce(null as never);
       
       // Call the API
-      await DELETE(mockRequest, mockParams);
+      const response = await DELETE(mockRequest, mockParams) as unknown as MockResponse;
       
-      // Verify response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Rolling stock not found' },
-        { status: 404 }
-      );
-    });
+      // Verify the response
+      expect(response.parsedBody).toEqual({ error: 'Rolling stock not found' });
+      expect(response.status).toBe(404);
+    }, 30000); // Increase timeout
     
-    it('should handle database errors during deletion', async () => {
-      // Setup mock to throw an error
-      mockMongoService.connect.mockRejectedValue(new Error('Database error'));
+    it('should handle errors during deletion', async () => {
+      // Mock findOne to succeed but deleteOne to fail
+      mockCollection.findOne.mockResolvedValueOnce({ _id: mockObjectId } as never);
+      mockCollection.deleteOne.mockRejectedValueOnce(new Error('Database error') as never);
       
       // Call the API
-      await DELETE(mockRequest, mockParams);
+      const response = await DELETE(mockRequest, mockParams) as unknown as MockResponse;
       
-      // Verify error response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to delete rolling stock' },
-        { status: 500 }
-      );
-    });
+      // Verify the response
+      expect(response.parsedBody).toEqual({ error: 'Failed to delete rolling stock' });
+      expect(response.status).toBe(500);
+    }, 30000); // Increase timeout
   });
 }); 

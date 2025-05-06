@@ -1,155 +1,216 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
+import { Industry } from '@/app/shared/types/models';
 
-
-// Create a MongoDB service to be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
-
-interface Industry {
-  _id?: string | ObjectId;
-  name: string;
-  locationId: string;
-  industryType: string;
-  blockName: string;
-  tracks?: any[];
-  [key: string]: any;
-}
+// Common CORS headers to use in all responses
+const corsHeaders = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+};
 
 // GET a specific industry by ID
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  // Create a MongoDB service instance for this request
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
-    await mongoService.connect();
-    const collection = mongoService.getIndustriesCollection();
+    const id = params.id;
     
-    const industry = await findIndustryById(collection, params.id, mongoService);
-    
-    if (!industry) {
-      return createNotFoundResponse();
+    if (!ObjectId.isValid(id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid industry ID format' }),
+        {
+          status: 400,
+          headers: corsHeaders
+        }
+      );
     }
     
-    return NextResponse.json(industry);
+    await mongoService.connect();
+    
+    const collection = mongoService.getIndustriesCollection();
+    const industry = await collection.findOne({ _id: new ObjectId(id) });
+    
+    await mongoService.close();
+    
+    if (!industry) {
+      return new Response(
+        JSON.stringify({ error: 'Industry not found' }),
+        {
+          status: 404,
+          headers: corsHeaders
+        }
+      );
+    }
+    
+    return new Response(
+      JSON.stringify(industry),
+      {
+        status: 200,
+        headers: corsHeaders
+      }
+    );
   } catch (error) {
     console.error('Error fetching industry:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch industry' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch industry' }),
+      {
+        status: 500,
+        headers: corsHeaders
+      }
     );
   } finally {
-    await mongoService.close();
+    // Ensure connection is closed even if an error occurs
+    if (mongoService) {
+      try {
+        await mongoService.close();
+      } catch (error) {
+        console.error('Error closing MongoDB connection:', error);
+      }
+    }
   }
-}
-
-async function findIndustryById(collection: Collection, id: string, mongoService: IMongoDbService) {
-  return await collection.findOne({ 
-    _id: mongoService.toObjectId(id) 
-  });
-}
-
-function createNotFoundResponse() {
-  return NextResponse.json(
-    { error: 'Industry not found' },
-    { status: 404 }
-  );
 }
 
 // PUT to update an industry
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  // Create a MongoDB service instance for this request
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
+    const id = params.id;
+    
+    if (!ObjectId.isValid(id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid industry ID format' }),
+        {
+          status: 400,
+          headers: corsHeaders
+        }
+      );
+    }
+    
     const data = await request.json();
     
-    if (!validateRequiredName(data)) {
-      return createInvalidNameResponse();
-    }
-    
     await mongoService.connect();
+    
     const collection = mongoService.getIndustriesCollection();
     
-    const industryId = prepareForUpdate(params.id, data, mongoService);
+    // Check if the industry exists
+    const existingIndustry = await collection.findOne({ _id: new ObjectId(id) });
     
-    const result = await updateIndustry(collection, industryId, data);
-    
-    if (result.matchedCount === 0) {
-      return createNotFoundResponse();
+    if (!existingIndustry) {
+      return new Response(
+        JSON.stringify({ error: 'Industry not found' }),
+        {
+          status: 404,
+          headers: corsHeaders
+        }
+      );
     }
     
-    const updatedIndustry = await findIndustryById(collection, params.id, mongoService);
+    // Remove the _id field from the update data if it exists
+    if (data._id) {
+      delete data._id;
+    }
     
-    return NextResponse.json(updatedIndustry);
+    const result = await collection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: data }
+    );
+    
+    return new Response(
+      JSON.stringify({ message: 'Industry updated successfully' }),
+      {
+        status: 200,
+        headers: corsHeaders
+      }
+    );
   } catch (error) {
     console.error('Error updating industry:', error);
-    return NextResponse.json(
-      { error: 'Failed to update industry' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to update industry' }),
+      {
+        status: 500,
+        headers: corsHeaders
+      }
     );
   } finally {
-    await mongoService.close();
+    // Ensure connection is closed even if an error occurs
+    if (mongoService) {
+      try {
+        await mongoService.close();
+      } catch (error) {
+        console.error('Error closing MongoDB connection:', error);
+      }
+    }
   }
-}
-
-function validateRequiredName(data: Partial<Industry>): boolean {
-  return !!data.name;
-}
-
-function createInvalidNameResponse() {
-  return NextResponse.json(
-    { error: 'Industry name is required' },
-    { status: 400 }
-  );
-}
-
-function prepareForUpdate(id: string, data: Partial<Industry>, mongoService: IMongoDbService): ObjectId {
-  const industryId = mongoService.toObjectId(id);
-  delete data._id;
-  return industryId;
-}
-
-async function updateIndustry(collection: Collection, industryId: ObjectId, data: Partial<Industry>) {
-  return await collection.updateOne(
-    { _id: industryId },
-    { $set: data }
-  );
 }
 
 // DELETE an industry
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  // Create a MongoDB service instance for this request
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
-    await mongoService.connect();
-    const collection = mongoService.getIndustriesCollection();
+    const id = params.id;
     
-    const industryId = mongoService.toObjectId(params.id);
-    const result = await deleteIndustry(collection, industryId);
-    
-    if (result.deletedCount === 0) {
-      return createNotFoundResponse();
+    if (!ObjectId.isValid(id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid industry ID format' }),
+        {
+          status: 400,
+          headers: corsHeaders
+        }
+      );
     }
     
-    return createSuccessResponse();
+    await mongoService.connect();
+    
+    const collection = mongoService.getIndustriesCollection();
+    
+    // Check if the industry exists first
+    const existingIndustry = await collection.findOne({ _id: new ObjectId(id) });
+    
+    if (!existingIndustry) {
+      return new Response(
+        JSON.stringify({ error: 'Industry not found' }),
+        {
+          status: 404,
+          headers: corsHeaders
+        }
+      );
+    }
+    
+    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+    
+    return new Response(
+      JSON.stringify({ message: 'Industry deleted successfully' }),
+      {
+        status: 200,
+        headers: corsHeaders
+      }
+    );
   } catch (error) {
     console.error('Error deleting industry:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete industry' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to delete industry' }),
+      {
+        status: 500,
+        headers: corsHeaders
+      }
     );
   } finally {
-    await mongoService.close();
+    // Ensure connection is closed even if an error occurs
+    if (mongoService) {
+      try {
+        await mongoService.close();
+      } catch (error) {
+        console.error('Error closing MongoDB connection:', error);
+      }
+    }
   }
-}
-
-async function deleteIndustry(collection: Collection, industryId: ObjectId) {
-  return await collection.deleteOne({ _id: industryId });
-}
-
-function createSuccessResponse() {
-  return NextResponse.json({ message: 'Industry deleted successfully' });
 } 

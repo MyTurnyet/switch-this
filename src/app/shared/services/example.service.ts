@@ -24,6 +24,15 @@ export class ExampleService {
   }
 
   /**
+   * Static factory method that creates an example service with a custom MongoDB service
+   * @param mongoService A MongoDB service instance
+   * @returns A new ExampleService instance with the provided MongoDbService
+   */
+  static withService(mongoService: IMongoDbService): ExampleService {
+    return new ExampleService(mongoService);
+  }
+
+  /**
    * Example method that fetches data using the MongoDB service
    */
   async fetchData(collectionName: string) {

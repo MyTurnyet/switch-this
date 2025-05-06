@@ -1,10 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
-
-// Create a MongoDB service that will be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+import { CarDestination } from '@/app/shared/types/models';
 
 interface RollingStock {
   _id?: string | ObjectId;
@@ -32,125 +30,235 @@ interface RollingStock {
   [key: string]: unknown;
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// Common headers for all responses
+const corsHeaders = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+};
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  // Create a MongoDB service instance for this request
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
-    await mongoService.connect();
-    const collection = mongoService.getRollingStockCollection();
+    const id = params.id;
     
-    const rollingStock = await findRollingStockById(collection, params.id, mongoService);
-    
-    if (!rollingStock) {
-      return createNotFoundResponse();
+    // Validate ID format
+    if (!ObjectId.isValid(id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid rolling stock ID format' }),
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
+      );
     }
     
-    return NextResponse.json(rollingStock);
+    // Connect to the database
+    await mongoService.connect();
+    
+    // Get the rolling stock collection
+    const collection = mongoService.getRollingStockCollection();
+    
+    // Find the rolling stock by ID
+    const rollingStock = await collection.findOne({ _id: new ObjectId(id) });
+    
+    // Close the connection
+    await mongoService.close();
+    
+    // If no rolling stock found, return 404
+    if (!rollingStock) {
+      return new Response(
+        JSON.stringify({ error: 'Rolling stock not found' }),
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
+      );
+    }
+    
+    // Return the rolling stock
+    return new Response(
+      JSON.stringify(rollingStock),
+      { 
+        status: 200,
+        headers: corsHeaders
+      }
+    );
   } catch (error) {
     console.error('Error fetching rolling stock item:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch rolling stock item' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch rolling stock item' }),
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     );
   } finally {
-    await mongoService.close();
+    // Ensure connection is closed even if an error occurs
+    if (mongoService) {
+      try {
+        await mongoService.close();
+      } catch (error) {
+        console.error('Error closing MongoDB connection:', error);
+      }
+    }
   }
 }
 
-async function findRollingStockById(collection: Collection, id: string, mongoService: IMongoDbService) {
-  return await collection.findOne({ 
-    _id: mongoService.toObjectId(id) 
-  });
-}
-
-function createNotFoundResponse() {
-  return NextResponse.json(
-    { error: 'Rolling stock not found' },
-    { status: 404 }
-  );
-}
-
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  // Create a MongoDB service instance for this request
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
-    const updatedData = await request.json();
+    const id = params.id;
     
-    sanitizeData(updatedData);
-    
-    await mongoService.connect();
-    const collection = mongoService.getRollingStockCollection();
-    
-    const result = await updateRollingStock(collection, params.id, updatedData, mongoService);
-    
-    if (result.matchedCount === 0) {
-      return createNotFoundResponse();
+    // Validate ID format
+    if (!ObjectId.isValid(id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid rolling stock ID format' }),
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
+      );
     }
     
-    return createSuccessResponse('Rolling stock updated successfully');
+    // Parse the request body
+    const data = await request.json();
+    
+    // Connect to the database
+    await mongoService.connect();
+    
+    // Get the rolling stock collection
+    const collection = mongoService.getRollingStockCollection();
+    
+    // Check if rolling stock exists
+    const existingRollingStock = await collection.findOne({ _id: new ObjectId(id) });
+    
+    if (!existingRollingStock) {
+      return new Response(
+        JSON.stringify({ error: 'Rolling stock not found' }),
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
+      );
+    }
+    
+    // Prepare update data
+    const updateData = { ...data };
+    delete updateData._id; // Remove _id from update data
+    
+    // Update the rolling stock
+    const result = await collection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    
+    // Return the result
+    return new Response(
+      JSON.stringify({ message: 'Rolling stock updated successfully' }),
+      { 
+        status: 200,
+        headers: corsHeaders
+      }
+    );
   } catch (error) {
     console.error('Error updating rolling stock:', error);
-    return NextResponse.json(
-      { error: 'Failed to update rolling stock' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to update rolling stock' }),
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     );
   } finally {
-    await mongoService.close();
+    // Ensure connection is closed even if an error occurs
+    if (mongoService) {
+      try {
+        await mongoService.close();
+      } catch (error) {
+        console.error('Error closing MongoDB connection:', error);
+      }
+    }
   }
 }
 
-function sanitizeData(data: Partial<RollingStock>) {
-  if (data._id) {
-    delete data._id;
-  }
-}
-
-async function updateRollingStock(
-  collection: Collection, 
-  id: string, 
-  data: Partial<RollingStock>, 
-  mongoService: IMongoDbService
-) {
-  return await collection.updateOne(
-    { _id: mongoService.toObjectId(id) },
-    { $set: data }
-  );
-}
-
-function createSuccessResponse(message: string) {
-  return NextResponse.json({ message });
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  // Create a MongoDB service instance for this request
+  const mongoService: IMongoDbService = new MongoDbService();
+  
   try {
-    await mongoService.connect();
-    const collection = mongoService.getRollingStockCollection();
+    const id = params.id;
     
-    const result = await deleteRollingStock(collection, params.id, mongoService);
-    
-    if (result.deletedCount === 0) {
-      return createNotFoundResponse();
+    // Validate ID format
+    if (!ObjectId.isValid(id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid rolling stock ID format' }),
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
+      );
     }
     
-    return createSuccessResponse('Rolling stock deleted successfully');
+    // Connect to the database
+    await mongoService.connect();
+    
+    // Get the rolling stock collection
+    const collection = mongoService.getRollingStockCollection();
+    
+    // Check if rolling stock exists
+    const existingRollingStock = await collection.findOne({ _id: new ObjectId(id) });
+    
+    if (!existingRollingStock) {
+      return new Response(
+        JSON.stringify({ error: 'Rolling stock not found' }),
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
+      );
+    }
+    
+    // Delete the rolling stock
+    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+    
+    // Also remove this rolling stock from any tracks it might be placed on
+    const industriesCollection = mongoService.getIndustriesCollection();
+    await industriesCollection.updateMany(
+      { 'tracks.placedCars': id },
+      { $pull: { 'tracks.$.placedCars': id } }
+    );
+    
+    // Return the result
+    return new Response(
+      JSON.stringify({ message: 'Rolling stock deleted successfully' }),
+      { 
+        status: 200,
+        headers: corsHeaders
+      }
+    );
   } catch (error) {
     console.error('Error deleting rolling stock:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete rolling stock' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to delete rolling stock' }),
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     );
   } finally {
-    await mongoService.close();
+    // Ensure connection is closed even if an error occurs
+    if (mongoService) {
+      try {
+        await mongoService.close();
+      } catch (error) {
+        console.error('Error closing MongoDB connection:', error);
+      }
+    }
   }
-}
-
-async function deleteRollingStock(collection: Collection, id: string, mongoService: IMongoDbService) {
-  return await collection.deleteOne({ 
-    _id: mongoService.toObjectId(id) 
-  });
 } 

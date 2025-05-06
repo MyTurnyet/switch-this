@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
@@ -20,7 +20,7 @@ const mongoService: IMongoDbService = new MongoDbService();
  * GET /api/industries
  * Retrieves all industries from the database
  */
-export async function GET(): Promise<NextResponse> {
+export async function GET(): Promise<Response> {
   try {
     // Connect to the database
     await mongoService.connect();
@@ -32,12 +32,21 @@ export async function GET(): Promise<NextResponse> {
     await mongoService.close();
     
     // Return the industries
-    return NextResponse.json(industries);
+    return new Response(
+      JSON.stringify(industries),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error(`Error retrieving industries:`, error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve industries' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to retrieve industries' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 }
@@ -46,7 +55,7 @@ export async function GET(): Promise<NextResponse> {
  * POST /api/industries
  * Creates a new industry
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest): Promise<Response> {
   try {
     // Parse the request body
     const data = await request.json();
@@ -84,42 +93,64 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await mongoService.close();
     
     // Return the new industry
-    return NextResponse.json(newIndustry, { status: 201 });
+    return new Response(
+      JSON.stringify(newIndustry),
+      { 
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error(`Error creating industry:`, error);
-    return NextResponse.json(
-      { error: 'Failed to create industry' },
-      { status: 500 }
+    await mongoService.close();
+    return new Response(
+      JSON.stringify({ error: 'Database error' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 }
 
-function validateRequiredFields(data: Partial<Industry>): NextResponse | null {
+function validateRequiredFields(data: Partial<Industry>): Response | null {
   if (!data.name) {
-    return NextResponse.json(
-      { error: 'Industry name is required' },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({ error: 'Industry name is required' }),
+      { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
   
   if (!data.locationId) {
-    return NextResponse.json(
-      { error: 'Location ID is required' },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({ error: 'Location ID is required' }),
+      { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
   
   if (!data.industryType) {
-    return NextResponse.json(
-      { error: 'Industry type is required' },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({ error: 'Industry type is required' }),
+      { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 
   if (!data.blockName) {
-    return NextResponse.json(
-      { error: 'Block name is required' },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({ error: 'Block name is required' }),
+      { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
   

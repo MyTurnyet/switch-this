@@ -12,7 +12,7 @@ export interface MockDocument extends Document {
 /**
  * Creates a mock collection for testing
  */
-export function createMockCollection(): jest.Mocked<Collection> {
+export function createMockCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
   return {
     findOne: jest.fn(),
     find: jest.fn().mockReturnThis(),
@@ -23,7 +23,7 @@ export function createMockCollection(): jest.Mocked<Collection> {
     deleteOne: jest.fn(),
     countDocuments: jest.fn(),
     aggregate: jest.fn().mockReturnThis(),
-  } as unknown as jest.Mocked<Collection>;
+  } as unknown as jest.Mocked<Collection<T>>;
 }
 
 /**
@@ -54,13 +54,16 @@ export function createMockMongoService(): jest.Mocked<IMongoDbService> {
 export class FakeMongoDbService implements IMongoDbService {
   // Track collections to ensure consistency in tests
   private collections: Record<string, jest.Mocked<Collection<Document>>> = {};
+  
+  // Flag to track connection state
+  public isConnected = false;
 
   public connect = jest.fn().mockResolvedValue(undefined);
   public close = jest.fn().mockResolvedValue(undefined);
 
   public getCollection<T extends Document = Document>(collectionName: string): jest.Mocked<Collection<T>> {
     if (!this.collections[collectionName]) {
-      this.collections[collectionName] = createMockCollection<T>();
+      this.collections[collectionName] = createMockCollection<Document>();
     }
     return this.collections[collectionName] as unknown as jest.Mocked<Collection<T>>;
   }
@@ -94,6 +97,24 @@ export class FakeMongoDbService implements IMongoDbService {
 
   public getSwitchlistsCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
     return this.getCollection<T>('switchlists');
+  }
+  
+  /**
+   * Clears the call history of all mock functions
+   * This is useful for cleaning up between tests
+   */
+  public clearCallHistory(): void {
+    this.connect.mockClear();
+    this.close.mockClear();
+    
+    // Clear call history for all collection methods
+    Object.values(this.collections).forEach((collection) => {
+      Object.values(collection).forEach((method) => {
+        if (typeof method === 'function' && method.mockClear) {
+          method.mockClear();
+        }
+      });
+    });
   }
 }
 
