@@ -1,10 +1,10 @@
-import { FakeMongoService } from '../__mocks__/FakeMongoService';
+import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 import { ObjectId } from 'mongodb';
 
 describe('MongoDB Testing Example', () => {
-  it('demonstrates how to use the FakeMongoService', async () => {
-    // Create a FakeMongoService instance
-    const fakeMongoService = new FakeMongoService();
+  it('demonstrates how to use the FakeMongoDbService', async () => {
+    // Create a FakeMongoDbService instance
+    const fakeMongoService = new FakeMongoDbService();
     
     // Spy on connect method
     jest.spyOn(fakeMongoService, 'connect');
@@ -36,9 +36,9 @@ describe('MongoDB Testing Example', () => {
     }));
   });
   
-  it('demonstrates using the FakeMongoService helper methods', async () => {
-    // Create a FakeMongoService instance
-    const fakeMongoService = new FakeMongoService();
+  it('demonstrates using the FakeMongoDbService helper methods', async () => {
+    // Create a FakeMongoDbService instance
+    const fakeMongoService = new FakeMongoDbService();
     
     // Connect first to ensure we can get collections
     await fakeMongoService.connect();
@@ -69,5 +69,8 @@ describe('MongoDB Testing Example', () => {
     
     // Clean up when done
     await fakeMongoService.close();
+    
+    // Use clearCallHistory to reset mock state (available in FakeMongoDbService)
+    fakeMongoService.clearCallHistory();
   });
 }); 

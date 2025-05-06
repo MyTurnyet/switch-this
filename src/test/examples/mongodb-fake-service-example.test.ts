@@ -1,9 +1,9 @@
-import { ObjectId, Collection } from 'mongodb';
+import { ObjectId, Collection, Document } from 'mongodb';
 import { createMockMongoService, FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 
 // Example interface for a document model
-interface RollingStock {
+interface RollingStock extends Document {
   _id?: ObjectId;
   roadName: string;
   roadNumber: string;
@@ -14,14 +14,14 @@ interface RollingStock {
 describe('MongoDB Service Testing Example', () => {
   // Declare the mock service variable
   let mockMongoService: jest.Mocked<IMongoDbService>;
-  let mockCollection: jest.Mocked<Collection<any>>;
+  let mockCollection: jest.Mocked<Collection<Document>>;
 
   // Set up the test environment before each test
   beforeEach(() => {
     jest.clearAllMocks();
     // Create a mock MongoDB service
     mockMongoService = createMockMongoService();
-    mockCollection = mockMongoService.getRollingStockCollection();
+    mockCollection = mockMongoService.getRollingStockCollection() as jest.Mocked<Collection<Document>>;
   });
 
   it('should use IMongoDbService directly', () => {
@@ -34,8 +34,8 @@ describe('MongoDB Service Testing Example', () => {
     expect(service.getCollection).toBeDefined();
   });
   
-  it('should use FakeMongoService for testing', async () => {
-    // Create a new FakeMongoService instance
+  it('should use FakeMongoDbService for testing', async () => {
+    // Create a new FakeMongoDbService instance
     const fakeMongoService = new FakeMongoDbService();
     
     // Connect to MongoDB
@@ -52,6 +52,9 @@ describe('MongoDB Service Testing Example', () => {
   });
 
   it('should connect and interact with collections', async () => {
+    // Spy on getRollingStockCollection method for verification
+    jest.spyOn(mockMongoService, 'getRollingStockCollection');
+    
     // Connect to the MongoDB
     await mockMongoService.connect();
     
@@ -129,6 +132,11 @@ describe('MongoDB Service Testing Example', () => {
   });
 
   it('should allow verification of method calls', async () => {
+    // Add spies for methods we want to verify
+    jest.spyOn(mockMongoService, 'getRollingStockCollection');
+    jest.spyOn(mockMongoService, 'getIndustriesCollection');
+    jest.spyOn(mockMongoService, 'toObjectId');
+    
     // Use various methods on the mock service
     await mockMongoService.connect();
     mockMongoService.getRollingStockCollection();
