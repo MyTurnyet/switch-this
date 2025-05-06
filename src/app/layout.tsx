@@ -1,8 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import Header from '@/shared/components/Header';
-import { ReactQueryProvider } from './shared/providers/reactQueryProvider';
-import { ReactQueryDevToolsWrapper } from './shared/providers/reactQueryDevToolsWrapper';
+import { ReactQueryProvider } from '@/app/shared/providers/reactQueryProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -27,7 +26,6 @@ export default function RootLayout({
           <main className="container mx-auto px-4 py-8">
             {children}
           </main>
-          <ReactQueryDevToolsWrapper />
         </ReactQueryProvider>
       </body>
     </html>
