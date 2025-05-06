@@ -39,6 +39,12 @@ export const Dashboard: React.FC = () => {
 
   const hasError = errors.length > 0;
   
+  // Helper function to safely get the count from data
+  const safeCount = <T extends object>(data: T[] | null | undefined): number => {
+    if (!data) return 0;
+    return Array.isArray(data) ? data.length : 0;
+  };
+  
   if (hasError) {
     const errorMessage = errors[0]?.message || 'Unable to connect to the database';
     
@@ -62,22 +68,22 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div data-testid="dashboard-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          count={locations.data?.length ?? 0} 
+          count={safeCount(locations.data)} 
           label="Locations" 
           isLoading={locations.isLoading} 
         />
         <StatCard 
-          count={industries.data?.length ?? 0} 
+          count={safeCount(industries.data)} 
           label="Industries" 
           isLoading={industries.isLoading} 
         />
         <StatCard 
-          count={trainRoutes.data?.length ?? 0} 
+          count={safeCount(trainRoutes.data)} 
           label="Train Routes" 
           isLoading={trainRoutes.isLoading} 
         />
         <StatCard 
-          count={rollingStock.data?.length ?? 0} 
+          count={safeCount(rollingStock.data)} 
           label="Rolling Stock" 
           isLoading={rollingStock.isLoading} 
         />

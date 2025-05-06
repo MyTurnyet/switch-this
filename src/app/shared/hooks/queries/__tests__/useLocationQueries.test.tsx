@@ -1,7 +1,28 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { useLocationQueries } from '../useLocationQueries';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
+
+// Mock the useServices function before importing the hook
+jest.mock('../useQueries', () => {
+  const originalModule = jest.requireActual('../useQueries');
+  return {
+    ...originalModule,
+    useServices: jest.fn().mockReturnValue({
+      locationService: {
+        getAll: jest.fn(),
+        getAllLocations: jest.fn(),
+        getById: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+      },
+    }),
+  };
+});
+
+// Import the hooks after the mock is set up
+import { useLocationQueries } from '../useLocationQueries';
+import { useServices } from '../useQueries';
 
 // Create a wrapper with QueryClientProvider
 const createWrapper = () => {
@@ -13,27 +34,14 @@ const createWrapper = () => {
     },
   });
   
-  return ({ children }: { children: ReactNode }) => (
+  const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+  
+  Wrapper.displayName = 'QueryClientWrapper';
+  
+  return Wrapper;
 };
-
-// Mock the useServices function before importing the hook
-jest.mock('../../../services/clientServices', () => ({
-  useServices: jest.fn().mockReturnValue({
-    locationService: {
-      getAll: jest.fn(),
-      getAllLocations: jest.fn(),
-      getById: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-  }),
-}));
-
-// Import the mocked module to control its behavior
-import { useServices } from '../../../services/clientServices';
 
 describe('useLocationQueries', () => {
   const mockLocations = [

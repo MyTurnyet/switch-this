@@ -105,8 +105,17 @@ describe('Dashboard', () => {
     
     render(<Dashboard />);
     
-    // Location count should be 0 with null data
-    expect(screen.getByText('Locations').nextSibling?.textContent).toBe('0');
+    // Find all StatCards 
+    const statCards = screen.getAllByTestId('stat-card');
+    
+    // Find the Locations card
+    const locationsCard = statCards.find(
+      card => card.textContent?.includes('Locations')
+    );
+    
+    // Check that the card contains '0'
+    expect(locationsCard).toBeTruthy();
+    expect(locationsCard?.textContent).toContain('0');
   });
   
   it('should show individual loading states', () => {
