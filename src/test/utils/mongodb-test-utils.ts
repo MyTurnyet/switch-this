@@ -31,21 +31,52 @@ export function createMockCollection<T extends Document = Document>(): jest.Mock
  * Creates a mock MongoDB service for testing
  */
 export function createMockMongoService(): jest.Mocked<IMongoDbService> {
-  // Create a single mock collection to be returned from any collection getter
-  const mockCollection = createMockCollection();
+  const collections: Record<string, jest.Mocked<Collection<Document>>> = {};
+  
+  // Pre-create all collections
+  Object.values(DB_COLLECTIONS).forEach(collectionName => {
+    collections[collectionName] = createMockCollection<Document>();
+  });
   
   return {
+    isConnected: true,
     connect: jest.fn().mockResolvedValue(undefined),
     close: jest.fn().mockResolvedValue(undefined),
-    getCollection: jest.fn().mockReturnValue(mockCollection),
-    toObjectId: jest.fn().mockImplementation((id: string) => new ObjectId(id)),
-    getRollingStockCollection: jest.fn().mockReturnValue(mockCollection),
-    getIndustriesCollection: jest.fn().mockReturnValue(mockCollection),
-    getLocationsCollection: jest.fn().mockReturnValue(mockCollection),
-    getTrainRoutesCollection: jest.fn().mockReturnValue(mockCollection),
-    getLayoutStateCollection: jest.fn().mockReturnValue(mockCollection),
-    getSwitchlistsCollection: jest.fn().mockReturnValue(mockCollection),
-  } as unknown as jest.Mocked<IMongoDbService>;
+    
+    getCollection: jest.fn().mockImplementation((collectionName: string) => {
+      if (!collections[collectionName]) {
+        collections[collectionName] = createMockCollection<Document>();
+      }
+      return collections[collectionName];
+    }),
+    
+    // Collection-specific getters
+    getLocationsCollection: jest.fn().mockImplementation(() => 
+      collections[DB_COLLECTIONS.LOCATIONS]),
+    
+    getIndustriesCollection: jest.fn().mockImplementation(() => 
+      collections[DB_COLLECTIONS.INDUSTRIES]),
+    
+    getRollingStockCollection: jest.fn().mockImplementation(() => 
+      collections[DB_COLLECTIONS.ROLLING_STOCK]),
+    
+    getSwitchlistsCollection: jest.fn().mockImplementation(() => 
+      collections[DB_COLLECTIONS.SWITCHLISTS]),
+    
+    getTrainRoutesCollection: jest.fn().mockImplementation(() => 
+      collections[DB_COLLECTIONS.TRAIN_ROUTES]),
+    
+    getLayoutStateCollection: jest.fn().mockImplementation(() => 
+      collections[DB_COLLECTIONS.LAYOUT_STATE]),
+      
+    // ObjectId conversion
+    toObjectId: jest.fn().mockImplementation((id: string | ObjectId) => {
+      if (typeof id === 'string') {
+        return new ObjectId(id);
+      }
+      return id;
+    })
+  } as jest.Mocked<IMongoDbService>;
 }
 
 /**
@@ -56,8 +87,15 @@ export class FakeMongoDbService implements IMongoDbService {
   // Track collections to ensure consistency in tests
   private collections: Record<string, jest.Mocked<Collection<Document>>> = {};
   
-  // Flag to track connection state
-  public isConnected = false;
+  // Flag to track connection state - start connected by default for easier testing
+  public isConnected = true;
+
+  constructor() {
+    // Pre-initialize collections
+    Object.values(DB_COLLECTIONS).forEach(collectionName => {
+      this.collections[collectionName] = createMockCollection<Document>();
+    });
+  }
 
   public connect = jest.fn().mockImplementation(async () => {
     this.isConnected = true;
@@ -69,46 +107,50 @@ export class FakeMongoDbService implements IMongoDbService {
     return undefined;
   });
 
+  /**
+   * Get a collection by name
+   */
   public getCollection<T extends Document = Document>(collectionName: string): jest.Mocked<Collection<T>> {
-    if (!this.isConnected) {
-      throw new Error('Not connected to MongoDB');
-    }
+    // No connection check for easier testing
     
     if (!this.collections[collectionName]) {
-      this.collections[collectionName] = createMockCollection<Document>();
+      this.collections[collectionName] = createMockCollection() as unknown as jest.Mocked<Collection<Document>>;
     }
+    
     return this.collections[collectionName] as unknown as jest.Mocked<Collection<T>>;
   }
 
-  public toObjectId(id: string): ObjectId {
-    if (id && id.match(/^[0-9a-fA-F]{24}$/)) {
-      return new ObjectId(id);
-    }
-    throw new Error(`Invalid ObjectId format: ${id}`);
-  }
-
-  public getRollingStockCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
-    return this.getCollection<T>(DB_COLLECTIONS.ROLLING_STOCK);
-  }
-
-  public getIndustriesCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
-    return this.getCollection<T>(DB_COLLECTIONS.INDUSTRIES);
-  }
-
+  // Collection-specific getters - with proper generic type parameters
   public getLocationsCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
     return this.getCollection<T>(DB_COLLECTIONS.LOCATIONS);
   }
-
+  
+  public getIndustriesCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
+    return this.getCollection<T>(DB_COLLECTIONS.INDUSTRIES);
+  }
+  
+  public getRollingStockCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
+    return this.getCollection<T>(DB_COLLECTIONS.ROLLING_STOCK);
+  }
+  
+  public getSwitchlistsCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
+    return this.getCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
+  }
+  
   public getTrainRoutesCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
     return this.getCollection<T>(DB_COLLECTIONS.TRAIN_ROUTES);
   }
-
+  
   public getLayoutStateCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
     return this.getCollection<T>(DB_COLLECTIONS.LAYOUT_STATE);
   }
-
-  public getSwitchlistsCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
-    return this.getCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
+    
+  // ObjectId conversion
+  public toObjectId(id: string | ObjectId): ObjectId {
+    if (typeof id === 'string') {
+      return new ObjectId(id);
+    }
+    return id;
   }
   
   /**

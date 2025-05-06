@@ -1,55 +1,37 @@
 import { jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
+import { setupApiRouteTest } from '@/test/utils/api-route-test-utils';
 
-// Define a properly typed mock Response interface
-interface MockResponse {
-  body: string;
-  parsedBody: any;
-  status: number;
-  headers: Record<string, string>;
+// Setup API route test environment
+const { fakeMongoService } = setupApiRouteTest();
+
+// Ensure the connection is ready before tests run
+beforeAll(async () => {
+  await fakeMongoService.connect();
+});
+
+// Mock Response class for testing
+class MockResponse extends Response {
+  constructor(body: string | Record<string, unknown>, init?: ResponseInit) {
+    const bodyString = typeof body === 'string' ? body : JSON.stringify(body);
+    super(bodyString, init);
+    Object.defineProperty(this, 'parsedBody', {
+      get: () => JSON.parse(bodyString)
+    });
+    Object.defineProperty(this, 'status', {
+      get: () => init?.status || 200
+    });
+  }
 }
 
-// Create a fake MongoDB service instance
-const fakeMongoService = new FakeMongoDbService();
+// Override global Response with our mock version
+global.Response = MockResponse as any;
 
-// Mock Response constructor
-global.Response = jest.fn().mockImplementation((body, options) => {
-  const parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
-  return {
-    body,
-    parsedBody,
-    status: options?.status || 200,
-    headers: options?.headers || {}
-  } as MockResponse;
-});
-
-// Mock MongoDB ObjectId
-jest.mock('mongodb', () => {
-  const original = jest.requireActual('mongodb');
-  return {
-    ...original,
-    ObjectId: jest.fn().mockImplementation((id) => ({
-      toString: () => id || 'mock-id',
-      toHexString: () => id || 'mock-id'
-    }))
-  };
-});
-
-// Mock MongoDB service
-jest.mock('@/lib/services/mongodb.service', () => {
-  return {
-    MongoDbService: jest.fn().mockImplementation(() => {
-      return fakeMongoService;
-    })
-  };
-});
-
-// Declare route handler variables
-let GET: (req: NextRequest, context: any) => Promise<Response>;
-let PUT: (req: NextRequest, context: any) => Promise<Response>;
-let DELETE: (req: NextRequest, context: any) => Promise<Response>;
+// Route handler functions
+let GET: (req: NextRequest, context: { params: Record<string, string> }) => Promise<Response>;
+let PUT: (req: NextRequest, context: { params: Record<string, string> }) => Promise<Response>;
+let DELETE: (req: NextRequest, context: { params: Record<string, string> }) => Promise<Response>;
 
 // Load the route handlers module in isolation
 jest.isolateModules(() => {
@@ -217,12 +199,14 @@ describe('Switchlist By ID API Routes', () => {
       const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
       const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
       
+      // Set up the mock behaviors
       jest.spyOn(switchlistsCollection, 'findOne').mockResolvedValueOnce(mockExistingSwitchlist);
-      jest.spyOn(trainRoutesCollection, 'findOne').mockResolvedValueOnce(null); // Train route not found
+      jest.spyOn(trainRoutesCollection, 'findOne').mockResolvedValueOnce(null);
       
+      // Mock the request with a valid ObjectId format
       const mockRequest = {
         json: jest.fn().mockResolvedValue({
-          trainRouteId: 'nonexistent'
+          trainRouteId: '507f1f77bcf86cd799439011' // Valid ObjectId format
         })
       } as unknown as NextRequest;
       
