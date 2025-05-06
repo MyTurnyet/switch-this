@@ -1,97 +1,162 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
-import { Collection, Document, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 
-
-// Create a MongoDB service that will be used throughout this file
+// Create a MongoDB service instance
 const mongoService: IMongoDbService = new MongoDbService();
 
-interface LayoutState extends Document {
-  _id?: ObjectId;
-  updatedAt: Date;
-  [key: string]: unknown;
-}
-
-// GET - retrieves the latest layout state
+/**
+ * GET /api/layout-state
+ * Fetches the most recent layout state
+ */
 export async function GET() {
   try {
     await mongoService.connect();
     const collection = mongoService.getLayoutStateCollection();
     
-    const layoutState = await fetchLatestLayoutState(collection);
+    // Find the most recent layout state
+    const layoutState = await collection.findOne({}, { sort: { updatedAt: -1 } });
     
     if (!layoutState) {
-      await mongoService.close();
-      return handleNoStateFound();
+      return new Response(
+        JSON.stringify({ exists: false }),
+        { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
     
-    await mongoService.close();
-    return NextResponse.json(layoutState);
+    return new Response(
+      JSON.stringify(layoutState),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error('Error fetching layout state:', error);
-    await mongoService.close();
-    return NextResponse.json(
-      { error: 'Failed to fetch layout state' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch layout state' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
+  } finally {
+    await mongoService.close();
   }
 }
 
-async function fetchLatestLayoutState(collection: Collection): Promise<LayoutState | null> {
-  return await collection.findOne<LayoutState>({}, { sort: { updatedAt: -1 } });
-}
-
-function handleNoStateFound() {
-  return NextResponse.json({ exists: false });
-}
-
-// POST - saves the current layout state
-export async function POST(request: Request) {
+/**
+ * POST /api/layout-state
+ * Creates or updates the layout state
+ */
+export async function POST(request: NextRequest) {
   try {
-    const data = await request.json();
-    
+    const requestData = await request.json();
     await mongoService.connect();
     const collection = mongoService.getLayoutStateCollection();
     
-    const stateToSave = addTimeStamp(data);
-    
-    if (data._id) {
-      // Convert string ID to ObjectId if necessary
-      const objectId = typeof data._id === 'string' ? mongoService.toObjectId(data._id) : data._id;
-      await upsertExistingState(collection, objectId, stateToSave);
-    } else {
-      await insertNewState(collection, stateToSave);
+    // If _id is provided, we're updating an existing layout state
+    if (requestData._id) {
+      let objectId;
+      try {
+        objectId = new ObjectId(requestData._id);
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid layout state ID format' }),
+          { 
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
+      // Add updatedAt timestamp
+      const updateData = {
+        ...requestData,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Remove _id from the update data (MongoDB doesn't allow _id in $set)
+      delete updateData._id;
+      
+      const result = await collection.updateOne(
+        { _id: objectId },
+        { $set: updateData }
+      );
+      
+      if (result.matchedCount === 0) {
+        return new Response(
+          JSON.stringify({ error: 'Layout state not found' }),
+          { 
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
+      // Return the updated document
+      const updatedDocument = await collection.findOne({ _id: objectId });
+      
+      return new Response(
+        JSON.stringify(updatedDocument),
+        { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    } 
+    // If no _id, we're creating a new layout state
+    else {
+      // Prepare the insert data with timestamp
+      const insertData = {
+        ...requestData,
+        updatedAt: new Date().toISOString()
+      };
+      
+      const result = await collection.insertOne(insertData);
+      
+      if (!result.acknowledged) {
+        throw new Error('Failed to insert layout state');
+      }
+      
+      // Return the new document with its _id
+      return new Response(
+        JSON.stringify({ ...insertData, _id: result.insertedId }),
+        { 
+          status: 201,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
-    
-    await mongoService.close();
-    return NextResponse.json(stateToSave);
   } catch (error) {
     console.error('Error saving layout state:', error);
-    await mongoService.close();
-    return NextResponse.json(
-      { error: 'Failed to save layout state' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to save layout state' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
+  } finally {
+    await mongoService.close();
   }
 }
 
-function addTimeStamp(data: Partial<LayoutState>): LayoutState {
-  return {
-    ...data,
-    updatedAt: new Date()
-  } as LayoutState;
-}
-
-async function upsertExistingState(collection: Collection, id: ObjectId, stateToSave: LayoutState): Promise<void> {
-  await collection.updateOne(
-    { _id: id },
-    { $set: stateToSave },
-    { upsert: true }
-  );
-}
-
-async function insertNewState(collection: Collection, stateToSave: LayoutState): Promise<void> {
-  const result = await collection.insertOne(stateToSave);
-  stateToSave._id = result.insertedId;
+/**
+ * OPTIONS /api/layout-state
+ * Handle preflight requests
+ */
+export function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With',
+    },
+  });
 } 

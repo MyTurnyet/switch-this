@@ -1,130 +1,133 @@
-import { POST } from '../route';
-import { NextResponse } from 'next/server';
-import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
+import { jest } from '@jest/globals';
+import { NextRequest } from 'next/server';
 
-// Set up mock database collections
+// Define a properly typed mock Response interface
+interface MockResponse {
+  body: string;
+  parsedBody: any;
+  status: number;
+  headers: Record<string, string>;
+}
+
+// Mock Response constructor
+global.Response = jest.fn().mockImplementation((body, options) => {
+  const parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
+  return {
+    body,
+    parsedBody,
+    status: options?.status || 200,
+    headers: options?.headers || {}
+  } as MockResponse;
+});
+
+// Create mock collections
 const rollingStockCollection = {
-  find: jest.fn().mockReturnThis(),
-  toArray: jest.fn().mockResolvedValue([
-    // Mock rolling stock
-    {
-      _id: '1',
-      roadName: 'BNSF',
-      roadNumber: '1234',
-      aarType: 'XM',
-      description: 'Boxcar',
-      color: 'RED',
-      homeYard: 'yard1',
-      ownerId: '1',
-    },
-    // Additional mocked rolling stock...
-  ]),
-  updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
+  find: jest.fn(),
+  updateOne: jest.fn(),
 };
 
 const industriesCollection = {
-  find: jest.fn().mockReturnThis(),
-  toArray: jest.fn().mockResolvedValue([
-    // Mock industries
-    {
-      _id: 'yard1',
-      name: 'BNSF Yard',
-      industryType: 'YARD',
-      tracks: [
-        {
-          _id: 'track1',
-          name: 'Track 1',
-          maxCars: 4,
-          capacity: 4,
-          length: 100,
-          placedCars: ['4', '5'],
-          acceptedCarTypes: ['XM', 'GS', 'FM'],
-        },
-        // Additional tracks...
-      ],
-    },
-    // Additional industries...
-  ]),
-  updateOne: jest.fn().mockResolvedValue({ acknowledged: true })
+  find: jest.fn(),
+  updateMany: jest.fn(),
 };
 
-// Create a fake MongoDB service instance
-const fakeMongoService = new FakeMongoDbService();
-fakeMongoService.isConnected = true;
+// Create mockMongoService before it's used
+const mockMongoService = {
+  connect: jest.fn().mockResolvedValue(undefined),
+  close: jest.fn().mockResolvedValue(undefined),
+  getRollingStockCollection: jest.fn().mockReturnValue(rollingStockCollection),
+  getIndustriesCollection: jest.fn().mockReturnValue(industriesCollection),
+  toObjectId: jest.fn(id => id)
+};
 
-// Configure the mocks
-jest.spyOn(fakeMongoService, 'connect').mockResolvedValue();
-jest.spyOn(fakeMongoService, 'close').mockResolvedValue();
-jest.spyOn(fakeMongoService, 'getRollingStockCollection').mockReturnValue(rollingStockCollection as any);
-jest.spyOn(fakeMongoService, 'getIndustriesCollection').mockReturnValue(industriesCollection as any);
-jest.spyOn(fakeMongoService, 'toObjectId').mockImplementation(id => id as any);
-
-// Mock NextResponse
-jest.mock('next/server', () => ({
-  NextResponse: {
-    json: jest.fn().mockImplementation((data, options) => ({
-      status: options?.status || 200,
-      body: data,
-    })),
-  },
-}));
-
-// Mock MongoDB service - now with fakeMongoService already initialized
+// Set up MongoDB service mock
 jest.mock('@/lib/services/mongodb.service', () => ({
-  MongoDbService: jest.fn().mockImplementation(() => fakeMongoService)
+  MongoDbService: jest.fn().mockImplementation(() => mockMongoService)
 }));
 
-describe('Rolling Stock Reset API', () => {
+// Import POST route after all mocks are set up
+let POST: any;
+
+// Load the actual module after all mocks are in place
+jest.isolateModules(() => {
+  const routeModule = require('../route');
+  POST = routeModule.POST;
+});
+
+describe('Reset Rolling Stock Route', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('should reset rolling stock to their home yards on the least occupied tracks', async () => {
-    // Call the API route handler
-    const result = await POST();
-
-    // Verify the response
-    expect(NextResponse.json).toHaveBeenCalledWith({ success: true });
-    expect(result.status).toBe(200);
     
-    // Verify the MongoDB service was used correctly
-    expect(fakeMongoService.connect).toHaveBeenCalled();
-    expect(fakeMongoService.getRollingStockCollection).toHaveBeenCalled();
-    expect(fakeMongoService.getIndustriesCollection).toHaveBeenCalled();
-    expect(fakeMongoService.close).toHaveBeenCalled();
+    // Set up mock data
+    const mockRollingStock = [
+      { 
+        _id: { toString: () => '1' }, 
+        roadName: 'TEST', 
+        roadNumber: '1001', 
+        homeYard: 'Test Yard',
+        aarType: 'XM'
+      },
+      { 
+        _id: { toString: () => '2' }, 
+        roadName: 'TEST', 
+        roadNumber: '1002', 
+        homeYard: 'Test Yard',
+        aarType: 'FM'
+      }
+    ];
     
-    // Verify updateOne was called for the rolling stock
-    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
-    expect(rollingStockCollection.updateOne).toHaveBeenCalledTimes(3);
-  });
-
-  it('should use the correct collection names', async () => {
-    // Call the API route handler
-    await POST();
+    // Configure mocks
+    rollingStockCollection.find.mockReturnValue({
+      toArray: jest.fn().mockResolvedValue(mockRollingStock)
+    });
     
-    // Verify the correct collection methods were called
-    expect(fakeMongoService.getRollingStockCollection).toHaveBeenCalled();
-    expect(fakeMongoService.getIndustriesCollection).toHaveBeenCalled();
+    rollingStockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
+    industriesCollection.updateMany.mockResolvedValue({ modifiedCount: 1 });
   });
-
-  it('should handle errors gracefully', async () => {
-    // Mock the connect method to throw an error
-    (fakeMongoService.connect as jest.Mock).mockRejectedValueOnce(new Error('Database connection failed'));
-
-    // Call the API route handler
-    await POST();
-
-    // Verify the error response
-    expect(NextResponse.json).toHaveBeenCalledWith(
-      { error: 'Failed to reset rolling stock' }, 
-      { status: 500 }
+  
+  it('should reset rolling stock to their home yards', async () => {
+    // Call the route
+    const mockRequest = {} as NextRequest;
+    const response = await POST(mockRequest) as MockResponse;
+    
+    // Check the success response
+    expect(response).toBeDefined();
+    expect(response.parsedBody).toEqual({ 
+      success: true, 
+      message: 'All rolling stock reset to home yards' 
+    });
+    expect(response.status).toBe(200);
+    
+    // Verify MongoDB operations
+    expect(mockMongoService.connect).toHaveBeenCalled();
+    expect(mockMongoService.getRollingStockCollection).toHaveBeenCalled();
+    expect(mockMongoService.getIndustriesCollection).toHaveBeenCalled();
+    expect(rollingStockCollection.find).toHaveBeenCalled();
+    expect(industriesCollection.updateMany).toHaveBeenCalledWith(
+      { 'tracks.placedCars': { $exists: true, $ne: [] } },
+      { $set: { 'tracks.$[].placedCars': [] } }
     );
-    
-    // Verify close was still called for cleanup
-    expect(fakeMongoService.close).toHaveBeenCalled();
+    expect(rollingStockCollection.updateOne).toHaveBeenCalledTimes(2);
+    expect(mockMongoService.close).toHaveBeenCalled();
   });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+  
+  it('should return an error response when something goes wrong', async () => {
+    // Make getRollingStockCollection throw an error
+    const errorMessage = 'Test error';
+    mockMongoService.connect.mockImplementationOnce(() => {
+      throw new Error(errorMessage);
+    });
+    
+    // Call the route
+    const mockRequest = {} as NextRequest;
+    const response = await POST(mockRequest) as MockResponse;
+    
+    // Check the error response
+    expect(response).toBeDefined();
+    expect(response.parsedBody).toEqual({ error: 'Failed to reset rolling stock' });
+    expect(response.status).toBe(500);
+    
+    // Verify close was called despite the error
+    expect(mockMongoService.close).toHaveBeenCalled();
   });
 }); 

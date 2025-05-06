@@ -1,241 +1,226 @@
-import { GET, POST } from '../route';
-import { NextRequest, NextResponse } from 'next/server';
-import { MongoDbProvider } from '@/lib/services/mongodb.provider';
-import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
-import { ObjectId } from 'mongodb';
+import { NextRequest } from 'next/server';
+import { jest } from '@jest/globals';
 
-import { FakeMongoDbService, createMongoDbTestSetup } from '@/test/utils/mongodb-test-utils';
-// Using FakeMongoDbService from test utils instead of custom mocks
+// Define a properly typed mock Response interface
+interface MockResponse {
+  body: string;
+  parsedBody: any;
+  status: number;
+  headers: Record<string, string>;
+}
 
-// Now mock the MongoDB provider
-// MongoDB provider mocking is now handled by createMongoDbTestSetup()
-
-
-
-// Using FakeMongoDbService from test utils instead of custom mocks
-
-// Now mock the MongoDB provider
-// Mock removed and replaced with proper declaration
-
-
-
-
-// Create a MongoDB provider and service that will be used throughout this file
-const mongoDbProvider = new MongoDbProvider(new MongoDbService());
-
-// Mock the MongoDB service
-// Mock removed and replaced with proper declaration
-
-// Mock NextResponse
-jest.mock('next/server', () => ({
-  NextResponse: {
-    json: jest.fn().mockImplementation((data, options) => ({
-      data,
-      status: options?.status || 200
-    }))
-  }
-}));
-
-// Mock ObjectId
-jest.mock('mongodb', () => {
+// Mock Response constructor
+global.Response = jest.fn().mockImplementation((body, options) => {
+  const parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
   return {
-    ObjectId: jest.fn((id) => {
-      return {
-        toString: () => id
-      };
-    })
+    body,
+    parsedBody,
+    status: options?.status || 200,
+    headers: options?.headers || {}
+  } as MockResponse;
+});
+
+// Create the custom ObjectId mock function with a throw-on-invalid capability
+const mockObjectId = jest.fn().mockImplementation((id) => {
+  // Specifically throw for 'invalid-id-format'
+  if (id === 'invalid-id-format') {
+    throw new Error('Invalid ObjectId');
+  }
+  return {
+    toString: () => id || 'new-id',
+    toHexString: () => id || 'mock-id'
   };
 });
 
+// Mock MongoDB ObjectId
+jest.mock('mongodb', () => {
+  const original = jest.requireActual('mongodb');
+  return {
+    ...original,
+    ObjectId: mockObjectId
+  };
+});
+
+// Import ObjectId after the mock is set up
+import { ObjectId } from 'mongodb';
+
+// Create mocks for collections
+const mockSwitchlistCollection = {
+  find: jest.fn(),
+  findOne: jest.fn(),
+  insertOne: jest.fn(),
+  updateOne: jest.fn(),
+  deleteOne: jest.fn()
+};
+
+const mockTrainRoutesCollection = {
+  findOne: jest.fn()
+};
+
+// Define mockMongoService
+const mockMongoService = {
+  connect: jest.fn().mockResolvedValue(undefined),
+  close: jest.fn().mockResolvedValue(undefined),
+  getSwitchlistsCollection: jest.fn().mockReturnValue(mockSwitchlistCollection),
+  getTrainRoutesCollection: jest.fn().mockReturnValue(mockTrainRoutesCollection)
+};
+
+// Set up the MongoDB service mock
+jest.mock('@/lib/services/mongodb.service', () => ({
+  MongoDbService: jest.fn().mockImplementation(() => mockMongoService)
+}));
+
+// Import route handlers after all mocks are set up
+let GET: (req?: NextRequest, context?: any) => Promise<Response>;
+let POST: (req: NextRequest, context?: any) => Promise<Response>;
+
+// Load the actual module after all mocks are in place
+jest.isolateModules(() => {
+  const routeModule = require('../route');
+  GET = routeModule.GET;
+  POST = routeModule.POST;
+});
+
 describe('Switchlists API Routes', () => {
-  // Mock MongoDB service implementation
-  const mockCollection = {
-    find: jest.fn().mockReturnThis(),
-    toArray: jest.fn(),
-    findOne: jest.fn(),
-    insertOne: jest.fn()
-  };
-  
-  const mockTrainRoutesCollection = {
-    findOne: jest.fn()
-  };
-  
-  const fakeMongoService = {
-    connect: jest.fn().mockResolvedValue(undefined),
-    close: jest.fn().mockResolvedValue(undefined),
-    getSwitchlistsCollection: jest.fn().mockReturnValue(mockCollection),
-    getTrainRoutesCollection: jest.fn().mockReturnValue(mockTrainRoutesCollection)
-  };
-  
   beforeEach(() => {
-  // Setup mock collections for this test
-  beforeEach(() => {
-    // Configure the fake service collections
-    const rollingStockCollection = fakeMongoService.getRollingStockCollection();
-    const industriesCollection = fakeMongoService.getIndustriesCollection();
-    const locationsCollection = fakeMongoService.getLocationsCollection();
-    const trainRoutesCollection = fakeMongoService.getTrainRoutesCollection();
-    const switchlistsCollection = fakeMongoService.getSwitchlistsCollection();
+    jest.clearAllMocks();
     
-    // Configure collection methods as needed for specific tests
-    // Example: rollingStockCollection.find.mockImplementation(() => ({ toArray: jest.fn().mockResolvedValue([mockRollingStock]) }));
+    // Configure mock find to return an array of results
+    mockSwitchlistCollection.find.mockReturnValue({
+      toArray: jest.fn().mockResolvedValue([])
+    });
   });
 
-    jest.clearAllMocks();
-    const mockProvider = new MongoDbProvider(fakeMongoService);
-  (MongoDbProvider as jest.Mock).mockReturnValue(mockProvider);
-    (ObjectId as unknown as jest.Mock).mockImplementation((id) => ({ toString: () => id }));
-  });
-  
   describe('GET', () => {
     it('should return all switchlists', async () => {
       const mockSwitchlists = [
-        { _id: '1', name: 'Switchlist 1' },
-        { _id: '2', name: 'Switchlist 2' }
+        { _id: '1', name: 'Test Switchlist 1' },
+        { _id: '2', name: 'Test Switchlist 2' }
       ];
       
-      mockCollection.toArray.mockResolvedValueOnce(mockSwitchlists);
+      // Configure mock to return switchlists
+      mockSwitchlistCollection.find.mockReturnValue({
+        toArray: jest.fn().mockResolvedValue(mockSwitchlists)
+      });
       
-      await GET();
+      const response = await GET() as MockResponse;
       
-      expect(fakeMongoService.connect).toHaveBeenCalled();
-      expect(fakeMongoService.getSwitchlistsCollection).toHaveBeenCalled();
-      expect(mockCollection.find).toHaveBeenCalledWith({});
-      expect(mockCollection.toArray).toHaveBeenCalled();
-      expect(NextResponse.json).toHaveBeenCalledWith(mockSwitchlists);
-      expect(fakeMongoService.close).toHaveBeenCalled();
+      expect(mockMongoService.connect).toHaveBeenCalled();
+      expect(mockMongoService.getSwitchlistsCollection).toHaveBeenCalled();
+      expect(mockSwitchlistCollection.find).toHaveBeenCalled();
+      expect(response.parsedBody).toEqual(mockSwitchlists);
+      expect(response.status).toBe(200);
     });
     
     it('should handle errors', async () => {
-      const mockError = new Error('Database error');
-      mockCollection.toArray.mockRejectedValueOnce(mockError);
+      // Configure mock to throw an error
+      mockSwitchlistCollection.find.mockReturnValue({
+        toArray: jest.fn().mockRejectedValue(new Error('Database error'))
+      });
       
-      await GET();
+      const response = await GET() as MockResponse;
       
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to fetch switchlists' },
-        { status: 500 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Failed to fetch switchlists' });
+      expect(response.status).toBe(500);
     });
   });
   
   describe('POST', () => {
     it('should create a new switchlist', async () => {
-      const mockRequest = {
-        json: jest.fn().mockResolvedValue({
-          trainRouteId: '123',
-          name: 'New Switchlist',
-          notes: 'Test notes'
-        })
-      } as unknown as NextRequest;
-      
-      const mockTrainRoute = { _id: '123', name: 'Test Route' };
-      mockTrainRoutesCollection.findOne.mockResolvedValueOnce(mockTrainRoute);
-      
-      const mockInsertResult = {
-        acknowledged: true,
-        insertedId: { toString: () => '456' }
+      const mockTrainRoute = { _id: 'train1', name: 'Test Train Route' };
+      const mockSwitchlistData = {
+        name: 'New Switchlist',
+        trainRouteId: 'train1'
       };
-      mockCollection.insertOne.mockResolvedValueOnce(mockInsertResult);
       
-      await POST(mockRequest);
+      // Configure mocks for successful creation
+      mockTrainRoutesCollection.findOne.mockResolvedValue(mockTrainRoute);
+      mockSwitchlistCollection.insertOne.mockResolvedValue({
+        acknowledged: true,
+        insertedId: new ObjectId('123456789012345678901234')
+      });
       
-      expect(fakeMongoService.connect).toHaveBeenCalled();
+      const mockRequest = {
+        json: jest.fn().mockResolvedValue(mockSwitchlistData)
+      } as unknown as NextRequest;
+      
+      const response = await POST(mockRequest) as MockResponse;
+      
+      expect(mockMongoService.connect).toHaveBeenCalled();
       expect(mockTrainRoutesCollection.findOne).toHaveBeenCalled();
-      expect(mockCollection.insertOne).toHaveBeenCalled();
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          _id: '456',
-          trainRouteId: '123',
+      expect(mockSwitchlistCollection.insertOne).toHaveBeenCalled();
+      expect(response.status).toBe(201);
+      expect(response.parsedBody).toHaveProperty('_id');
+      expect(response.parsedBody).toHaveProperty('name', 'New Switchlist');
+      expect(response.parsedBody).toHaveProperty('trainRouteId', 'train1');
+    });
+    
+    it('should return 400 if required fields are missing', async () => {
+      const mockRequest = {
+        json: jest.fn().mockResolvedValue({
+          // Missing trainRouteId or name
+        })
+      } as unknown as NextRequest;
+      
+      const response = await POST(mockRequest) as MockResponse;
+      
+      expect(response.parsedBody).toEqual({ 
+        error: 'Missing required fields: trainRouteId and name are required' 
+      });
+      expect(response.status).toBe(400);
+    });
+    
+    it('should return 404 if train route not found', async () => {
+      // Configure train route to not be found
+      mockTrainRoutesCollection.findOne.mockResolvedValue(null);
+      
+      const mockRequest = {
+        json: jest.fn().mockResolvedValue({
           name: 'New Switchlist',
-          notes: 'Test notes'
-        }),
-        { status: 201 }
-      );
-    });
-    
-    it('should validate required fields', async () => {
-      const mockRequest = {
-        json: jest.fn().mockResolvedValue({
-          name: 'New Switchlist'
-          // Missing trainRouteId
+          trainRouteId: 'nonexistent'
         })
       } as unknown as NextRequest;
       
-      await POST(mockRequest);
-      
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Missing required fields: trainRouteId and name are required' },
-        { status: 400 }
-      );
-    });
-    
-    it('should validate trainRouteId exists', async () => {
-      const mockRequest = {
-        json: jest.fn().mockResolvedValue({
-          trainRouteId: '123',
-          name: 'New Switchlist'
-        })
-      } as unknown as NextRequest;
-      
-      // No train route found
-      mockTrainRoutesCollection.findOne.mockResolvedValueOnce(null);
-      
-      await POST(mockRequest);
+      const response = await POST(mockRequest) as MockResponse;
       
       expect(mockTrainRoutesCollection.findOne).toHaveBeenCalled();
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Train route not found' },
-        { status: 404 }
-      );
-    });
-    
-    it('should handle errors', async () => {
-      const mockRequest = {
-        json: jest.fn().mockResolvedValue({
-          trainRouteId: '123',
-          name: 'New Switchlist'
-        })
-      } as unknown as NextRequest;
-      
-      // Mock a database error during insert
-      const mockError = new Error('Database error');
-      mockTrainRoutesCollection.findOne.mockResolvedValueOnce({ _id: '123' });
-      mockCollection.insertOne.mockRejectedValueOnce(mockError);
-      
-      await POST(mockRequest);
-      
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to create switchlist' },
-        { status: 500 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Train route not found' });
+      expect(response.status).toBe(404);
     });
     
     it('should handle invalid trainRouteId format', async () => {
       const mockRequest = {
         json: jest.fn().mockResolvedValue({
-          trainRouteId: 'invalid-id',
-          name: 'New Switchlist'
+          name: 'New Switchlist',
+          trainRouteId: 'invalid-id-format'
         })
       } as unknown as NextRequest;
       
-      // Make ObjectId constructor throw an error
-      (ObjectId as unknown as jest.Mock).mockImplementationOnce(() => {
-        throw new Error('Invalid ObjectId');
-      });
+      const response = await POST(mockRequest) as MockResponse;
       
-      await POST(mockRequest);
+      expect(response.parsedBody).toEqual({ error: 'Invalid trainRouteId format' });
+      expect(response.status).toBe(400);
+    });
+    
+    it('should handle database errors', async () => {
+      mockTrainRoutesCollection.findOne.mockResolvedValue({ _id: 'train1' });
+      mockSwitchlistCollection.insertOne.mockRejectedValue(new Error('Database error'));
       
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Invalid trainRouteId format' },
-        { status: 400 }
-      );
+      const mockRequest = {
+        json: jest.fn().mockResolvedValue({
+          name: 'New Switchlist',
+          trainRouteId: 'train1'
+        })
+      } as unknown as NextRequest;
+      
+      const response = await POST(mockRequest) as MockResponse;
+      
+      expect(response.parsedBody).toEqual({ error: 'Failed to create switchlist' });
+      expect(response.status).toBe(500);
     });
   });
-
+  
   afterEach(() => {
     jest.clearAllMocks();
-    fakeMongoService.clearCallHistory();
   });
 }); 

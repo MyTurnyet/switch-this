@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
@@ -14,12 +14,21 @@ export async function GET() {
     
     const switchlists = await collection.find({}).toArray();
     
-    return NextResponse.json(switchlists);
+    return new Response(
+      JSON.stringify(switchlists),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error('Error fetching switchlists:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch switchlists' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch switchlists' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } finally {
     await mongoService.close();
@@ -33,9 +42,12 @@ export async function POST(request: NextRequest) {
     
     // Validate required fields
     if (!body.trainRouteId || !body.name) {
-      return NextResponse.json(
-        { error: 'Missing required fields: trainRouteId and name are required' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: trainRouteId and name are required' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
@@ -46,18 +58,24 @@ export async function POST(request: NextRequest) {
     try {
       trainRouteId = new ObjectId(body.trainRouteId);
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid trainRouteId format' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: 'Invalid trainRouteId format' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
     const trainRoutesCollection = mongoService.getTrainRoutesCollection();
     const trainRoute = await trainRoutesCollection.findOne({ _id: trainRouteId });
     if (!trainRoute) {
-      return NextResponse.json(
-        { error: 'Train route not found' },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: 'Train route not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
@@ -78,15 +96,21 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to insert switchlist');
     }
     
-    return NextResponse.json(
-      { ...switchlist, _id: result.insertedId.toString() },
-      { status: 201 }
+    return new Response(
+      JSON.stringify({ ...switchlist, _id: result.insertedId.toString() }),
+      { 
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } catch (error) {
     console.error('Error creating switchlist:', error);
-    return NextResponse.json(
-      { error: 'Failed to create switchlist' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to create switchlist' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } finally {
     await mongoService.close();

@@ -1,188 +1,266 @@
 import { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { GET, POST } from '../route';
-import { createMockMongoService } from '@/test/utils/mongodb-test-utils';
-import { Collection, Document, ObjectId } from 'mongodb';
+import { jest } from '@jest/globals';
 
-// Mock NextResponse
-jest.mock('next/server', () => ({
-  NextResponse: {
-    json: jest.fn()
-  }
+// Define a properly typed mock Response interface
+interface MockResponse {
+  body: string;
+  parsedBody: any;
+  status: number;
+  headers: Record<string, string>;
+}
+
+// Mock Response constructor
+global.Response = jest.fn().mockImplementation((body, options) => {
+  const parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
+  return {
+    body,
+    parsedBody,
+    status: options?.status || 200,
+    headers: options?.headers || {}
+  } as MockResponse;
+});
+
+// Create mock collections first
+const mockCollection = {
+  findOne: jest.fn(),
+  insertOne: jest.fn(),
+  updateOne: jest.fn()
+};
+
+// Create mockMongoService before it's used in mock implementation
+const mockMongoService = {
+  connect: jest.fn().mockResolvedValue(undefined),
+  close: jest.fn().mockResolvedValue(undefined),
+  getLayoutStateCollection: jest.fn().mockReturnValue(mockCollection)
+};
+
+// Mock the MongoDB service module
+jest.mock('@/lib/services/mongodb.service', () => ({
+  MongoDbService: jest.fn().mockImplementation(() => mockMongoService)
 }));
 
-// Mock the MongoDB provider
-jest.mock('@/lib/services/mongodb.provider', () => {
+// Create the custom ObjectId mock function with a throw-on-invalid capability
+const mockObjectId = jest.fn().mockImplementation((id) => {
+  // Specifically throw for 'invalid-id'
+  if (id === 'invalid-id') {
+    throw new Error('Invalid ObjectId');
+  }
   return {
-    MongoDbProvider: jest.fn().mockImplementation(() => ({
-      getService: jest.fn().mockReturnValue(createMockMongoService())
-    }))
+    toString: () => id || 'mock-id',
+    toHexString: () => id || 'mock-id'
   };
 });
 
-describe('Layout State API', () => {
-  let mockRequest: NextRequest;
-  let mockRequestJson: jest.Mock;
-  let mockMongoService: ReturnType<typeof createMockMongoService>;
-  let mockCollection: jest.Mocked<Collection<Document>>;
+// Mock ObjectId
+jest.mock('mongodb', () => {
+  const original = jest.requireActual('mongodb');
+  return {
+    ...original,
+    ObjectId: mockObjectId
+  };
+});
 
+// Import modules after mocks
+import { ObjectId } from 'mongodb';
+
+// Import API routes after all mocks are set up
+let GET: (req?: NextRequest, context?: any) => Promise<Response>;
+let POST: (req: NextRequest, context?: any) => Promise<Response>;
+let OPTIONS: (req?: NextRequest, context?: any) => Promise<Response>;
+
+// Load the actual module after all mocks are in place
+jest.isolateModules(() => {
+  const routeModule = require('../route');
+  GET = routeModule.GET;
+  POST = routeModule.POST;
+  OPTIONS = routeModule.OPTIONS;
+});
+
+describe('Layout State API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    // Setup mock request
-    mockRequestJson = jest.fn();
-    mockRequest = {
-      json: mockRequestJson
-    } as unknown as NextRequest;
-    
-    // Setup MongoDB mock
-    mockMongoService = createMockMongoService();
-    mockCollection = mockMongoService.getLayoutStateCollection() as jest.Mocked<Collection<Document>>;
   });
   
   describe('GET', () => {
     it('should return layout state from the database', async () => {
-      // Setup mock data
+      // Mock data
       const mockLayoutState = {
-        _id: new ObjectId().toString(),
+        _id: 'mock-layout-id-123',
         industries: [{ _id: 'ind-1', tracks: [] }],
-        updatedAt: new Date()
+        updatedAt: '2025-05-06T16:16:03.299Z'
       };
       
-      // Configure mock
-      (mockCollection.findOne as jest.Mock).mockResolvedValue(mockLayoutState);
+      // Configure the mock
+      mockCollection.findOne.mockResolvedValueOnce(mockLayoutState);
       
       // Call the API
-      await GET();
+      const response = await GET() as MockResponse;
       
       // Verify the result
-      expect(NextResponse.json).toHaveBeenCalledWith(mockLayoutState);
+      expect(response.parsedBody).toEqual(mockLayoutState);
       expect(mockCollection.findOne).toHaveBeenCalledWith({}, { sort: { updatedAt: -1 } });
       expect(mockMongoService.close).toHaveBeenCalled();
     });
     
     it('should return exists:false when no layout state exists', async () => {
-      // Configure mock to return null (no state found)
-      (mockCollection.findOne as jest.Mock).mockResolvedValue(null);
+      // Configure the mock to return null (no state exists)
+      mockCollection.findOne.mockResolvedValueOnce(null);
       
       // Call the API
-      await GET();
+      const response = await GET() as MockResponse;
       
       // Verify the result
-      expect(NextResponse.json).toHaveBeenCalledWith({ exists: false });
+      expect(response.parsedBody).toEqual({ exists: false });
       expect(mockMongoService.close).toHaveBeenCalled();
     });
     
     it('should handle database errors', async () => {
-      // Configure mock to throw an error
-      mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
+      // Configure the mock to throw an error
+      mockCollection.findOne.mockRejectedValueOnce(new Error('Database error'));
       
       // Call the API
-      await GET();
+      const response = await GET() as MockResponse;
       
       // Verify error response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to fetch layout state' },
-        { status: 500 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Failed to fetch layout state' });
+      expect(response.status).toBe(500);
+      expect(mockMongoService.close).toHaveBeenCalled();
     });
   });
   
   describe('POST', () => {
     it('should update existing layout state', async () => {
-      // Setup mock data with an existing _id
-      const layoutId = new ObjectId().toString();
-      const mockData = {
+      // Setup existing layout ID
+      const layoutId = 'mock-layout-id-123';
+      
+      // Mock request data
+      const requestData = {
         _id: layoutId,
         industries: [{ _id: 'ind-1', tracks: [] }]
       };
       
-      // Create request with mock data
-      mockRequestJson.mockResolvedValue(mockData);
+      // Mock response after update
+      const updatedState = {
+        ...requestData,
+        updatedAt: '2025-05-06T16:16:03.299Z'
+      };
       
-      // Mock updateOne to show success
-      (mockCollection.updateOne as jest.Mock).mockResolvedValue({ 
-        acknowledged: true, 
-        modifiedCount: 1 
-      });
+      // Configure mocks
+      mockCollection.updateOne.mockResolvedValueOnce({ matchedCount: 1 });
+      mockCollection.findOne.mockResolvedValueOnce(updatedState);
+      
+      // Create mock request
+      const mockRequest = {
+        json: jest.fn().mockResolvedValueOnce(requestData)
+      } as unknown as NextRequest;
       
       // Call the API
-      await POST(mockRequest);
+      const response = await POST(mockRequest) as MockResponse;
       
-      // Verify updateOne was called with correct params
+      // Verify the response includes the original data with added timestamp
+      expect(response.status).toBe(200);
+      expect(response.parsedBody._id).toBe(layoutId);
+      expect(response.parsedBody.industries).toEqual(requestData.industries);
+      expect(response.parsedBody.updatedAt).toBeDefined();
+      
+      // Verify DB operations
+      expect(mockMongoService.connect).toHaveBeenCalled();
       expect(mockCollection.updateOne).toHaveBeenCalledWith(
-        { _id: layoutId },
+        { _id: expect.anything() },
         { $set: expect.objectContaining({
-          _id: layoutId,
-          industries: [{ _id: 'ind-1', tracks: [] }],
-          updatedAt: expect.any(Date)
-        })},
-        { upsert: true }
+          industries: requestData.industries,
+          updatedAt: expect.any(String)
+        })}
       );
-      
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          _id: layoutId,
-          industries: [{ _id: 'ind-1', tracks: [] }],
-          updatedAt: expect.any(Date)
-        })
-      );
-      
       expect(mockMongoService.close).toHaveBeenCalled();
     });
     
     it('should create new layout state when no _id is provided', async () => {
-      // Setup mock data without an _id
-      const mockData = {
+      // Mock request data without ID
+      const requestData = {
         industries: [{ _id: 'ind-1', tracks: [] }]
       };
       
-      // Create request with mock data
-      mockRequestJson.mockResolvedValue(mockData);
-      
-      // Mock insertOne to return an ID
-      const insertedId = new ObjectId().toString();
-      (mockCollection.insertOne as jest.Mock).mockResolvedValue({ 
+      // Mock insertOne response
+      const mockInsertedId = { toString: () => 'new-mock-id' };
+      mockCollection.insertOne.mockResolvedValueOnce({
         acknowledged: true,
-        insertedId
+        insertedId: mockInsertedId
       });
       
+      // Create mock request
+      const mockRequest = {
+        json: jest.fn().mockResolvedValueOnce(requestData)
+      } as unknown as NextRequest;
+      
       // Call the API
-      await POST(mockRequest);
+      const response = await POST(mockRequest) as MockResponse;
+      
+      // Verify the response
+      expect(response.status).toBe(201);
+      expect(response.parsedBody.industries).toEqual(requestData.industries);
+      expect(response.parsedBody._id).toBeDefined();
+      expect(response.parsedBody.updatedAt).toBeDefined();
       
       // Verify insertOne was called
       expect(mockCollection.insertOne).toHaveBeenCalledWith(
         expect.objectContaining({
-          industries: [{ _id: 'ind-1', tracks: [] }],
-          updatedAt: expect.any(Date)
+          industries: requestData.industries,
+          updatedAt: expect.anything()
         })
       );
-      
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          industries: [{ _id: 'ind-1', tracks: [] }],
-          updatedAt: expect.any(Date)
-        })
-      );
-      
       expect(mockMongoService.close).toHaveBeenCalled();
     });
     
     it('should handle database errors during save', async () => {
-      // Create request with mock data
-      mockRequestJson.mockResolvedValue({ industries: [] });
+      // Mock request with ID
+      const mockRequest = {
+        json: jest.fn().mockResolvedValueOnce({
+          _id: 'mock-layout-id-123'
+        })
+      } as unknown as NextRequest;
       
-      // Configure mock to throw an error
-      mockMongoService.connect.mockRejectedValue(new Error('Database connection error'));
+      // Configure updateOne to throw error
+      mockCollection.updateOne.mockRejectedValueOnce(new Error('Database error'));
       
       // Call the API
-      await POST(mockRequest);
+      const response = await POST(mockRequest) as MockResponse;
       
       // Verify error response
-      expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Failed to save layout state' },
-        { status: 500 }
-      );
+      expect(response.parsedBody).toEqual({ error: 'Failed to save layout state' });
+      expect(response.status).toBe(500);
+      
+      // Verify close was called
+      expect(mockMongoService.close).toHaveBeenCalled();
+    });
+    
+    it('should handle invalid ID format', async () => {
+      // Create mock request with invalid ID
+      const mockRequest = {
+        json: jest.fn().mockResolvedValueOnce({
+          _id: 'invalid-id'
+        })
+      } as unknown as NextRequest;
+      
+      // Call the API - our mockObjectId will throw for 'invalid-id'
+      const response = await POST(mockRequest) as MockResponse;
+      
+      // Verify error response
+      expect(response.parsedBody).toEqual({ error: 'Invalid layout state ID format' });
+      expect(response.status).toBe(400);
+    });
+  });
+  
+  describe('OPTIONS', () => {
+    it('should return CORS headers', async () => {
+      const response = await OPTIONS() as MockResponse;
+      
+      expect(response.status).toBe(200);
+      expect(response.headers).toEqual(expect.objectContaining({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With',
+      }));
     });
   });
 }); 

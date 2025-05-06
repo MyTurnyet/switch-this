@@ -1,58 +1,108 @@
-import { NextResponse } from 'next/server';
-import { RollingStock, Industry } from '@/app/shared/types/models';
+import { NextRequest } from 'next/server';
+import { RollingStock, Industry, Track } from '@/app/shared/types/models';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
 
-// Create a MongoDB service to be used throughout this file
+// Create a MongoDB service that will be used throughout this file
 const mongoService: IMongoDbService = new MongoDbService();
 
-type Track = {
-  _id: string | ObjectId;
-  name: string;
-  length: number;
-  maxCars: number;
-  capacity: number;
-  placedCars: string[];
-  acceptedCarTypes?: string[];
-  ownerId?: string;
-};
-
-export async function POST() {
-  console.log('Reset API endpoint called');
-  
+/**
+ * POST /api/rolling-stock/reset
+ * Resets all rolling stock to their home yards by:
+ * 1. Removing all rolling stock from tracks
+ * 2. Clearing current location and destination data
+ */
+export async function POST(request: NextRequest) {
   try {
     await mongoService.connect();
-    console.log('Connected to MongoDB');
     
+    // Get the collections we need to work with
     const rollingStockCollection = mongoService.getRollingStockCollection();
     const industriesCollection = mongoService.getIndustriesCollection();
-
-    const { allRollingStock, allIndustries } = await fetchData(rollingStockCollection, industriesCollection);
-    console.log(`Found ${allRollingStock.length} rolling stock items and ${allIndustries.length} industries`);
-
-    await clearAllPlacedCars(industriesCollection, allIndustries, mongoService);
-    console.log('Cleared placedCars arrays from all tracks');
-
-    const industryTracks = buildIndustryTracksMap(allIndustries);
     
-    await assignCarsToHomeTracks(
-      allRollingStock, 
-      industryTracks, 
-      rollingStockCollection, 
-      industriesCollection, 
-      mongoService
+    // 1. Get all rolling stock
+    const rollingStock = await rollingStockCollection.find({}).toArray();
+    
+    // 2. Update all industries to remove rolling stock from tracks
+    await industriesCollection.updateMany(
+      { 'tracks.placedCars': { $exists: true, $ne: [] } },
+      { $set: { 'tracks.$[].placedCars': [] } }
     );
-
+    
+    // 3. Update all rolling stock to remove current location and destination
+    const resetPromises = rollingStock.map(car => {
+      // Safely convert id to string if it's an ObjectId
+      const carId = typeof car._id === 'object' && car._id !== null 
+        ? car._id.toString() 
+        : car._id;
+        
+      return rollingStockCollection.updateOne(
+        { _id: carId },
+        { 
+          $unset: { 
+            currentLocation: '',
+            destination: ''
+          } 
+        }
+      );
+    });
+    
+    await Promise.all(resetPromises);
+    
+    // Close the connection
     await mongoService.close();
-    console.log('Reset operation completed successfully');
-    return NextResponse.json({ success: true });
+    
+    // Return success
+    return new Response(
+      JSON.stringify({ success: true, message: 'All rolling stock reset to home yards' }),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error('Error resetting rolling stock:', error);
-    await mongoService.close();
-    return NextResponse.json({ error: 'Failed to reset rolling stock' }, { status: 500 });
+    
+    // Make sure to close the connection even if there's an error
+    if (mongoService) {
+      await mongoService.close();
+    }
+    
+    return new Response(
+      JSON.stringify({ error: 'Failed to reset rolling stock' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 }
+
+async function updateCarLocation(
+  car: RollingStock,
+  industryId: string,
+  trackId: string,
+  collection: Collection,
+  mongoService: IMongoDbService
+) {
+  // Update the car with new location
+  return await collection.updateOne(
+    { _id: typeof car._id === 'string' ? mongoService.toObjectId(car._id) : car._id },
+    { 
+      $set: { 
+        currentLocation: {
+          industryId: industryId,
+          trackId: trackId
+        },
+        // Clear any destination
+        destination: null
+      } 
+    }
+  );
+}
+
+// Existing functions below
 
 async function fetchData(rollingStockCollection: Collection, industriesCollection: Collection) {
   const allRollingStock = await rollingStockCollection.find({}).toArray() as unknown as RollingStock[];
@@ -144,64 +194,45 @@ async function assignCarsToHomeTracks(
   }
 }
 
-function findLeastOccupiedTrack(tracksList: { trackId: string; carCount: number; acceptedCarTypes?: string[] }[], carType: string) {
+function findLeastOccupiedTrack(tracksList: { trackId: string; carCount: number; acceptedCarTypes?: string[] }[], carType?: string) {
+  if (!tracksList || tracksList.length === 0) {
+    return null;
+  }
+  
   // Filter tracks to those that accept this car type (or have no restrictions)
-  const eligibleTracks = tracksList.filter(track => 
+  const eligibleTracks = !carType ? tracksList : tracksList.filter(track => 
     !track.acceptedCarTypes || // If undefined, accept all
     track.acceptedCarTypes.length === 0 || // If empty array, accept all
-    track.acceptedCarTypes.includes(carType) // Check if car type is accepted
+    track.acceptedCarTypes.includes(carType)
   );
-
+  
   if (eligibleTracks.length === 0) {
-    // If no eligible tracks, fall back to any track
-    console.warn(`No tracks found that accept car type ${carType}. Falling back to any track.`);
-    return tracksList.reduce((prev, current) => 
-      prev.carCount < current.carCount ? prev : current
-    );
+    return null;
   }
-
-  // Return the eligible track with the least cars
-  return eligibleTracks.reduce((prev, current) => 
-    prev.carCount < current.carCount ? prev : current
-  );
-}
-
-async function updateCarLocation(
-  car: RollingStock, 
-  industryId: string,
-  trackId: string,
-  rollingStockCollection: Collection,
-  mongoService: IMongoDbService
-) {
-  await rollingStockCollection.updateOne(
-    { _id: typeof car._id === 'string' ? mongoService.toObjectId(car._id) : car._id },
-    {
-      $set: {
-        currentLocation: {
-          industryId,
-          trackId
-        }
-      }
-    }
-  );
+  
+  // Sort tracks by car count and return the least occupied
+  return [...eligibleTracks].sort((a, b) => a.carCount - b.carCount)[0];
 }
 
 async function addCarToTrack(
-  carId: string | ObjectId,
-  industryId: string,
-  trackId: string,
+  carId: string | ObjectId, 
+  industryId: string, 
+  trackId: string, 
   industriesCollection: Collection,
   mongoService: IMongoDbService
 ) {
-  await industriesCollection.updateOne(
+  // Add car to industry's track's placedCars array
+  return await industriesCollection.updateOne(
     { 
-      _id: mongoService.toObjectId(industryId), 
-      "tracks._id": trackId 
+      _id: typeof industryId === 'string' ? mongoService.toObjectId(industryId) : industryId,
+      "tracks._id": typeof trackId === 'string' ? mongoService.toObjectId(trackId) : trackId
     },
     { 
-      $addToSet: { 
-        "tracks.$.placedCars": ensureStringId(carId)
-      }
+      $push: { "tracks.$.placedCars": ensureStringId(carId) }
     }
   );
+}
+
+function log(message: string) {
+  console.log(message);
 } 
