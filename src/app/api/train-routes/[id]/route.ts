@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
@@ -26,24 +26,49 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    let objectId;
+    try {
+      objectId = new ObjectId(params.id);
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid ID format' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     await mongoService.connect();
     const collection = mongoService.getTrainRoutesCollection();
     
-    const trainRoute = await collection.findOne({ _id: new ObjectId(params.id) });
+    const trainRoute = await collection.findOne({ _id: objectId });
     
     if (!trainRoute) {
-      return NextResponse.json(
-        { error: 'Train route not found' },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: 'Train route not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
-    return NextResponse.json(trainRoute);
+    return new Response(
+      JSON.stringify(trainRoute),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error(`Error fetching train route with id ${params.id}:`, error);
-    return NextResponse.json(
-      { error: 'Failed to fetch train route' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch train route' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } finally {
     await mongoService.close();
@@ -60,9 +85,12 @@ export async function PUT(
     
     // Validate the train route data
     if (!validateTrainRoute(trainRoute)) {
-      return NextResponse.json(
-        { error: 'Invalid train route data' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: 'Invalid train route data' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
@@ -94,19 +122,31 @@ export async function PUT(
     );
     
     if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { error: 'Train route not found' },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: 'Train route not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
     const updatedTrainRoute = await collection.findOne({ _id: new ObjectId(params.id) });
-    return NextResponse.json(updatedTrainRoute);
+    return new Response(
+      JSON.stringify(updatedTrainRoute),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error(`Error updating train route with id ${params.id}:`, error);
-    return NextResponse.json(
-      { error: 'Failed to update train route' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to update train route' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } finally {
     await mongoService.close();
@@ -119,24 +159,49 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    let objectId;
+    try {
+      objectId = new ObjectId(params.id);
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid ID format' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     await mongoService.connect();
     const collection = mongoService.getTrainRoutesCollection();
     
-    const result = await collection.deleteOne({ _id: new ObjectId(params.id) });
+    const result = await collection.deleteOne({ _id: objectId });
     
     if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { error: 'Train route not found' },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: 'Train route not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
-    return NextResponse.json({ success: true });
+    return new Response(
+      JSON.stringify({ success: true }),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error(`Error deleting train route with id ${params.id}:`, error);
-    return NextResponse.json(
-      { error: 'Failed to delete train route' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to delete train route' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } finally {
     await mongoService.close();

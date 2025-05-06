@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
@@ -18,27 +18,42 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     try {
       id = new ObjectId(params.id);
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid ID format' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: 'Invalid ID format' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
     const switchlist = await collection.findOne({ _id: id });
     
     if (!switchlist) {
-      return NextResponse.json(
-        { error: 'Switchlist not found' },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: 'Switchlist not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
-    return NextResponse.json(switchlist);
+    return new Response(
+      JSON.stringify(switchlist),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error(`Error fetching switchlist with id ${params.id}:`, error);
-    return NextResponse.json(
-      { error: 'Failed to fetch switchlist' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch switchlist' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } finally {
     await mongoService.close();
@@ -54,9 +69,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     try {
       id = new ObjectId(params.id);
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid ID format' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: 'Invalid ID format' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
@@ -67,9 +85,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const existingSwitchlist = await collection.findOne({ _id: id });
     
     if (!existingSwitchlist) {
-      return NextResponse.json(
-        { error: 'Switchlist not found' },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: 'Switchlist not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
@@ -79,9 +100,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       try {
         trainRouteId = new ObjectId(body.trainRouteId);
       } catch (error) {
-        return NextResponse.json(
-          { error: 'Invalid trainRouteId format' },
-          { status: 400 }
+        return new Response(
+          JSON.stringify({ error: 'Invalid trainRouteId format' }),
+          { 
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          }
         );
       }
       
@@ -89,9 +113,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       const trainRoute = await trainRoutesCollection.findOne({ _id: trainRouteId });
       
       if (!trainRoute) {
-        return NextResponse.json(
-          { error: 'Train route not found' },
-          { status: 404 }
+        return new Response(
+          JSON.stringify({ error: 'Train route not found' }),
+          { 
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          }
         );
       }
     }
@@ -112,20 +139,32 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     );
     
     if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { error: 'Switchlist not found' },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: 'Switchlist not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
     const updatedSwitchlist = await collection.findOne({ _id: id });
     
-    return NextResponse.json(updatedSwitchlist);
+    return new Response(
+      JSON.stringify(updatedSwitchlist),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error(`Error updating switchlist with id ${params.id}:`, error);
-    return NextResponse.json(
-      { error: 'Failed to update switchlist' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to update switchlist' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } finally {
     await mongoService.close();
@@ -139,40 +178,45 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     try {
       id = new ObjectId(params.id);
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid ID format' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: 'Invalid ID format' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
     await mongoService.connect();
     const collection = mongoService.getSwitchlistsCollection();
     
-    // Check if the switchlist exists
-    const switchlist = await collection.findOne({ _id: id });
-    
-    if (!switchlist) {
-      return NextResponse.json(
-        { error: 'Switchlist not found' },
-        { status: 404 }
-      );
-    }
-    
     const result = await collection.deleteOne({ _id: id });
     
     if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { error: 'Failed to delete switchlist' },
-        { status: 500 }
+      return new Response(
+        JSON.stringify({ error: 'Switchlist not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
     
-    return NextResponse.json({ success: true });
+    return new Response(
+      JSON.stringify({ success: true }),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     console.error(`Error deleting switchlist with id ${params.id}:`, error);
-    return NextResponse.json(
-      { error: 'Failed to delete switchlist' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: 'Failed to delete switchlist' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   } finally {
     await mongoService.close();
