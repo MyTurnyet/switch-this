@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server';
+import { getMongoService } from "@/lib/services/mongodb.client";
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
 
 // Create a MongoDB service instance
-const mongoService: IMongoDbService = new MongoDbService();
+const mongoService = getMongoService();
 
 /**
  * GET /api/layout-state
@@ -12,7 +13,9 @@ const mongoService: IMongoDbService = new MongoDbService();
  */
 export async function GET() {
   try {
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getLayoutStateCollection();
     
     // Find the most recent layout state
@@ -45,7 +48,9 @@ export async function GET() {
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -56,7 +61,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const requestData = await request.json();
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getLayoutStateCollection();
     
     // If _id is provided, we're updating an existing layout state
@@ -142,7 +149,9 @@ export async function POST(request: NextRequest) {
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 

@@ -1,10 +1,10 @@
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
+import { getMongoService } from '@/lib/services/mongodb.client';
 import { LocationType } from '@/app/shared/types/models';
 
 
-// Create a MongoDB service that will be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+// Get the MongoDB service instance from the factory
+const mongoService: IMongoDbService = getMongoService();
 
 // Helper to create a response with CORS headers
 function createResponse(body: unknown, status = 200) {
@@ -24,7 +24,9 @@ function createResponse(body: unknown, status = 200) {
 
 export async function GET() {
   try {
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getLocationsCollection();
     const locations = await collection.find().toArray();
     
@@ -50,7 +52,9 @@ export async function GET() {
       500
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -81,7 +85,9 @@ export async function POST(request: Request) {
       delete data._id;
     }
     
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getLocationsCollection();
     
     const result = await collection.insertOne(data);
@@ -97,7 +103,9 @@ export async function POST(request: Request) {
       500
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 

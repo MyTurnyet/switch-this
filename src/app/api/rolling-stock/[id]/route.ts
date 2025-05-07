@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getMongoService } from "@/lib/services/mongodb.client";
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
@@ -13,7 +14,7 @@ const corsHeaders = {
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   // Create a MongoDB service instance for this request
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
     const id = params.id;
@@ -30,7 +31,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
     
     // Connect to the database
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     // Get the rolling stock collection
     const collection = mongoService.getRollingStockCollection();
@@ -39,7 +42,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const rollingStock = await collection.findOne({ _id: new ObjectId(id) });
     
     // Close the connection
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
     
     // If no rolling stock found, return 404
     if (!rollingStock) {
@@ -73,7 +78,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // Ensure connection is closed even if an error occurs
     if (mongoService) {
       try {
-        await mongoService.close();
+        if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
       } catch (error) {
         console.error('Error closing MongoDB connection:', error);
       }
@@ -83,7 +90,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   // Create a MongoDB service instance for this request
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
     const id = params.id;
@@ -103,7 +110,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const data = await request.json();
     
     // Connect to the database
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     // Get the rolling stock collection
     const collection = mongoService.getRollingStockCollection();
@@ -152,7 +161,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Ensure connection is closed even if an error occurs
     if (mongoService) {
       try {
-        await mongoService.close();
+        if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
       } catch (error) {
         console.error('Error closing MongoDB connection:', error);
       }
@@ -162,7 +173,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   // Create a MongoDB service instance for this request
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
     const id = params.id;
@@ -179,7 +190,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     
     // Connect to the database
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     // Get the rolling stock collection
     const collection = mongoService.getRollingStockCollection();
@@ -245,7 +258,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // Ensure connection is closed even if an error occurs
     if (mongoService) {
       try {
-        await mongoService.close();
+        if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
       } catch (error) {
         console.error('Error closing MongoDB connection:', error);
       }

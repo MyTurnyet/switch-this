@@ -1,4 +1,5 @@
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
+import { getMongoService } from "@/lib/services/mongodb.client";
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection } from 'mongodb';
 import { LocationType } from '@/app/shared/types/models';
@@ -52,10 +53,12 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getLocationsCollection();
     
     const location = await findLocationById(collection, params.id, mongoService);
@@ -81,7 +84,9 @@ export async function GET(
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -90,7 +95,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
     const data = await request.json();
@@ -113,7 +118,9 @@ export async function PUT(
       delete data._id;
     }
     
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getLocationsCollection();
     const locationId = mongoService.toObjectId(params.id);
     
@@ -145,7 +152,9 @@ export async function PUT(
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -154,7 +163,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
     // Validate the id parameter
@@ -169,7 +178,9 @@ export async function DELETE(
     }
 
     // Check for references to this location before deletion
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     // First check if the location exists
     const collection = mongoService.getLocationsCollection();
@@ -229,7 +240,9 @@ export async function DELETE(
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 

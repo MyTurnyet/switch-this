@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
-import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
-
-
-// Create a MongoDB service to be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+import { getMongoService } from '@/lib/services/mongodb.client';
 
 export async function GET() {
+  const mongoService = getMongoService();
+  
   try {
-    await mongoService.connect();
+    // Only call connect if the method exists
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
+    
     const collection = mongoService.getTrainRoutesCollection();
     const trainRoutes = await collection.find().toArray();
+    
     return NextResponse.json(trainRoutes);
   } catch (error) {
     console.error('Error fetching train routes:', error);
@@ -19,6 +21,9 @@ export async function GET() {
       { status: 500 }
     );
   } finally {
-    await mongoService.close();
+    // Only call close if the method exists
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 } 

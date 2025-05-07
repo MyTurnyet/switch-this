@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
+import { getMongoService } from "@/lib/services/mongodb.client";
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
 
 
 // Create a MongoDB service to be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+const mongoService = getMongoService();
 
 // Helper function to validate train route data
 function validateTrainRoute(trainRoute: Record<string, unknown>): boolean {
@@ -39,7 +40,9 @@ export async function GET(
       );
     }
 
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getTrainRoutesCollection();
     
     const trainRoute = await collection.findOne({ _id: objectId });
@@ -71,7 +74,9 @@ export async function GET(
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -94,7 +99,9 @@ export async function PUT(
       );
     }
     
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getTrainRoutesCollection();
     
     // Destructure to remove _id and ownerId from the update
@@ -149,7 +156,9 @@ export async function PUT(
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -172,7 +181,9 @@ export async function DELETE(
       );
     }
 
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getTrainRoutesCollection();
     
     const result = await collection.deleteOne({ _id: objectId });
@@ -204,6 +215,8 @@ export async function DELETE(
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 } 

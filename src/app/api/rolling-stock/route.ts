@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
+import { getMongoService } from '@/lib/services/mongodb.client';
 
-// Create a MongoDB service that will be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+// Get the MongoDB service instance from the factory
+const mongoService: IMongoDbService = getMongoService();
 
 export async function GET() {
   try {
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getRollingStockCollection();
     const rollingStock = await collection.find().toArray();
     return NextResponse.json(rollingStock);
@@ -18,6 +20,8 @@ export async function GET() {
       { status: 500 }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 } 

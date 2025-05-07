@@ -1,15 +1,17 @@
 import { NextRequest } from 'next/server';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
+import { getMongoService } from '@/lib/services/mongodb.client';
 import { ObjectId } from 'mongodb';
 
-// Create a MongoDB service that will be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+// Get the MongoDB service instance from the factory
+const mongoService: IMongoDbService = getMongoService();
 
 // GET handler
 export async function GET() {
   try {
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getSwitchlistsCollection();
     
     const switchlists = await collection.find({}).toArray();
@@ -31,7 +33,9 @@ export async function GET() {
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -52,7 +56,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate trainRouteId exists
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     let trainRouteId;
     try {
@@ -113,6 +119,8 @@ export async function POST(request: NextRequest) {
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 } 

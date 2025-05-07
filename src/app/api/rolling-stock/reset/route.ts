@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
+import { getMongoService } from "@/lib/services/mongodb.client";
 import { RollingStock, Industry, Track } from '@/app/shared/types/models';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
 
 // Create a MongoDB service that will be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+const mongoService = getMongoService();
 
 /**
  * POST /api/rolling-stock/reset
@@ -15,7 +16,9 @@ const mongoService: IMongoDbService = new MongoDbService();
  */
 export async function POST(request: NextRequest) {
   try {
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     // Get the collections we need to work with
     const rollingStockCollection = mongoService.getRollingStockCollection();
@@ -51,7 +54,9 @@ export async function POST(request: NextRequest) {
     await Promise.all(resetPromises);
     
     // Close the connection
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
     
     // Return success
     return new Response(
@@ -66,7 +71,9 @@ export async function POST(request: NextRequest) {
     
     // Make sure to close the connection even if there's an error
     if (mongoService) {
+      if (typeof mongoService.close === 'function') {
       await mongoService.close();
+    }
     }
     
     return new Response(

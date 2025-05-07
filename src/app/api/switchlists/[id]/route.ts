@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getMongoService } from "@/lib/services/mongodb.client";
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { ObjectId } from 'mongodb';
@@ -6,12 +7,14 @@ import { Switchlist } from '@/app/shared/types/models';
 
 
 // Create a MongoDB service to be used throughout this file
-const mongoService: IMongoDbService = new MongoDbService();
+const mongoService = getMongoService();
 
 // GET handler to fetch a specific switchlist
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getSwitchlistsCollection();
     
     let id;
@@ -56,7 +59,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -78,7 +83,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       );
     }
     
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getSwitchlistsCollection();
     
     // Ensure the switchlist exists
@@ -167,7 +174,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 }
 
@@ -187,7 +196,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
     
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     const collection = mongoService.getSwitchlistsCollection();
     
     // Check if the switchlist exists first
@@ -232,6 +243,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       }
     );
   } finally {
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
   }
 } 

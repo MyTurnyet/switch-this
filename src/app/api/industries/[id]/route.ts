@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getMongoService } from "@/lib/services/mongodb.client";
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
@@ -15,7 +16,7 @@ const corsHeaders = {
 // GET a specific industry by ID
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   // Create a MongoDB service instance for this request
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
     const id = params.id;
@@ -30,12 +31,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
     
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     const collection = mongoService.getIndustriesCollection();
     const industry = await collection.findOne({ _id: new ObjectId(id) });
     
-    await mongoService.close();
+    if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
     
     if (!industry) {
       return new Response(
@@ -67,7 +72,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // Ensure connection is closed even if an error occurs
     if (mongoService) {
       try {
-        await mongoService.close();
+        if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
       } catch (error) {
         console.error('Error closing MongoDB connection:', error);
       }
@@ -78,7 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // PUT to update an industry
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   // Create a MongoDB service instance for this request
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
     const id = params.id;
@@ -95,7 +102,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     
     const data = await request.json();
     
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     const collection = mongoService.getIndustriesCollection();
     
@@ -142,7 +151,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Ensure connection is closed even if an error occurs
     if (mongoService) {
       try {
-        await mongoService.close();
+        if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
       } catch (error) {
         console.error('Error closing MongoDB connection:', error);
       }
@@ -153,7 +164,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 // DELETE an industry
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   // Create a MongoDB service instance for this request
-  const mongoService: IMongoDbService = new MongoDbService();
+  const mongoService = getMongoService();
   
   try {
     const id = params.id;
@@ -168,7 +179,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
     
-    await mongoService.connect();
+    if (typeof mongoService.connect === 'function') {
+      await mongoService.connect();
+    }
     
     const collection = mongoService.getIndustriesCollection();
     
@@ -207,7 +220,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // Ensure connection is closed even if an error occurs
     if (mongoService) {
       try {
-        await mongoService.close();
+        if (typeof mongoService.close === 'function') {
+      await mongoService.close();
+    }
       } catch (error) {
         console.error('Error closing MongoDB connection:', error);
       }
