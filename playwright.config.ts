@@ -61,5 +61,12 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
+    env: {
+      USE_FAKE_MONGO: process.env.USE_FAKE_MONGO || 'true',
+      NODE_ENV: process.env.NODE_ENV || 'test'
+    }
   },
+  
+  /* Global setup to run before all tests */
+  globalSetup: './e2e/test-setup.ts'
 }); 

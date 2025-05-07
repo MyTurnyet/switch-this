@@ -1,229 +1,253 @@
-import { Collection, Document, ObjectId } from 'mongodb';
-import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
-
-// Use Record with unknown for safer typing
-type QueryType = Record<string, unknown>;
-type UpdateType = Record<string, unknown>;
+import { Collection, Document, Filter, ObjectId, UpdateFilter } from 'mongodb';
+import { IMongoDbService } from '../../lib/services/mongodb.interface';
+import { DB_COLLECTIONS } from '../../lib/constants/dbCollections';
 
 /**
- * Create a mock collection for Playwright tests
- * @returns A mocked Collection object suitable for Playwright e2e tests
+ * In-memory MongoDB service implementation for Playwright tests
+ * This class mimics a MongoDB service with in-memory collections
  */
-function createPlaywrightMockCollection<T extends Document>(): Collection<T> {
-  // In-memory data store for this collection
-  let data: T[] = [];
-  
-  // Create a collection with all necessary methods implemented
-  const collection = {
-    // Query methods
-    find: (_query: QueryType = {}) => {
-      // Currently we ignore the query and return all data
-      // In a more advanced implementation, we would filter based on the query
-      return {
-        toArray: async () => data
-      };
-    },
-    findOne: async (query: QueryType = {}) => {
-      // Check if we're querying by _id
-      if (query._id) {
-        const id = query._id.toString();
-        return data.find(item => item._id && item._id.toString() === id) || null;
-      }
-      
-      // Simple exact match on fields
-      return data.find(item => {
-        for (const [key, value] of Object.entries(query)) {
-          if (item[key as keyof T] !== value) {
-            return false;
-          }
-        }
-        return true;
-      }) || null;
-    },
+export class PlaywrightMongoDbService implements IMongoDbService {
+  // In-memory collections for testing
+  private collections: Map<string, Document[]> = new Map();
+  private initialized: boolean = false;
+
+  constructor() {
+    // Initialize all collections with empty arrays
+    this.initCollections();
+    console.log('PlaywrightMongoDbService initialized');
+  }
+
+  // Initialize the collections
+  private initCollections() {
+    if (this.initialized) return;
     
-    // Mutation methods
-    insertOne: async (doc: T) => {
-      const id = new ObjectId();
-      const newDoc = { ...doc, _id: id };
-      data.push(newDoc as T);
-      return {
-        acknowledged: true,
-        insertedId: id
-      };
-    },
-    insertMany: async (docs: T[]) => {
-      const insertedIds = [];
-      for (const doc of docs) {
-        const id = new ObjectId();
-        const newDoc = { ...doc, _id: id };
-        data.push(newDoc as T);
-        insertedIds.push(id);
-      }
-      return {
-        acknowledged: true,
-        insertedIds,
-        insertedCount: docs.length
-      };
-    },
-    updateOne: async (filter: QueryType, update: UpdateType) => {
-      // Simple update implementation that handles $set
-      const index = data.findIndex(item => {
-        if (filter._id) {
-          return item._id && item._id.toString() === filter._id.toString();
+    // Initialize each collection with an empty array
+    Object.values(DB_COLLECTIONS).forEach(collection => {
+      this.collections.set(collection, []);
+    });
+    
+    this.initialized = true;
+    console.log('Collections initialized:', Array.from(this.collections.keys()).join(', '));
+  }
+
+  // Set data for a collection (used by test setup)
+  public setCollectionData(collectionName: string, data: Document[]): void {
+    if (!this.initialized) this.initCollections();
+    
+    // Make sure we deep clone the data to avoid reference issues
+    const clonedData = JSON.parse(JSON.stringify(data));
+    this.collections.set(collectionName, clonedData);
+    console.log(`Collection ${collectionName} populated with ${clonedData.length} documents`);
+  }
+
+  // Get the data for a collection (useful for test verification)
+  public getCollectionData(collectionName: string): Document[] {
+    return this.collections.get(collectionName) || [];
+  }
+
+  /**
+   * Convert string ID to ObjectId
+   * @param id String ID to convert
+   * @returns MongoDB ObjectId
+   */
+  public toObjectId(id: string): ObjectId {
+    return new ObjectId(id);
+  }
+
+  /**
+   * Get a MongoDB collection
+   * @param collectionName The collection to get
+   * @returns The MongoDB collection
+   */
+  public getCollection<T extends Document = Document>(collectionName: string): Collection<T> {
+    return this.createMockCollection<T>(collectionName);
+  }
+
+  // Create a mock collection object with core MongoDB operations
+  private createMockCollection<T extends Document = Document>(collectionName: string): Collection<T> {
+    return {
+      find: (query: Filter<T> = {}) => {
+        console.log(`Mock find on ${collectionName}:`, JSON.stringify(query));
+        const results = this.collections.get(collectionName) || [];
+        
+        return {
+          toArray: async () => {
+            return this.filterDocuments(results, query as unknown as Record<string, any>) as T[];
+          }
+        };
+      },
+      
+      findOne: async (query: Filter<T> = {}) => {
+        console.log(`Mock findOne on ${collectionName}:`, JSON.stringify(query));
+        const results = this.collections.get(collectionName) || [];
+        const filtered = this.filterDocuments(results, query as unknown as Record<string, any>);
+        return filtered.length > 0 ? filtered[0] as T : null;
+      },
+      
+      insertOne: async (document: T) => {
+        console.log(`Mock insertOne on ${collectionName}:`, JSON.stringify(document));
+        const collection = this.collections.get(collectionName) || [];
+        
+        // Generate _id if not provided
+        if (!('_id' in document)) {
+          (document as unknown as { _id: ObjectId })._id = new ObjectId();
         }
         
-        // Exact match on all filter fields
-        for (const [key, value] of Object.entries(filter)) {
-          if (item[key as keyof T] !== value) {
-            return false;
-          }
-        }
-        return true;
-      });
+        collection.push(document as Document);
+        this.collections.set(collectionName, collection);
+        
+        return {
+          acknowledged: true,
+          insertedId: (document as unknown as { _id: ObjectId })._id
+        };
+      },
       
-      if (index !== -1) {
-        // Handle $set operator
-        if (update.$set) {
-          data[index] = { ...data[index], ...update.$set } as T;
-        } else {
-          // Direct update (not recommended but supported)
-          data[index] = { ...data[index], ...update } as T;
+      updateOne: async (filter: Filter<T>, update: UpdateFilter<T> | Partial<T>) => {
+        console.log(`Mock updateOne on ${collectionName}:`, 
+          JSON.stringify(filter), JSON.stringify(update));
+        
+        const collection = this.collections.get(collectionName) || [];
+        const index = collection.findIndex(doc => 
+          this.matchDocument(doc, filter as unknown as Record<string, any>));
+        
+        if (index !== -1) {
+          // Handle $set operator
+          if ('$set' in update) {
+            collection[index] = { 
+              ...collection[index], 
+              ...update.$set 
+            };
+          }
+          
+          // Handle direct update (no operators)
+          if (!('$set' in update) && !('$unset' in update) && !('$push' in update)) {
+            collection[index] = { ...update } as Document;
+          }
+          
+          this.collections.set(collectionName, collection);
+          
+          return {
+            acknowledged: true,
+            matchedCount: 1,
+            modifiedCount: 1,
+            upsertedCount: 0,
+            upsertedId: null
+          };
         }
         
         return {
           acknowledged: true,
-          modifiedCount: 1,
-          upsertedId: null,
+          matchedCount: 0,
+          modifiedCount: 0,
           upsertedCount: 0,
-          matchedCount: 1
+          upsertedId: null
         };
-      }
+      },
       
-      return {
-        acknowledged: true,
-        modifiedCount: 0,
-        upsertedId: null,
-        upsertedCount: 0,
-        matchedCount: 0
-      };
-    },
-    deleteOne: async (filter: QueryType) => {
-      const initialLength = data.length;
+      deleteOne: async (filter: Filter<T>) => {
+        console.log(`Mock deleteOne on ${collectionName}:`, JSON.stringify(filter));
+        
+        const collection = this.collections.get(collectionName) || [];
+        const index = collection.findIndex(doc => 
+          this.matchDocument(doc, filter as unknown as Record<string, any>));
+        
+        if (index !== -1) {
+          collection.splice(index, 1);
+          this.collections.set(collectionName, collection);
+          
+          return {
+            acknowledged: true,
+            deletedCount: 1
+          };
+        }
+        
+        return {
+          acknowledged: true,
+          deletedCount: 0
+        };
+      },
       
-      if (filter._id) {
-        data = data.filter(item => !(item._id && item._id.toString() === filter._id.toString()));
-      } else {
-        data = data.filter(item => {
-          for (const [key, value] of Object.entries(filter)) {
-            if (item[key as keyof T] !== value) {
-              return true; // Keep this item
-            }
-          }
-          return false; // Remove this item
-        });
-      }
-      
-      const deletedCount = initialLength - data.length;
-      
-      return {
-        acknowledged: true,
-        deletedCount
-      };
-    },
-    
-    // Add test helpers
-    _getData: () => data,
-    _setData: (newData: T[]) => {
-      data = [...newData];
-    },
-    _clearData: () => {
-      data = [];
-    }
-  } as unknown as Collection<T>;
-  
-  return collection;
-}
+      // Add additional methods as needed to satisfy the Collection interface
+    } as unknown as Collection<T>;
+  }
 
-/**
- * Mock MongoDB service for Playwright tests
- * This class implements IMongoDbService for use in e2e tests
- */
-export class PlaywrightMongoDbService implements IMongoDbService {
-  private collections: Record<string, Collection<Document>> = {};
-  public isConnected = false;
-  
-  constructor() {
-    // Initialize collections
-    Object.values(DB_COLLECTIONS).forEach(name => {
-      this.collections[name] = createPlaywrightMockCollection();
-    });
-    console.log('PlaywrightMongoDbService initialized with mock collections');
-  }
-  
-  /**
-   * Mock connection method - doesn't actually connect to anything
-   * Just sets the isConnected flag to true
-   */
-  async connect(): Promise<void> {
-    this.isConnected = true;
-    console.log('PlaywrightMongoDbService connected (mock)');
-    return Promise.resolve();
-  }
-  
-  /**
-   * Mock close method - doesn't actually close anything
-   * Just sets the isConnected flag to false
-   */
-  async close(): Promise<void> {
-    this.isConnected = false;
-    console.log('PlaywrightMongoDbService closed (mock)');
-    return Promise.resolve();
-  }
-  
-  getCollection<T extends Document = Document>(collectionName: string): Collection<T> {
-    if (!this.collections[collectionName]) {
-      this.collections[collectionName] = createPlaywrightMockCollection<T>();
+  // Helper method to filter documents based on a query
+  private filterDocuments(documents: Document[], query: Record<string, any>): Document[] {
+    if (!query || Object.keys(query).length === 0) {
+      return [...documents];
     }
-    return this.collections[collectionName] as Collection<T>;
-  }
-  
-  toObjectId(id: string): ObjectId {
-    return new ObjectId(id);
-  }
-  
-  getRollingStockCollection<T extends Document = Document>(): Collection<T> {
-    return this.getCollection<T>(DB_COLLECTIONS.ROLLING_STOCK);
-  }
-  
-  getIndustriesCollection<T extends Document = Document>(): Collection<T> {
-    return this.getCollection<T>(DB_COLLECTIONS.INDUSTRIES);
-  }
-  
-  getLocationsCollection<T extends Document = Document>(): Collection<T> {
-    return this.getCollection<T>(DB_COLLECTIONS.LOCATIONS);
-  }
-  
-  getTrainRoutesCollection<T extends Document = Document>(): Collection<T> {
-    return this.getCollection<T>(DB_COLLECTIONS.TRAIN_ROUTES);
-  }
-  
-  getLayoutStateCollection<T extends Document = Document>(): Collection<T> {
-    return this.getCollection<T>(DB_COLLECTIONS.LAYOUT_STATE);
-  }
-  
-  getSwitchlistsCollection<T extends Document = Document>(): Collection<T> {
-    return this.getCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
-  }
-  
-  // Helper method to directly set test data for a collection
-  setCollectionData<T extends Document>(collectionName: string, data: T[]): void {
-    const collection = this.getCollection<T>(collectionName) as unknown as {
-      _setData: (data: T[]) => void;
-    };
     
-    if (typeof collection._setData === 'function') {
-      collection._setData(data);
+    return documents.filter(doc => this.matchDocument(doc, query));
+  }
+
+  // Helper method to check if a document matches a query
+  private matchDocument(document: Document, query: Record<string, any>): boolean {
+    // Handle ObjectId queries
+    for (const key in query) {
+      if (query[key] instanceof ObjectId) {
+        if (document[key] instanceof ObjectId) {
+          if (!document[key].equals(query[key])) {
+            return false;
+          }
+        } else if (typeof document[key] === 'string') {
+          if (document[key] !== query[key].toString()) {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+      // Handle _id as string comparison
+      else if (key === '_id' && typeof query[key] === 'string' && document[key]) {
+        if (document[key].toString() !== query[key]) {
+          return false;
+        }
+      }
+      // Simple equality check for other properties
+      else if (document[key] !== query[key]) {
+        return false;
+      }
     }
+    
+    return true;
+  }
+
+  // MongoDB Service Interface Implementation
+
+  async connect(): Promise<void> {
+    console.log('Mock connect called');
+    // No-op for mock implementation
+    return Promise.resolve();
+  }
+
+  async close(): Promise<void> {
+    console.log('Mock close called');
+    // No-op for mock implementation
+    return Promise.resolve();
+  }
+
+  // Collection getters with generic type support
+  getIndustriesCollection<T extends Document = Document>(): Collection<T> {
+    return this.createMockCollection<T>(DB_COLLECTIONS.INDUSTRIES);
+  }
+
+  getLocationsCollection<T extends Document = Document>(): Collection<T> {
+    return this.createMockCollection<T>(DB_COLLECTIONS.LOCATIONS);
+  }
+
+  getRollingStockCollection<T extends Document = Document>(): Collection<T> {
+    return this.createMockCollection<T>(DB_COLLECTIONS.ROLLING_STOCK);
+  }
+
+  getTrainRoutesCollection<T extends Document = Document>(): Collection<T> {
+    return this.createMockCollection<T>(DB_COLLECTIONS.TRAIN_ROUTES);
+  }
+
+  getSwitchlistsCollection<T extends Document = Document>(): Collection<T> {
+    return this.createMockCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
+  }
+
+  getLayoutStateCollection<T extends Document = Document>(): Collection<T> {
+    return this.createMockCollection<T>(DB_COLLECTIONS.LAYOUT_STATE);
   }
 } 

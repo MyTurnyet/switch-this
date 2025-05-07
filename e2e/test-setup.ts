@@ -5,8 +5,13 @@
 import { setupFakeMongoDbData } from './test-data-setup';
 import { resetMongoService } from '../src/lib/services/mongodb.client';
 
-// Set environment variable to use fake MongoDB service during tests
+// Ensure environment variables are set for test environment
 process.env.USE_FAKE_MONGO = 'true';
+process.env.NODE_ENV = 'test';
+
+console.log('Environment setup for Playwright tests:');
+console.log(`USE_FAKE_MONGO: ${process.env.USE_FAKE_MONGO}`);
+console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
 
 /**
  * This is the required default export for Playwright global setup

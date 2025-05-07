@@ -44,6 +44,9 @@ jobs:
       
       - name: Run Playwright tests
         run: npm run test:e2e
+        env:
+          USE_FAKE_MONGO: 'true'
+          NODE_ENV: 'test'
       
       - name: Archive Playwright results
         uses: actions/upload-artifact@v4
