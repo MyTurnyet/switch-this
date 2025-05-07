@@ -27,11 +27,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Verify React Query dependencies
+        run: |
+          npm list @tanstack/react-query || npm install @tanstack/react-query@^5.24.1 --save
+          npm list @tanstack/react-query-devtools || npm install @tanstack/react-query-devtools@^5.24.1 --save
+      
       - name: Verify lucide-react installation
         run: npm install lucide-react --no-save
       
       - name: Build project
         run: npm run build
+        env:
+          CI: true
+          NODE_ENV: 'production'
       
       - name: Run linting
         run: npm run lint
