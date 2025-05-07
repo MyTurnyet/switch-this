@@ -3,6 +3,13 @@ import { IMongoDbService } from '../../lib/services/mongodb.interface';
 import { DB_COLLECTIONS } from '../../lib/constants/dbCollections';
 
 /**
+ * Interface for query object to avoid using 'any'
+ */
+interface QueryObject {
+  [key: string]: string | number | boolean | ObjectId | null | undefined;
+}
+
+/**
  * In-memory MongoDB service implementation for Playwright tests
  * This class mimics a MongoDB service with in-memory collections
  */
@@ -72,7 +79,7 @@ export class PlaywrightMongoDbService implements IMongoDbService {
         
         return {
           toArray: async () => {
-            return this.filterDocuments(results, query as unknown as Record<string, any>) as T[];
+            return this.filterDocuments(results, query as unknown as QueryObject) as T[];
           }
         };
       },
@@ -80,7 +87,7 @@ export class PlaywrightMongoDbService implements IMongoDbService {
       findOne: async (query: Filter<T> = {}) => {
         console.log(`Mock findOne on ${collectionName}:`, JSON.stringify(query));
         const results = this.collections.get(collectionName) || [];
-        const filtered = this.filterDocuments(results, query as unknown as Record<string, any>);
+        const filtered = this.filterDocuments(results, query as unknown as QueryObject);
         return filtered.length > 0 ? filtered[0] as T : null;
       },
       
@@ -108,7 +115,7 @@ export class PlaywrightMongoDbService implements IMongoDbService {
         
         const collection = this.collections.get(collectionName) || [];
         const index = collection.findIndex(doc => 
-          this.matchDocument(doc, filter as unknown as Record<string, any>));
+          this.matchDocument(doc, filter as unknown as QueryObject));
         
         if (index !== -1) {
           // Handle $set operator
@@ -149,7 +156,7 @@ export class PlaywrightMongoDbService implements IMongoDbService {
         
         const collection = this.collections.get(collectionName) || [];
         const index = collection.findIndex(doc => 
-          this.matchDocument(doc, filter as unknown as Record<string, any>));
+          this.matchDocument(doc, filter as unknown as QueryObject));
         
         if (index !== -1) {
           collection.splice(index, 1);
@@ -172,7 +179,7 @@ export class PlaywrightMongoDbService implements IMongoDbService {
   }
 
   // Helper method to filter documents based on a query
-  private filterDocuments(documents: Document[], query: Record<string, any>): Document[] {
+  private filterDocuments(documents: Document[], query: QueryObject): Document[] {
     if (!query || Object.keys(query).length === 0) {
       return [...documents];
     }
@@ -181,7 +188,7 @@ export class PlaywrightMongoDbService implements IMongoDbService {
   }
 
   // Helper method to check if a document matches a query
-  private matchDocument(document: Document, query: Record<string, any>): boolean {
+  private matchDocument(document: Document, query: QueryObject): boolean {
     // Handle ObjectId queries
     for (const key in query) {
       if (query[key] instanceof ObjectId) {
