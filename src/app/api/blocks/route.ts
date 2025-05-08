@@ -1,5 +1,7 @@
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { getMongoService } from '@/lib/services/mongodb.client';
+import { Collection } from 'mongodb';
+import { DB_COLLECTIONS } from '@/lib/constants/dbCollections';
 
 // Helper to create a response with CORS headers
 function createResponse(body: unknown, status = 200) {
@@ -22,11 +24,26 @@ export async function GET(request: Request, injectedMongoService?: IMongoDbServi
   // Use injected service or get default
   const mongoService = injectedMongoService || getMongoService();
   
+  console.log('GET /api/blocks - Service type:', mongoService.constructor.name);
+  
   try {
     if (typeof mongoService.connect === 'function') {
       await mongoService.connect();
     }
-    const collection = mongoService.getBlocksCollection();
+    
+    // Check if getBlocksCollection exists, otherwise use getCollection directly
+    let collection: Collection;
+    if (typeof mongoService.getBlocksCollection === 'function') {
+      console.log('Using getBlocksCollection method');
+      collection = mongoService.getBlocksCollection();
+    } else {
+      console.log('getBlocksCollection not found, using getCollection fallback');
+      if (typeof mongoService.getCollection !== 'function') {
+        throw new Error('MongoDB service does not implement required methods');
+      }
+      collection = mongoService.getCollection(DB_COLLECTIONS.BLOCKS);
+    }
+    
     const blocks = await collection.find().toArray();
     
     return createResponse(blocks);
@@ -46,6 +63,8 @@ export async function GET(request: Request, injectedMongoService?: IMongoDbServi
 export async function POST(request: Request, injectedMongoService?: IMongoDbService) {
   // Use injected service or get default
   const mongoService = injectedMongoService || getMongoService();
+  
+  console.log('POST /api/blocks - Service type:', mongoService.constructor.name);
   
   try {
     const data = await request.json();
@@ -68,7 +87,19 @@ export async function POST(request: Request, injectedMongoService?: IMongoDbServ
     if (typeof mongoService.connect === 'function') {
       await mongoService.connect();
     }
-    const collection = mongoService.getBlocksCollection();
+    
+    // Check if getBlocksCollection exists, otherwise use getCollection directly
+    let collection: Collection;
+    if (typeof mongoService.getBlocksCollection === 'function') {
+      console.log('Using getBlocksCollection method');
+      collection = mongoService.getBlocksCollection();
+    } else {
+      console.log('getBlocksCollection not found, using getCollection fallback');
+      if (typeof mongoService.getCollection !== 'function') {
+        throw new Error('MongoDB service does not implement required methods');
+      }
+      collection = mongoService.getCollection(DB_COLLECTIONS.BLOCKS);
+    }
     
     // Check if a block with the same name already exists
     const existingBlock = await collection.findOne({ blockName: data.blockName });
