@@ -5,6 +5,7 @@
 
 import { IMongoDbService } from './mongodb.interface';
 import { MongoDbService } from './mongodb.service';
+import { Collection, Document } from 'mongodb';
 
 // Singleton instance store
 let mongoService: IMongoDbService | null = null;
@@ -47,7 +48,19 @@ export function getMongoService(): IMongoDbService {
   }
   
   // At this point mongoService is guaranteed to be initialized
-  return mongoService as IMongoDbService;
+  const service = mongoService as IMongoDbService;
+  
+  // Add debug check for getBlocksCollection method
+  if (typeof service.getBlocksCollection !== 'function') {
+    console.error('The mongoService instance is missing getBlocksCollection method:', service);
+    // Create a dynamic implementation if needed
+    service.getBlocksCollection = function<T extends Document = Document>(): Collection<T> {
+      console.log('Using dynamically added getBlocksCollection method');
+      return this.getCollection<T>('blocks');
+    };
+  }
+  
+  return service;
 }
 
 /**
