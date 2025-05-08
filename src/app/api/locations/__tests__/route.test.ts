@@ -132,7 +132,7 @@ describe('Locations API', () => {
       // Mock data
       const newLocation = {
         stationName: 'New Station',
-        block: 'D',
+        blockId: 'block123',
         locationType: LocationType.ON_LAYOUT
       };
       
@@ -178,7 +178,7 @@ describe('Locations API', () => {
       // Test cases for validation
       const testCases = [
         {
-          data: { block: 'D', locationType: LocationType.ON_LAYOUT },
+          data: { blockId: 'block123', locationType: LocationType.ON_LAYOUT },
           error: 'Station name is required'
         },
         {
@@ -186,7 +186,7 @@ describe('Locations API', () => {
           error: 'Block is required'
         },
         {
-          data: { stationName: 'Test', block: 'D', locationType: 'INVALID' },
+          data: { stationName: 'Test', blockId: 'block123', locationType: 'INVALID' },
           error: 'Valid location type is required'
         }
       ];
@@ -208,7 +208,7 @@ describe('Locations API', () => {
       // Mock data
       const newLocation = {
         stationName: 'New Station',
-        block: 'D',
+        blockId: 'block123',
         locationType: LocationType.ON_LAYOUT
       };
       

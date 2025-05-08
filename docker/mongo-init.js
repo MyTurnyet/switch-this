@@ -5,7 +5,8 @@ const DB_COLLECTIONS = {
   LOCATIONS: 'locations',
   TRAIN_ROUTES: 'trainRoutes',
   LAYOUT_STATE: 'layoutState',
-  SWITCHLISTS: 'switchlists'
+  SWITCHLISTS: 'switchlists',
+  BLOCKS: 'blocks'
 };
 
 // Create root user if it doesn't exist
@@ -39,6 +40,9 @@ if (!db.getCollectionNames().includes(DB_COLLECTIONS.LAYOUT_STATE)) {
 }
 if (!db.getCollectionNames().includes(DB_COLLECTIONS.SWITCHLISTS)) {
   db.createCollection(DB_COLLECTIONS.SWITCHLISTS);
+}
+if (!db.getCollectionNames().includes(DB_COLLECTIONS.BLOCKS)) {
+  db.createCollection(DB_COLLECTIONS.BLOCKS);
 }
 
 // Create application user if it doesn't exist

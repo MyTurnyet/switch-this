@@ -112,4 +112,12 @@ export class MongoDbService implements IMongoDbService {
   public getSwitchlistsCollection<T extends Document = Document>(): Collection<T> {
     return this.getCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
   }
+
+  /**
+   * Get the blocks collection
+   * @returns The blocks collection
+   */
+  public getBlocksCollection<T extends Document = Document>(): Collection<T> {
+    return this.getCollection<T>(DB_COLLECTIONS.BLOCKS);
+  }
 } 

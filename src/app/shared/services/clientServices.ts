@@ -1,6 +1,6 @@
 'use client';
 
-import { Location, Industry, TrainRoute, RollingStock } from '../types/models';
+import { Location, Industry, TrainRoute, RollingStock, Block } from '../types/models';
 import { BaseService } from './BaseService';
 
 // Generic interface for all services
@@ -11,6 +11,9 @@ export interface EntityService<T> {
 // Service interfaces with specific additional methods
 export interface LocationService extends EntityService<Location> {
   getAllLocations(): Promise<Location[]>;
+  updateLocation(id: string, location: Partial<Location>): Promise<Location>;
+  createLocation(location: Partial<Location>): Promise<Location>;
+  deleteLocation(id: string): Promise<void>;
 }
 
 export interface IndustryService extends EntityService<Industry> {
@@ -22,7 +25,10 @@ export interface IndustryService extends EntityService<Industry> {
 
 export interface TrainRouteService extends EntityService<TrainRoute> {
   getAllTrainRoutes(): Promise<TrainRoute[]>;
-  updateTrainRoute(id: string, trainRoute: TrainRoute): Promise<TrainRoute>;
+  getTrainRouteById(id: string): Promise<TrainRoute>;
+  updateTrainRoute(id: string, trainRoute: Partial<TrainRoute>): Promise<TrainRoute>;
+  createTrainRoute(trainRoute: Partial<TrainRoute>): Promise<TrainRoute>;
+  deleteTrainRoute(id: string): Promise<void>;
 }
 
 export interface RollingStockService extends EntityService<RollingStock> {
@@ -31,11 +37,22 @@ export interface RollingStockService extends EntityService<RollingStock> {
   resetToHomeYards(): Promise<void>;
 }
 
+export interface BlockService extends EntityService<Block> {
+  getAllBlocks(): Promise<Block[]>;
+  getBlockById(id: string): Promise<Block>;
+  createBlock(block: Partial<Block>): Promise<Block>;
+  updateBlock(id: string, block: Partial<Block>): Promise<Block>;
+  deleteBlock(id: string): Promise<void>;
+}
+
 export interface LayoutStateData {
-  _id?: string;
-  industries: Industry[];
-  rollingStock: RollingStock[];
-  updatedAt?: Date;
+  rollingStockState: Record<string, {
+    locationId: string;
+    industryId?: string;
+    trackId?: string;
+    status: string;
+  }>;
+  timestamp: number;
 }
 
 export interface LayoutStateService {
@@ -49,6 +66,7 @@ export interface ClientServices {
   trainRouteService: TrainRouteService;
   rollingStockService: RollingStockService;
   layoutStateService: LayoutStateService;
+  blockService: BlockService;
 }
 
 abstract class EntityServiceImpl<T extends { _id: string }> extends BaseService<T> implements EntityService<T> {
@@ -62,6 +80,48 @@ class LocationServiceImpl extends EntityServiceImpl<Location> implements Locatio
 
   async getAllLocations(): Promise<Location[]> {
     return this.getAll();
+  }
+
+  async updateLocation(id: string, location: Partial<Location>): Promise<Location> {
+    const response = await fetch(`${this.endpoint}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(location),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update location with id ${id}`);
+    }
+    
+    return response.json();
+  }
+
+  async createLocation(location: Partial<Location>): Promise<Location> {
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(location),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to create location`);
+    }
+    
+    return response.json();
+  }
+
+  async deleteLocation(id: string): Promise<void> {
+    const response = await fetch(`${this.endpoint}/${id}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete location with id ${id}`);
+    }
   }
 }
 
@@ -126,7 +186,17 @@ class TrainRouteServiceImpl extends EntityServiceImpl<TrainRoute> implements Tra
     return this.getAll();
   }
   
-  async updateTrainRoute(id: string, trainRoute: TrainRoute): Promise<TrainRoute> {
+  async getTrainRouteById(id: string): Promise<TrainRoute> {
+    const response = await fetch(`${this.endpoint}/${id}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch train route with id ${id}`);
+    }
+    
+    return response.json();
+  }
+
+  async updateTrainRoute(id: string, trainRoute: Partial<TrainRoute>): Promise<TrainRoute> {
     const response = await fetch(`${this.endpoint}/${id}`, {
       method: 'PUT',
       headers: {
@@ -140,6 +210,32 @@ class TrainRouteServiceImpl extends EntityServiceImpl<TrainRoute> implements Tra
     }
     
     return response.json();
+  }
+
+  async createTrainRoute(trainRoute: Partial<TrainRoute>): Promise<TrainRoute> {
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(trainRoute),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to create train route`);
+    }
+    
+    return response.json();
+  }
+
+  async deleteTrainRoute(id: string): Promise<void> {
+    const response = await fetch(`${this.endpoint}/${id}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete train route with id ${id}`);
+    }
   }
 }
 
@@ -202,10 +298,73 @@ export class LayoutStateServiceImpl implements LayoutStateService {
   }
 }
 
+class BlockServiceImpl extends EntityServiceImpl<Block> implements BlockService {
+  constructor() {
+    super('/api/blocks');
+  }
+
+  async getAllBlocks(): Promise<Block[]> {
+    return this.getAll();
+  }
+
+  async getBlockById(id: string): Promise<Block> {
+    const response = await fetch(`${this.endpoint}/${id}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch block with id ${id}`);
+    }
+    
+    return response.json();
+  }
+
+  async updateBlock(id: string, block: Partial<Block>): Promise<Block> {
+    const response = await fetch(`${this.endpoint}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(block),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update block with id ${id}`);
+    }
+    
+    return response.json();
+  }
+
+  async createBlock(block: Partial<Block>): Promise<Block> {
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(block),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to create block`);
+    }
+    
+    return response.json();
+  }
+
+  async deleteBlock(id: string): Promise<void> {
+    const response = await fetch(`${this.endpoint}/${id}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete block with id ${id}`);
+    }
+  }
+}
+
 export const services: ClientServices = {
   locationService: new LocationServiceImpl(),
   industryService: new IndustryServiceImpl(),
   trainRouteService: new TrainRouteServiceImpl(),
   rollingStockService: new RollingStockServiceImpl(),
-  layoutStateService: new LayoutStateServiceImpl()
+  layoutStateService: new LayoutStateServiceImpl(),
+  blockService: new BlockServiceImpl()
 }; 

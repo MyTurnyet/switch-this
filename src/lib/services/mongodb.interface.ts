@@ -66,4 +66,10 @@ export interface IMongoDbService {
    * @returns The switchlists collection
    */
   getSwitchlistsCollection<T extends Document = Document>(): Collection<T>;
+
+  /**
+   * Get the blocks collection
+   * @returns The blocks collection
+   */
+  getBlocksCollection<T extends Document = Document>(): Collection<T>;
 } 

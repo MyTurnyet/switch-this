@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       return createResponse({ error: 'Station name is required' }, 400);
     }
     
-    if (!data.block) {
+    if (!data.blockId) {
       return createResponse({ error: 'Block is required' }, 400);
     }
     

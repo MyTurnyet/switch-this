@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import LocationsPage from '../page';
 import { LocationService } from '@/app/shared/services/LocationService';
 import { LocationType } from '@/app/shared/types/models';
@@ -179,14 +179,17 @@ describe('LocationsPage', () => {
     render(<LocationsPage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('data-table')).toBeInTheDocument();
+      const dataTables = screen.getAllByTestId('data-table');
+      // Get the second data-table, which is the locations table
+      const locationsTable = dataTables[1]; 
+      expect(locationsTable).toBeInTheDocument();
       
-      // Check for column headers
-      expect(screen.getByText('Station Name')).toBeInTheDocument();
-      expect(screen.getByText('Block')).toBeInTheDocument();
-      expect(screen.getByText('Type')).toBeInTheDocument();
-      expect(screen.getByText('Description')).toBeInTheDocument();
-      expect(screen.getByText('Actions')).toBeInTheDocument();
+      // Check for column headers in the locations table
+      within(locationsTable).getByText('Station Name');
+      within(locationsTable).getByText('Block');
+      within(locationsTable).getByText('Type');
+      within(locationsTable).getByText('Description');
+      within(locationsTable).getByText('Actions');
       
       // Check for rows
       expect(screen.getByTestId('row-loc1')).toBeInTheDocument();
@@ -240,7 +243,8 @@ describe('LocationsPage', () => {
 
     // Wait for the data to load
     await waitFor(() => {
-      expect(screen.getByTestId('data-table')).toBeInTheDocument();
+      const dataTables = screen.getAllByTestId('data-table');
+      expect(dataTables[1]).toBeInTheDocument(); // Check locations table exists
     });
 
     // Open the add location modal
@@ -282,7 +286,8 @@ describe('LocationsPage', () => {
 
     // Wait for the data to load
     await waitFor(() => {
-      expect(screen.getByTestId('data-table')).toBeInTheDocument();
+      const dataTables = screen.getAllByTestId('data-table');
+      expect(dataTables[1]).toBeInTheDocument(); // Check locations table exists
     });
 
     // Find and click a delete button

@@ -1,6 +1,5 @@
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
 import { getMongoService } from "@/lib/services/mongodb.client";
-import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection } from 'mongodb';
 import { LocationType } from '@/app/shared/types/models';
 
@@ -105,7 +104,7 @@ export async function PUT(
       return createInvalidInputResponse('Station name is required');
     }
     
-    if (!data.block) {
+    if (!data.blockId) {
       return createInvalidInputResponse('Block is required');
     }
     

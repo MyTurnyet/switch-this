@@ -10,5 +10,6 @@ export const DB_COLLECTIONS = {
   LOCATIONS: 'locations',
   TRAIN_ROUTES: 'trainRoutes',
   LAYOUT_STATE: 'layoutState',
-  SWITCHLISTS: 'switchlists'
+  SWITCHLISTS: 'switchlists',
+  BLOCKS: 'blocks'
 }; 

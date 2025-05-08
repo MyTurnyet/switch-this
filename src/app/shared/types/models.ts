@@ -18,6 +18,11 @@ export enum LocationType {
   FIDDLE_YARD = 'FIDDLE_YARD'
 }
 
+export interface Block extends BaseEntity {
+  blockName: string;
+  description?: string;
+}
+
 export interface Track extends BaseEntity {
   name: string;
   length: number;
@@ -29,7 +34,8 @@ export interface Track extends BaseEntity {
 
 export interface Location extends BaseEntity {
   stationName: string;
-  block: string;
+  blockId: string;        // Reference to a Block entity
+  block?: string;         // Keeping for backward compatibility
   description?: string;
   locationType: LocationType;
 }

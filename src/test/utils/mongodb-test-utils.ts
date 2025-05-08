@@ -138,6 +138,14 @@ export class FakeMongoDbService implements IMongoDbService {
   public getLayoutStateCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
     return this.getCollection<T>(DB_COLLECTIONS.LAYOUT_STATE);
   }
+  
+  /**
+   * Get the blocks collection
+   * @returns A mocked blocks collection
+   */
+  public getBlocksCollection<T extends Document = Document>(): jest.Mocked<Collection<T>> {
+    return this.getCollection<T>(DB_COLLECTIONS.BLOCKS);
+  }
     
   /**
    * Convert a string ID to MongoDB ObjectId

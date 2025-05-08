@@ -10,7 +10,8 @@ const DB_COLLECTIONS = {
   INDUSTRIES: 'industries',
   LOCATIONS: 'locations',
   TRAIN_ROUTES: 'trainRoutes',
-  LAYOUT_STATE: 'layoutState'
+  LAYOUT_STATE: 'layoutState',
+  BLOCKS: 'blocks'
 };
 
 // Simple MongoDB service for JavaScript usage

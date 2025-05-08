@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Location } from '@/app/shared/types/models';
+import { Location, Block } from '@/app/shared/types/models';
 import { LocationService } from '@/app/shared/services/LocationService';
+import { BlockService } from '@/app/shared/services/BlockService';
 import { 
   PageContainer, 
   DataTable, 
@@ -17,6 +18,7 @@ import {
 import { Column } from '@/app/components/ui/data-table';
 import { SortDirection } from '@/app/components/ui/data-table';
 import EditLocationModal from './components/EditLocationModal';
+import BlocksSection from './components/BlocksSection';
 
 export default function LocationsPage() {
   return (
@@ -28,6 +30,7 @@ export default function LocationsPage() {
 
 function LocationsContent() {
   const [locations, setLocations] = useState<Location[]>([]);
+  const [blocks, setBlocks] = useState<Block[]>([]);
   const [paginatedLocations, setPaginatedLocations] = useState<Location[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,10 +45,12 @@ function LocationsContent() {
   
   const itemsPerPage = 10;
   const locationService = new LocationService();
+  const blockService = new BlockService();
 
   // Fetch data on component mount
   useEffect(() => {
     fetchLocations();
+    fetchBlocks();
   }, []);
 
   // Fetch locations from API
@@ -61,6 +66,17 @@ function LocationsContent() {
       setError('Failed to load data. Please try again later.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch blocks from API
+  const fetchBlocks = async () => {
+    try {
+      const data = await blockService.getAllBlocks();
+      setBlocks(data);
+    } catch (err) {
+      console.error('Failed to fetch blocks:', err);
+      // Don't set error state as the blocks are secondary
     }
   };
 
@@ -82,6 +98,13 @@ function LocationsContent() {
     setIsDeleteDialogOpen(true);
   };
 
+  // Get block name for a location
+  const getBlockName = (blockId?: string): string => {
+    if (!blockId) return '-';
+    const block = blocks.find(b => b._id === blockId);
+    return block ? block.blockName : blockId;
+  };
+
   // Table columns
   const columns: Column<Record<string, unknown>>[] = [
     {
@@ -92,6 +115,11 @@ function LocationsContent() {
     {
       key: 'block',
       header: 'Block',
+      accessor: (item: Record<string, unknown>) => {
+        const location = item as unknown as Location;
+        // Display block name using blockId if available, otherwise use legacy block field
+        return location.blockId ? getBlockName(location.blockId) : (location.block || '-');
+      },
       sortable: true
     },
     {
@@ -159,6 +187,15 @@ function LocationsContent() {
     
     if (sortColumn) {
       sortedData.sort((a, b) => {
+        // Special case for block column which might use blockId
+        if (sortColumn === 'block') {
+          const aBlockName = a.blockId ? getBlockName(a.blockId) : (a.block || '');
+          const bBlockName = b.blockId ? getBlockName(b.blockId) : (b.block || '');
+          return sortDirection === 'asc' 
+            ? aBlockName.localeCompare(bBlockName) 
+            : bBlockName.localeCompare(aBlockName);
+        }
+        
         const aValue = a[sortColumn as keyof Location];
         const bValue = b[sortColumn as keyof Location];
         
@@ -186,7 +223,7 @@ function LocationsContent() {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     setPaginatedLocations(sortedData.slice(startIndex, endIndex));
-  }, [currentPage, locations, sortColumn, sortDirection]);
+  }, [currentPage, locations, sortColumn, sortDirection, blocks]);
 
   // Handle sort change
   const handleSort = (columnId: string, direction: SortDirection) => {
@@ -271,6 +308,10 @@ function LocationsContent() {
       description="Manage your layout locations"
       actions={actions}
     >
+      {/* Blocks Section */}
+      <BlocksSection />
+      
+      {/* Locations Section */}
       {error && (
         <div className="error-message p-4 mb-4 bg-red-100 text-red-700 rounded-md">
           {error}
@@ -300,6 +341,7 @@ function LocationsContent() {
       
       <EditLocationModal
         location={selectedLocation}
+        blocks={blocks}
         isOpen={isModalOpen}
         onSave={handleSave}
         onCancel={handleCloseModal}

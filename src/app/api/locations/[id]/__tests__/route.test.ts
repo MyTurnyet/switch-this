@@ -166,7 +166,7 @@ describe('Location ID API', () => {
       const updatedLocation = {
         _id: '123456789012345678901234',
         stationName: 'Updated Echo Lake, WA',
-        block: 'ECHO',
+        blockId: 'block123',
         locationType: LocationType.ON_LAYOUT,
         ownerId: 'owner1',
         description: 'Updated description'
@@ -197,7 +197,7 @@ describe('Location ID API', () => {
 
     it('should return 400 for invalid input - missing station name', async () => {
       const invalidLocation = {
-        block: 'ECHO',
+        blockId: 'block123',
         locationType: LocationType.ON_LAYOUT
       };
 
@@ -224,7 +224,7 @@ describe('Location ID API', () => {
       const request = {
         json: jest.fn().mockResolvedValue({
           stationName: 'Updated Station',
-          block: 'UPDATED',
+          blockId: 'block123',
           locationType: LocationType.ON_LAYOUT
         })
       } as unknown as Request;
@@ -241,7 +241,7 @@ describe('Location ID API', () => {
       const request = {
         json: jest.fn().mockResolvedValue({
           stationName: 'Updated Station',
-          block: 'UPDATED',
+          blockId: 'block123',
           locationType: LocationType.ON_LAYOUT
         })
       } as unknown as Request;

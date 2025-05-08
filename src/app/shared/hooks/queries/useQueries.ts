@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  UseQueryResult,
-  UseMutationResult,
-  QueryKey
-} from '@tanstack/react-query';
+import { QueryKey } from '@tanstack/react-query';
 import { services, ClientServices } from '../../services/clientServices';
 
 // Define query keys constants to ensure consistency across queries
@@ -22,7 +15,9 @@ export const QUERY_KEYS = {
   TRAIN_ROUTE: (id: string) => ['trainRoute', id],
   LAYOUT_STATE: ['layoutState'],
   SWITCHLISTS: ['switchlists'],
-  SWITCHLIST: (id: string) => ['switchlist', id]
+  SWITCHLIST: (id: string) => ['switchlist', id],
+  BLOCKS: ['blocks'],
+  BLOCK: (id: string) => ['block', id]
 };
 
 // Type to define invalidation relationships
@@ -44,10 +39,11 @@ export const INVALIDATION_MAP: InvalidationMap = {
   'layoutState:save': [QUERY_KEYS.LAYOUT_STATE],
   'switchlist:create': [QUERY_KEYS.SWITCHLISTS],
   'switchlist:update': [QUERY_KEYS.SWITCHLISTS],
-  'switchlist:delete': [QUERY_KEYS.SWITCHLISTS]
+  'switchlist:delete': [QUERY_KEYS.SWITCHLISTS],
+  'block:create': [QUERY_KEYS.BLOCKS],
+  'block:update': [QUERY_KEYS.BLOCKS],
+  'block:delete': [QUERY_KEYS.BLOCKS]
 };
 
-// Services context to allow overriding in tests
-export const useServices = (): ClientServices => {
-  return services;
-}; 
+// Export services hook for use in other hooks
+export const useServices = (): ClientServices => services; 

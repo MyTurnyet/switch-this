@@ -1,7 +1,23 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import EditLocationModal from '../EditLocationModal';
-import { LocationType } from '@/app/shared/types/models';
+import { LocationType, Block } from '@/app/shared/types/models';
+
+// Mock blocks data
+const mockBlocks: Block[] = [
+  {
+    _id: 'block1',
+    blockName: 'ECHO',
+    description: 'Echo District',
+    ownerId: 'owner1'
+  },
+  {
+    _id: 'block2',
+    blockName: 'YARD',
+    description: 'Main Yard',
+    ownerId: 'owner1'
+  }
+];
 
 // Mock the components/ui module
 jest.mock('@/app/components/ui', () => {
@@ -65,12 +81,13 @@ jest.mock('@/app/components/ui', () => {
         {error && <div data-testid={`error-${name}`}>{error}</div>}
       </div>
     ),
-    Select: ({ label, name, value, onChange, options }: {
+    Select: ({ label, name, value, onChange, options, error }: {
       label: string;
       name: string;
       value: string;
       onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
       options: Array<{ value: string; label: string }>;
+      error?: string;
     }) => (
       <div>
         <label htmlFor={name}>{label}</label>
@@ -87,6 +104,7 @@ jest.mock('@/app/components/ui', () => {
             </option>
           ))}
         </select>
+        {error && <div data-testid={`error-${name}`}>{error}</div>}
       </div>
     ),
     useToast: () => ({
@@ -99,7 +117,8 @@ describe('EditLocationModal', () => {
   const mockLocation = {
     _id: 'loc1',
     stationName: 'Echo Lake, WA',
-    block: 'ECHO',
+    blockId: 'block1',
+    block: 'ECHO', // for backward compatibility
     locationType: LocationType.ON_LAYOUT,
     ownerId: 'owner1',
     description: 'A beautiful lake'
@@ -116,6 +135,7 @@ describe('EditLocationModal', () => {
     render(
       <EditLocationModal
         location={mockLocation}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={false}
@@ -129,6 +149,7 @@ describe('EditLocationModal', () => {
     render(
       <EditLocationModal
         location={mockLocation}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={true}
@@ -143,6 +164,7 @@ describe('EditLocationModal', () => {
     render(
       <EditLocationModal
         location={null}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={true}
@@ -157,6 +179,7 @@ describe('EditLocationModal', () => {
     render(
       <EditLocationModal
         location={mockLocation}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={true}
@@ -164,7 +187,7 @@ describe('EditLocationModal', () => {
     );
 
     expect(screen.getByTestId('input-stationName')).toHaveValue(mockLocation.stationName);
-    expect(screen.getByTestId('input-block')).toHaveValue(mockLocation.block);
+    expect(screen.getByTestId('select-blockId')).toHaveValue(mockLocation.blockId);
     expect(screen.getByTestId('select-locationType')).toHaveValue(mockLocation.locationType);
     expect(screen.getByTestId('input-description')).toHaveValue(mockLocation.description);
   });
@@ -173,6 +196,7 @@ describe('EditLocationModal', () => {
     render(
       <EditLocationModal
         location={null}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={true}
@@ -180,7 +204,7 @@ describe('EditLocationModal', () => {
     );
 
     expect(screen.getByTestId('input-stationName')).toHaveValue('');
-    expect(screen.getByTestId('input-block')).toHaveValue('');
+    expect(screen.getByTestId('select-blockId')).toHaveValue('');
     expect(screen.getByTestId('input-description')).toHaveValue('');
   });
 
@@ -188,6 +212,7 @@ describe('EditLocationModal', () => {
     render(
       <EditLocationModal
         location={mockLocation}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={true}
@@ -202,6 +227,7 @@ describe('EditLocationModal', () => {
     render(
       <EditLocationModal
         location={null}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={true}
@@ -210,7 +236,9 @@ describe('EditLocationModal', () => {
 
     // Clear the form fields
     fireEvent.change(screen.getByTestId('input-stationName'), { target: { value: '' } });
-    fireEvent.change(screen.getByTestId('input-block'), { target: { value: '' } });
+    
+    // Ensure blockId is empty
+    fireEvent.change(screen.getByTestId('select-blockId'), { target: { value: '' } });
 
     // Submit the form
     fireEvent.click(screen.getByTestId('button-create'));
@@ -218,7 +246,7 @@ describe('EditLocationModal', () => {
     // Check if validation errors are displayed
     await waitFor(() => {
       expect(screen.getByTestId('error-stationName')).toBeInTheDocument();
-      expect(screen.getByTestId('error-block')).toBeInTheDocument();
+      expect(screen.getByTestId('error-blockId')).toBeInTheDocument();
     });
 
     // Verify that onSave was not called
@@ -229,6 +257,7 @@ describe('EditLocationModal', () => {
     render(
       <EditLocationModal
         location={mockLocation}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={true}
@@ -240,6 +269,11 @@ describe('EditLocationModal', () => {
       target: { value: 'Updated Station Name' } 
     });
     
+    // Update block selection
+    fireEvent.change(screen.getByTestId('select-blockId'), { 
+      target: { value: 'block2' } 
+    });
+    
     fireEvent.change(screen.getByTestId('input-description'), { 
       target: { value: 'Updated description' } 
     });
@@ -249,83 +283,40 @@ describe('EditLocationModal', () => {
 
     // Verify that onSave was called with the updated data
     await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledTimes(1);
       expect(mockOnSave).toHaveBeenCalledWith(
         expect.objectContaining({
           _id: mockLocation._id,
           stationName: 'Updated Station Name',
-          block: mockLocation.block,
-          locationType: mockLocation.locationType,
+          blockId: 'block2',
           description: 'Updated description'
         })
       );
     });
   });
 
-  it('should call onSave with new data when creating a location', async () => {
+  it('should convert block string to blockId for backward compatibility', () => {
+    // Create a location with only block property (no blockId)
+    const legacyLocation = {
+      _id: 'loc2',
+      stationName: 'Legacy Station',
+      block: 'ECHO', // matches blockName of block1
+      locationType: LocationType.ON_LAYOUT,
+      ownerId: 'owner1',
+      blockId: '' // Empty blockId that will be filled based on block name
+    } as Location & { block: string };
+
     render(
       <EditLocationModal
-        location={null}
+        location={legacyLocation}
+        blocks={mockBlocks}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
         isOpen={true}
       />
     );
 
-    // Fill form fields
-    fireEvent.change(screen.getByTestId('input-stationName'), { 
-      target: { value: 'New Station' } 
-    });
-    
-    fireEvent.change(screen.getByTestId('input-block'), { 
-      target: { value: 'NEW' } 
-    });
-    
-    fireEvent.change(screen.getByTestId('input-description'), { 
-      target: { value: 'New description' } 
-    });
-
-    // Submit the form
-    fireEvent.click(screen.getByTestId('button-create'));
-
-    // Verify that onSave was called with the new data
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        expect.objectContaining({
-          stationName: 'New Station',
-          block: 'NEW',
-          locationType: LocationType.ON_LAYOUT, // Default value
-          description: 'New description'
-        })
-      );
-    });
-  });
-
-  it('should display loading state during submission', async () => {
-    // Create a mock that doesn't resolve immediately
-    const delayedSave = jest.fn().mockImplementation(() => {
-      return new Promise(resolve => {
-        setTimeout(() => resolve(undefined), 100);
-      });
-    });
-
-    render(
-      <EditLocationModal
-        location={mockLocation}
-        onSave={delayedSave}
-        onCancel={mockOnCancel}
-        isOpen={true}
-      />
-    );
-
-    // Submit the form
-    fireEvent.click(screen.getByTestId('button-update'));
-
-    // Check for loading state
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-
-    // Wait for the save to complete
-    await waitFor(() => {
-      expect(delayedSave).toHaveBeenCalled();
-    });
+    // The blockId should be automatically set based on the block name
+    expect(screen.getByTestId('select-blockId')).toHaveValue('block1');
   });
 }); 

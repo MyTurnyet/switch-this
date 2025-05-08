@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Location, LocationType } from '@/app/shared/types/models';
+import { Location, LocationType, Block } from '@/app/shared/types/models';
 import { 
   Dialog, 
   Button, 
@@ -13,6 +13,7 @@ import {
 // Component Props
 interface EditLocationModalProps {
   location: Location | null;
+  blocks: Block[];
   onSave: (location: Location) => Promise<void>;
   onCancel: () => void;
   isOpen: boolean;
@@ -22,7 +23,7 @@ function getInitialFormState(): Location {
   return {
     _id: '',
     stationName: '',
-    block: '',
+    blockId: '',
     locationType: LocationType.ON_LAYOUT,
     ownerId: 'owner1'  // Default owner
   };
@@ -30,6 +31,7 @@ function getInitialFormState(): Location {
 
 export default function EditLocationModal({
   location,
+  blocks,
   onSave,
   onCancel,
   isOpen
@@ -42,11 +44,19 @@ export default function EditLocationModal({
   // Update form when location changes
   useEffect(() => {
     if (location) {
-      setFormData(location);
+      // Convert block string to blockId if needed for backward compatibility
+      const updatedLocation = { ...location };
+      if (!updatedLocation.blockId && updatedLocation.block) {
+        const matchingBlock = blocks.find(b => b.blockName === updatedLocation.block);
+        if (matchingBlock) {
+          updatedLocation.blockId = matchingBlock._id;
+        }
+      }
+      setFormData(updatedLocation);
     } else {
       setFormData(getInitialFormState());
     }
-  }, [location]);
+  }, [location, blocks]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -71,8 +81,8 @@ export default function EditLocationModal({
       errors.stationName = 'Station name is required';
     }
     
-    if (!formData.block.trim()) {
-      errors.block = 'Block is required';
+    if (!formData.blockId) {
+      errors.blockId = 'Block is required';
     }
     
     setValidationErrors(errors);
@@ -102,6 +112,15 @@ export default function EditLocationModal({
     }
   };
 
+  // Create block options
+  const blockOptions = [
+    { value: '', label: 'Select a Block' },
+    ...blocks.map(block => ({
+      value: block._id,
+      label: block.blockName
+    }))
+  ];
+
   // Create location type options
   const locationTypeOptions = Object.values(LocationType).map(type => ({
     value: type,
@@ -129,13 +148,13 @@ export default function EditLocationModal({
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Input
+            <Select
               label="Block"
-              name="block"
-              value={formData.block}
+              name="blockId"
+              value={formData.blockId}
               onChange={handleChange}
-              error={validationErrors.block}
-              placeholder="ECHO"
+              options={blockOptions}
+              error={validationErrors.blockId}
             />
           </div>
           <div>

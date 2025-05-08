@@ -3,4 +3,5 @@ export * from './useQueries';
 export * from './useLocationQueries';
 export * from './useIndustryQueries';
 export * from './useRollingStockQueries';
-export * from './useTrainRouteQueries'; 
+export * from './useTrainRouteQueries';
+export * from './useBlockQueries'; 
