@@ -6,6 +6,7 @@
 import { IMongoDbService } from './mongodb.interface';
 import { MongoDbService } from './mongodb.service';
 import { Collection, Document } from 'mongodb';
+import { DB_COLLECTIONS } from '../constants/dbCollections';
 
 // Singleton instance store
 let mongoService: IMongoDbService | null = null;
@@ -50,17 +51,36 @@ export function getMongoService(): IMongoDbService {
   // At this point mongoService is guaranteed to be initialized
   const service = mongoService as IMongoDbService;
   
-  // Add debug check for getBlocksCollection method
+  // Ensure critical methods are available
+  ensureServiceMethods(service);
+  
+  return service;
+}
+
+/**
+ * Ensure all required methods exist on the service
+ * This is a safety mechanism to prevent runtime errors
+ */
+function ensureServiceMethods(service: IMongoDbService): void {
+  // Check for getBlocksCollection method
   if (typeof service.getBlocksCollection !== 'function') {
-    console.error('The mongoService instance is missing getBlocksCollection method:', service);
-    // Create a dynamic implementation if needed
+    console.error('The mongoService instance is missing getBlocksCollection method - adding it dynamically');
+    
+    // Patch missing method
     service.getBlocksCollection = function<T extends Document = Document>(): Collection<T> {
       console.log('Using dynamically added getBlocksCollection method');
-      return this.getCollection<T>('blocks');
+      
+      // Try to use getCollection if available
+      if (typeof this.getCollection === 'function') {
+        return this.getCollection<T>(DB_COLLECTIONS.BLOCKS);
+      }
+      
+      // If getCollection is not available, create error-throwing stub
+      throw new Error('Cannot access blocks collection - service implementation is incomplete');
     };
   }
   
-  return service;
+  // Add any other method checks here if needed
 }
 
 /**

@@ -22,6 +22,32 @@ export class PlaywrightMongoDbService implements IMongoDbService {
     // Initialize all collections with empty arrays
     this.initCollections();
     console.log('PlaywrightMongoDbService initialized');
+    
+    // Extra verification for debugging
+    this.verifyInterface();
+  }
+  
+  // Verify this class fully implements IMongoDbService
+  private verifyInterface(): void {
+    // List all required methods from the interface
+    const requiredMethods = [
+      'connect', 'close', 'getCollection', 'toObjectId',
+      'getRollingStockCollection', 'getIndustriesCollection',
+      'getLocationsCollection', 'getTrainRoutesCollection',
+      'getLayoutStateCollection', 'getSwitchlistsCollection',
+      'getBlocksCollection'
+    ];
+    
+    // Check each method exists on this instance
+    const missingMethods = requiredMethods.filter(
+      method => typeof (this as unknown as Record<string, unknown>)[method] !== 'function'
+    );
+    
+    if (missingMethods.length > 0) {
+      console.error('PlaywrightMongoDbService is missing required methods:', missingMethods);
+    } else {
+      console.log('PlaywrightMongoDbService implements all required methods');
+    }
   }
 
   // Initialize the collections
@@ -67,6 +93,14 @@ export class PlaywrightMongoDbService implements IMongoDbService {
    * @returns The MongoDB collection
    */
   public getCollection<T extends Document = Document>(collectionName: string): Collection<T> {
+    if (!this.initialized) this.initCollections();
+    
+    // Ensure the collection exists
+    if (!this.collections.has(collectionName)) {
+      console.log(`Creating new collection: ${collectionName}`);
+      this.collections.set(collectionName, []);
+    }
+    
     return this.createMockCollection<T>(collectionName);
   }
 
@@ -250,15 +284,24 @@ export class PlaywrightMongoDbService implements IMongoDbService {
     return this.createMockCollection<T>(DB_COLLECTIONS.TRAIN_ROUTES);
   }
 
-  getSwitchlistsCollection<T extends Document = Document>(): Collection<T> {
-    return this.createMockCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
-  }
-
   getLayoutStateCollection<T extends Document = Document>(): Collection<T> {
     return this.createMockCollection<T>(DB_COLLECTIONS.LAYOUT_STATE);
   }
 
+  getSwitchlistsCollection<T extends Document = Document>(): Collection<T> {
+    return this.createMockCollection<T>(DB_COLLECTIONS.SWITCHLISTS);
+  }
+
   getBlocksCollection<T extends Document = Document>(): Collection<T> {
+    console.log('PlaywrightMongoDbService.getBlocksCollection called');
+    if (!this.initialized) this.initCollections();
+    
+    // Ensure the blocks collection exists
+    if (!this.collections.has(DB_COLLECTIONS.BLOCKS)) {
+      console.log(`Creating new collection: ${DB_COLLECTIONS.BLOCKS}`);
+      this.collections.set(DB_COLLECTIONS.BLOCKS, []);
+    }
+    
     return this.createMockCollection<T>(DB_COLLECTIONS.BLOCKS);
   }
 } 
