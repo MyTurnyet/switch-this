@@ -2,13 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import type { 
+  Switchlist, 
+  TrainRoute, 
+  Industry, 
+  RollingStock, 
+  Location 
+} from '@/app/shared/types/models';
 import { SwitchlistService } from '@/app/shared/services/SwitchlistService';
 import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { LocationService } from '@/app/shared/services/LocationService';
 import { IndustryService } from '@/app/shared/services/IndustryService';
-import { Switchlist, RollingStock, TrainRoute, Industry } from '@/app/shared/types/models';
-import { Location } from '@/shared/types/models';
 import { OperationsService } from '@/app/shared/services/OperationsService';
 
 export default function SwitchlistOperationsPage({ params }: { params: { id: string } }) {

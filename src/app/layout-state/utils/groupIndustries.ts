@@ -57,7 +57,8 @@ export function groupIndustriesByLocationAndBlock(
       };
     }
 
-    const block = location.block;
+    // Use blockId first, fall back to block, or use a default value
+    const block = location.blockId || location.block || 'unassigned';
     if (!result[industry.locationId].blocks[block]) {
       result[industry.locationId].blocks[block] = [];
     }
@@ -79,7 +80,8 @@ export function groupIndustriesByBlockAndLocation(
   
   // First, make sure every location has an entry
   locations.forEach(location => {
-    const blockName = location.block;
+    // Use blockId first, fall back to block, or use a default value
+    const blockName = location.blockId || location.block || 'unassigned';
     
     // Create block entry if it doesn't exist
     if (!result[blockName]) {
@@ -103,7 +105,8 @@ export function groupIndustriesByBlockAndLocation(
     const location = locationMap.get(industry.locationId);
     if (!location) return;
     
-    const blockName = location.block;
+    // Use blockId first, fall back to block, or use a default value
+    const blockName = location.blockId || location.block || 'unassigned';
     
     // This should already exist from the initialization above,
     // but just in case, create it if it doesn't

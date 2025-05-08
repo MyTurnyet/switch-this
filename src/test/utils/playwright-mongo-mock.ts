@@ -257,4 +257,8 @@ export class PlaywrightMongoDbService implements IMongoDbService {
   getLayoutStateCollection<T extends Document = Document>(): Collection<T> {
     return this.createMockCollection<T>(DB_COLLECTIONS.LAYOUT_STATE);
   }
+
+  getBlocksCollection<T extends Document = Document>(): Collection<T> {
+    return this.createMockCollection<T>(DB_COLLECTIONS.BLOCKS);
+  }
 } 

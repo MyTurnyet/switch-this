@@ -5,11 +5,25 @@ import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { groupIndustriesByBlockAndLocation } from './utils/groupIndustries';
 import { initializeLayoutState, syncRollingStockLocations } from './utils/layoutStateManager';
 import type { Location, Industry, RollingStock, Track } from '@/app/shared/types/models';
-import type { ClientServices } from '../shared/services/clientServices';
+import type { ClientServices, LayoutStateData } from '../shared/services/clientServices';
 import RollingStockList from './components/RollingStockList';
 
 interface LayoutStateProps {
   services: ClientServices;
+}
+
+// Combined state interface that includes both LayoutStateData properties and our custom properties
+interface ExtendedLayoutState {
+  _id?: string;
+  industries: Industry[];
+  rollingStock: RollingStock[];
+  rollingStockState: Record<string, {
+    locationId: string;
+    industryId?: string;
+    trackId?: string;
+    status: string;
+  }>;
+  timestamp: number;
 }
 
 const getIndustryTypeStyle = (type: string): string => {
@@ -169,25 +183,47 @@ export default function LayoutState({ services }: LayoutStateProps) {
 
   const persistLayoutState = useCallback(async (updatedIndustries: Industry[], updatedRollingStock: RollingStock[]) => {
     try {
-      const stateToSave = {
+      // Create rollingStockState record
+      const rollingStockState: Record<string, {
+        locationId: string;
+        industryId?: string;
+        trackId?: string;
+        status: string;
+      }> = {};
+      
+      // Populate the rolling stock state from the rolling stock data
+      updatedRollingStock.forEach(stock => {
+        rollingStockState[stock._id] = {
+          locationId: stock.currentLocation?.industryId || stock.homeYard || '',
+          industryId: stock.currentLocation?.industryId,
+          trackId: stock.currentLocation?.trackId,
+          status: 'STORED' // Default status
+        };
+      });
+      
+      // Create a properly typed state object
+      const stateToSave: ExtendedLayoutState = {
         _id: layoutStateId,
         industries: updatedIndustries,
-        rollingStock: updatedRollingStock
+        rollingStock: updatedRollingStock,
+        rollingStockState,
+        timestamp: Date.now()
       };
       
-      const savedState = await services.layoutStateService.saveLayoutState(stateToSave);
+      // Type assertion to satisfy the API requirements
+      const savedState = await services.layoutStateService.saveLayoutState(stateToSave as unknown as LayoutStateData);
       
-      updateLayoutStateIdIfNeeded(savedState);
+      if (savedState) {
+        // Type assertion for the returned state
+        const typedSavedState = savedState as unknown as ExtendedLayoutState;
+        if (typedSavedState._id) {
+          setLayoutStateId(typedSavedState._id);
+        }
+      }
     } catch (err) {
       logBackgroundOperationError('save layout state', err);
     }
   }, [layoutStateId, services.layoutStateService]);
-
-  const updateLayoutStateIdIfNeeded = (savedState: { _id?: string }) => {
-    if (!layoutStateId && savedState._id) {
-      setLayoutStateId(savedState._id);
-    }
-  };
 
   const loadInitialState = useCallback(async () => {
     setIsLoading(true);
@@ -201,7 +237,9 @@ export default function LayoutState({ services }: LayoutStateProps) {
       const savedState = await services.layoutStateService.getLayoutState();
       
       if (savedState) {
-        applyExistingSavedState(savedState);
+        // Type assertion for the saved state
+        const typedSavedState = savedState as unknown as ExtendedLayoutState;
+        applyExistingSavedState(typedSavedState);
       } else {
         await initializeDefaultState(industriesData, rollingStockData);
       }
@@ -213,11 +251,13 @@ export default function LayoutState({ services }: LayoutStateProps) {
     }
   }, [services]);
 
-  const applyExistingSavedState = (savedState: { _id?: string, industries: Industry[], rollingStock: RollingStock[] }) => {
+  const applyExistingSavedState = (savedState: ExtendedLayoutState) => {
     console.log('Loading saved layout state from database');
     setIndustries(savedState.industries);
     setRollingStock(savedState.rollingStock);
-    setLayoutStateId(savedState._id);
+    if (savedState._id) {
+      setLayoutStateId(savedState._id);
+    }
   };
 
   const initializeDefaultState = async (industriesData: Industry[], rollingStockData: RollingStock[]) => {

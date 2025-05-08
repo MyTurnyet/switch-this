@@ -3,18 +3,22 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SwitchlistService } from '@/app/shared/services/SwitchlistService';
-import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
 import { RollingStockService } from '@/app/shared/services/RollingStockService';
 import { LocationService } from '@/app/shared/services/LocationService';
-import { Switchlist, TrainRoute, RollingStock } from '@/app/shared/types/models';
-import { Location } from '@/shared/types/models';
+import { TrainRouteService } from '@/app/shared/services/TrainRouteService';
+import type { 
+  Switchlist, 
+  TrainRoute, 
+  RollingStock, 
+  Location 
+} from '@/app/shared/types/models';
 
 export default function SwitchlistPrintPage({ params }: { params: { id: string } }) {
   const [switchlist, setSwitchlist] = useState<Switchlist | null>(null);
   const [trainRoute, setTrainRoute] = useState<TrainRoute | null>(null);
   const [rollingStock, setRollingStock] = useState<RollingStock[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate] = useState<string>(new Date().toLocaleDateString());
   
