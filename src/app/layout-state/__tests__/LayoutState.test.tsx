@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import LayoutState from '../LayoutState';
 import { ClientServices } from '@/app/shared/services/clientServices';
@@ -297,6 +297,92 @@ describe('LayoutState Component', () => {
     // Verify error message is displayed
     await waitFor(() => {
       expect(screen.getByText('Failed to load layout state')).toBeInTheDocument();
+    });
+  });
+
+  it('resets layout state with cars at their home locations regardless of industry type', async () => {
+    // Setup industry and rolling stock mocks that include different industry types
+    const mockIndustries = [
+      {
+        _id: 'yard1',
+        name: 'Test Yard',
+        locationId: 'loc1',
+        blockName: 'block1',
+        industryType: 'YARD',
+        tracks: [{ _id: 'track1', name: 'Track 1', maxCars: 5, placedCars: ['car1'] }],
+        ownerId: 'owner1'
+      },
+      {
+        _id: 'industry1',
+        name: 'Test Industry',
+        locationId: 'loc1',
+        blockName: 'block1',
+        industryType: 'INDUSTRY',
+        tracks: [{ _id: 'track2', name: 'Track 2', maxCars: 5, placedCars: ['car2'] }],
+        ownerId: 'owner1'
+      }
+    ];
+
+    const mockRollingStock = [
+      {
+        _id: 'car1',
+        roadName: 'BNSF',
+        roadNumber: '1234',
+        aarType: 'XM',
+        homeYard: 'yard1',
+        currentLocation: { industryId: 'yard1', trackId: 'track1' }
+      },
+      {
+        _id: 'car2',
+        roadName: 'UP',
+        roadNumber: '5678',
+        aarType: 'GS',
+        homeYard: 'industry1',
+        currentLocation: { industryId: 'industry1', trackId: 'track2' }
+      }
+    ];
+
+    // Update the mocks for this test
+    mockServices.industryService.getAllIndustries.mockResolvedValueOnce(mockIndustries);
+    mockServices.rollingStockService.getAllRollingStock.mockResolvedValueOnce(mockRollingStock);
+    
+    // Setup mock to return null for getLayoutState so we go through initialization
+    mockGetLayoutState.mockResolvedValueOnce(null);
+    mockSaveLayoutState.mockImplementation((state) => Promise.resolve({...state, _id: 'state-id'}));
+    
+    // Render component
+    await act(async () => {
+      render(<LayoutState services={mockServices} />);
+    });
+    
+    // Wait for initial loading to complete
+    await waitFor(() => {
+      expect(screen.getByText('Layout State')).toBeInTheDocument();
+    });
+    
+    // Click reset button
+    const resetButton = screen.getByText('Reset Layout State');
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+    
+    // Verify resetToHomeYards was called
+    await waitFor(() => {
+      expect(mockServices.rollingStockService.resetToHomeYards).toHaveBeenCalled();
+    });
+    
+    // Verify data was fetched again after reset
+    await waitFor(() => {
+      // Should be called twice, once during initial load and once after reset
+      expect(mockServices.locationService.getAllLocations).toHaveBeenCalledTimes(2);
+      expect(mockServices.industryService.getAllIndustries).toHaveBeenCalledTimes(2);
+      expect(mockServices.rollingStockService.getAllRollingStock).toHaveBeenCalledTimes(2);
+    });
+    
+    // Verify new state was saved
+    await waitFor(() => {
+      // First call is during initialization, second call is after reset
+      expect(mockSaveLayoutState).toHaveBeenCalledTimes(2);
     });
   });
 }); 

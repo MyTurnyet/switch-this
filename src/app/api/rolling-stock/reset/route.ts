@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { getMongoService } from "@/lib/services/mongodb.client";
 import { RollingStock, Industry, Track } from '@/app/shared/types/models';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { MongoDbService } from '@/lib/services/mongodb.service';
 import { Collection, ObjectId } from 'mongodb';
 
 // Create a MongoDB service that will be used throughout this file
@@ -13,8 +12,9 @@ const mongoService = getMongoService();
  * Resets all rolling stock to their home yards by:
  * 1. Removing all rolling stock from tracks
  * 2. Clearing current location and destination data
+ * 3. Placing cars back at their home tracks
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     if (typeof mongoService.connect === 'function') {
       await mongoService.connect();
@@ -24,17 +24,14 @@ export async function POST(request: NextRequest) {
     const rollingStockCollection = mongoService.getRollingStockCollection();
     const industriesCollection = mongoService.getIndustriesCollection();
     
-    // 1. Get all rolling stock
-    const rollingStock = await rollingStockCollection.find({}).toArray();
+    // Fetch all data
+    const { allRollingStock, allIndustries } = await fetchData(rollingStockCollection, industriesCollection);
     
-    // 2. Update all industries to remove rolling stock from tracks
-    await industriesCollection.updateMany(
-      { 'tracks.placedCars': { $exists: true, $ne: [] } },
-      { $set: { 'tracks.$[].placedCars': [] } }
-    );
+    // Clear all placed cars from industries
+    await clearAllPlacedCars(industriesCollection, allIndustries, mongoService);
     
-    // 3. Update all rolling stock to remove current location and destination
-    const resetPromises = rollingStock.map(car => {
+    // Clear current location and destination from all rolling stock
+    const resetPromises = allRollingStock.map(car => {
       // Safely convert id to string if it's an ObjectId
       const carId = typeof car._id === 'object' && car._id !== null 
         ? car._id
@@ -52,6 +49,18 @@ export async function POST(request: NextRequest) {
     });
     
     await Promise.all(resetPromises);
+    
+    // Build map of industries and their tracks
+    const industryTracks = buildIndustryTracksMap(allIndustries);
+    
+    // Assign cars to their home tracks
+    await assignCarsToHomeTracks(
+      allRollingStock, 
+      industryTracks, 
+      rollingStockCollection, 
+      industriesCollection, 
+      mongoService
+    );
     
     // Close the connection
     if (typeof mongoService.close === 'function') {
@@ -145,9 +154,8 @@ function buildIndustryTracksMap(allIndustries: Industry[]) {
 }
 
 function filterHomeIndustries(allIndustries: Industry[]) {
-  return allIndustries.filter(industry => 
-    industry.industryType === 'YARD' || industry.industryType === 'FREIGHT'
-  );
+  // Include ALL industry types as valid home yards
+  return allIndustries;
 }
 
 function ensureStringId(id: string | ObjectId): string {
@@ -243,7 +251,3 @@ async function addCarToTrack(
     }
   );
 }
-
-function log(message: string) {
-  console.log(message);
-} 

@@ -111,7 +111,7 @@ export function Dialog({
           </div>
         )}
         
-        <div className={cn('px-6 py-4', contentClassName)}>
+        <div className={cn('px-6 py-4 overflow-y-auto max-h-[calc(100vh-10rem)]', contentClassName)}>
           {children}
         </div>
         

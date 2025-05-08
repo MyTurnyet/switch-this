@@ -9,6 +9,7 @@ interface DialogProps {
   children: React.ReactNode;
   isOpen: boolean;
   title?: string;
+  contentClassName?: string;
 }
 
 interface ButtonProps {
@@ -19,11 +20,16 @@ interface ButtonProps {
 
 // Mock the Dialog component
 jest.mock('@/app/components/ui', () => ({
-  Dialog: ({ children, isOpen, title }: DialogProps) => 
+  Dialog: ({ children, isOpen, title, contentClassName }: DialogProps) => 
     isOpen ? (
       <div data-testid="mock-dialog">
         <h2>{title}</h2>
-        {children}
+        <div 
+          data-testid="dialog-content" 
+          className={`mock-dialog-content overflow-y-auto max-h-[calc(100vh-10rem)] ${contentClassName || ''}`}
+        >
+          {children}
+        </div>
       </div>
     ) : null,
   Button: ({ children, onClick, type }: ButtonProps) => (
@@ -223,5 +229,45 @@ describe('EditIndustryModal', () => {
     
     // Check for validation error
     expect(screen.getByText('Track name is required')).toBeInTheDocument();
+  });
+
+  test('handles many tracks with proper scrolling', async () => {
+    // Create an industry with multiple tracks to make the form very tall
+    const industryWithManyTracks: Industry = {
+      ...mockIndustry,
+      tracks: Array(10).fill(null).map((_, index) => ({
+        _id: `track-${index}`,
+        name: `Track ${index}`,
+        maxCars: 3,
+        capacity: 3,
+        length: 0,
+        placedCars: [],
+        acceptedCarTypes: ['XM'],
+        ownerId: 'owner1'
+      }))
+    };
+
+    render(
+      <EditIndustryModal
+        industry={industryWithManyTracks}
+        isOpen={true}
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    // Verify the mock dialog content has the necessary scroll classes
+    const dialogContent = screen.getByTestId('dialog-content');
+    expect(dialogContent).toHaveClass('overflow-y-auto');
+    expect(dialogContent).toHaveClass('max-h-[calc(100vh-10rem)]');
+    
+    // Verify all tracks are rendered
+    const trackNodes = document.querySelectorAll('[data-testid^="track-name-"]');
+    expect(trackNodes.length).toBe(10);
+    
+    // Verify specific tracks by name 
+    for (let i = 0; i < 10; i++) {
+      expect(screen.getByDisplayValue(`Track ${i}`)).toBeInTheDocument();
+    }
   });
 }); 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Dialog, ConfirmDialog } from '../dialog';
 
 describe('Dialog Component', () => {
@@ -176,6 +176,18 @@ describe('Dialog Component', () => {
     
     const contentContainer = container.querySelector('.px-6.py-4');
     expect(contentContainer).toHaveClass('custom-content-class');
+  });
+
+  it('has scrollable content with proper overflow and max-height classes', () => {
+    const { container } = render(
+      <Dialog isOpen={true} onClose={() => {}}>
+        <div style={{ height: '1000px' }}>Tall content that should be scrollable</div>
+      </Dialog>
+    );
+    
+    const contentContainer = container.querySelector('.px-6.py-4');
+    expect(contentContainer).toHaveClass('overflow-y-auto');
+    expect(contentContainer).toHaveClass('max-h-[calc(100vh-10rem)]');
   });
 
   it('applies headerClassName to the header container', () => {
