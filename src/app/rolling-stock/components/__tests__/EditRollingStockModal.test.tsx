@@ -131,7 +131,8 @@ describe('EditRollingStockModal', () => {
         maxCars: 10,
         placedCars: [],
         _id: 'track1',
-        ownerId: 'owner1'
+        ownerId: 'owner1',
+        acceptedCarTypes: []
       }],
       ownerId: 'owner1',
     },
@@ -149,7 +150,8 @@ describe('EditRollingStockModal', () => {
         maxCars: 2,
         placedCars: [],
         _id: 'track2',
-        ownerId: 'owner1'
+        ownerId: 'owner1',
+        acceptedCarTypes: []
       }],
       ownerId: 'owner1',
     },
@@ -283,5 +285,112 @@ describe('EditRollingStockModal', () => {
     fireEvent.click(cancelButton);
     
     expect(mockCancel).toHaveBeenCalled();
+  });
+
+  it('displays dropdown options in alphabetical order', () => {
+    // Create an array of industries with non-alphabetical names to test sorting
+    const unsortedIndustries: Industry[] = [
+      {
+        _id: 'yard3',
+        name: 'Zebra Yard',
+        locationId: 'loc3',
+        blockName: 'Block C',
+        description: 'Switching yard',
+        industryType: 'YARD' as IndustryType,
+        tracks: [{ 
+          name: 'Track 3', 
+          capacity: 8,
+          length: 120,
+          maxCars: 8,
+          placedCars: [],
+          _id: 'track3',
+          ownerId: 'owner1',
+          acceptedCarTypes: []
+        }],
+        ownerId: 'owner1',
+      },
+      {
+        _id: 'yard2',
+        name: 'Bravo Yard',
+        locationId: 'loc4',
+        blockName: 'Block D',
+        description: 'Engine facility',
+        industryType: 'YARD' as IndustryType,
+        tracks: [{ 
+          name: 'Track 4', 
+          capacity: 5,
+          length: 80,
+          maxCars: 5,
+          placedCars: [],
+          _id: 'track4',
+          ownerId: 'owner1',
+          acceptedCarTypes: []
+        }],
+        ownerId: 'owner1',
+      },
+      {
+        _id: 'ind2',
+        name: 'Manufacturing Plant',
+        locationId: 'loc5',
+        blockName: 'Block E',
+        description: 'Production facility',
+        industryType: 'FACTORY' as IndustryType,
+        tracks: [{ 
+          name: 'Dock A', 
+          capacity: 3,
+          length: 60,
+          maxCars: 3,
+          placedCars: [],
+          _id: 'track5',
+          ownerId: 'owner1',
+          acceptedCarTypes: []
+        }],
+        ownerId: 'owner1',
+      },
+      ...industries, // Add original industries
+    ];
+
+    customRender(
+      <EditRollingStockModal
+        rollingStock={null}
+        industries={unsortedIndustries}
+        onSave={mockSave}
+        onCancel={mockCancel}
+        isOpen={true}
+      />
+    );
+    
+    // Get all options from the homeYard select
+    const homeYardSelect = screen.getByTestId('select-homeYard') as HTMLSelectElement;
+    const homeYardOptionElements = Array.from(homeYardSelect.options).slice(1); // Skip the first "Select Home Yard" option
+    
+    // Get all options from the currentLocation select
+    const currentLocationSelect = screen.getByTestId('select-currentLocation') as HTMLSelectElement;
+    const currentLocationOptionElements = Array.from(currentLocationSelect.options).slice(1); // Skip the first "Select Current Location" option
+    
+    // Check that homeYard options are alphabetically sorted
+    expect(homeYardOptionElements.map(option => option.text)).toEqual([
+      'Bravo Yard',
+      'Central Yard',
+      'Zebra Yard'
+    ]);
+    
+    // Check that currentLocation options are alphabetically sorted
+    expect(currentLocationOptionElements.map(option => option.text)).toEqual([
+      'Acme Factory',
+      'Bravo Yard',
+      'Central Yard',
+      'Manufacturing Plant',
+      'Zebra Yard'
+    ]);
+    
+    // Also verify using sequential comparison
+    for (let i = 0; i < homeYardOptionElements.length - 1; i++) {
+      expect(homeYardOptionElements[i].text.localeCompare(homeYardOptionElements[i + 1].text)).toBeLessThanOrEqual(0);
+    }
+    
+    for (let i = 0; i < currentLocationOptionElements.length - 1; i++) {
+      expect(currentLocationOptionElements[i].text.localeCompare(currentLocationOptionElements[i + 1].text)).toBeLessThanOrEqual(0);
+    }
   });
 }); 

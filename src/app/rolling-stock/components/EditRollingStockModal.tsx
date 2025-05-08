@@ -150,7 +150,8 @@ export default function EditRollingStockModal({
     .map(yard => ({
       value: yard._id,
       label: yard.name
-    }));
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   // Create options for all industries
   const industryOptions: SelectOption[] = [
@@ -159,6 +160,7 @@ export default function EditRollingStockModal({
       value: industry._id,
       label: industry.name
     }))
+    .sort((a, b) => a.label.localeCompare(b.label))
   ];
 
   return (
