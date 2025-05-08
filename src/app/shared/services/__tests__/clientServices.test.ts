@@ -1,4 +1,4 @@
-import { services } from '../clientServices';
+import clientServices from '../clientServices';
 import { TrainRoute, RollingStock } from '@/app/shared/types/models';
 
 describe('Client Services', () => {
@@ -21,7 +21,7 @@ describe('Client Services', () => {
         json: async () => mockLocations
       });
 
-      const result = await services.locationService.getAllLocations();
+      const result = await clientServices.locationService.getAllLocations();
       
       expect(result).toEqual(mockLocations);
       expect(global.fetch).toHaveBeenCalledWith('/api/locations');
@@ -36,7 +36,7 @@ describe('Client Services', () => {
         json: async () => mockIndustries
       });
 
-      const result = await services.industryService.getAllIndustries();
+      const result = await clientServices.industryService.getAllIndustries();
       
       expect(result).toEqual(mockIndustries);
       expect(global.fetch).toHaveBeenCalledWith('/api/industries');
@@ -52,7 +52,7 @@ describe('Client Services', () => {
         json: async () => updatedIndustry
       });
 
-      const result = await services.industryService.updateIndustry(industryId, updateData);
+      const result = await clientServices.industryService.updateIndustry(industryId, updateData);
       
       expect(result).toEqual(updatedIndustry);
       expect(global.fetch).toHaveBeenCalledWith(`/api/industries/${industryId}`, {
@@ -73,7 +73,7 @@ describe('Client Services', () => {
         statusText: 'Not Found'
       });
 
-      await expect(services.industryService.updateIndustry(industryId, updateData))
+      await expect(clientServices.industryService.updateIndustry(industryId, updateData))
         .rejects.toThrow(`Failed to update industry with id ${industryId}`);
     });
 
@@ -86,7 +86,7 @@ describe('Client Services', () => {
         json: async () => createdIndustry
       });
 
-      const result = await services.industryService.createIndustry(newIndustry);
+      const result = await clientServices.industryService.createIndustry(newIndustry);
       
       expect(result).toEqual(createdIndustry);
       expect(global.fetch).toHaveBeenCalledWith('/api/industries', {
@@ -106,7 +106,7 @@ describe('Client Services', () => {
         statusText: 'Bad Request'
       });
 
-      await expect(services.industryService.createIndustry(newIndustry))
+      await expect(clientServices.industryService.createIndustry(newIndustry))
         .rejects.toThrow('Failed to create industry');
     });
 
@@ -117,7 +117,7 @@ describe('Client Services', () => {
         ok: true
       });
 
-      await services.industryService.deleteIndustry(industryId);
+      await clientServices.industryService.deleteIndustry(industryId);
       
       expect(global.fetch).toHaveBeenCalledWith(`/api/industries/${industryId}`, {
         method: 'DELETE',
@@ -132,7 +132,7 @@ describe('Client Services', () => {
         statusText: 'Not Found'
       });
 
-      await expect(services.industryService.deleteIndustry(industryId))
+      await expect(clientServices.industryService.deleteIndustry(industryId))
         .rejects.toThrow(`Failed to delete industry with id ${industryId}`);
     });
   });
@@ -154,7 +154,7 @@ describe('Client Services', () => {
         json: async () => mockTrainRoutes
       });
 
-      const result = await services.trainRouteService.getAllTrainRoutes();
+      const result = await clientServices.trainRouteService.getAllTrainRoutes();
       
       expect(result).toEqual(mockTrainRoutes);
       expect(global.fetch).toHaveBeenCalledWith('/api/train-routes');
@@ -178,7 +178,7 @@ describe('Client Services', () => {
         json: async () => updateData
       });
 
-      const result = await services.trainRouteService.updateTrainRoute(routeId, updateData);
+      const result = await clientServices.trainRouteService.updateTrainRoute(routeId, updateData);
       
       expect(result).toEqual(updateData);
       expect(global.fetch).toHaveBeenCalledWith(`/api/train-routes/${routeId}`, {
@@ -208,7 +208,7 @@ describe('Client Services', () => {
         statusText: 'Not Found'
       });
 
-      await expect(services.trainRouteService.updateTrainRoute(routeId, updateData))
+      await expect(clientServices.trainRouteService.updateTrainRoute(routeId, updateData))
         .rejects.toThrow(`Failed to update train route with id ${routeId}`);
     });
   });
@@ -231,7 +231,7 @@ describe('Client Services', () => {
         json: async () => mockRollingStock
       });
 
-      const result = await services.rollingStockService.getAllRollingStock();
+      const result = await clientServices.rollingStockService.getAllRollingStock();
       
       expect(result).toEqual(mockRollingStock);
       expect(global.fetch).toHaveBeenCalledWith('/api/rolling-stock');
@@ -256,7 +256,7 @@ describe('Client Services', () => {
         json: async () => updateData
       });
 
-      await services.rollingStockService.updateRollingStock(stockId, updateData);
+      await clientServices.rollingStockService.updateRollingStock(stockId, updateData);
       
       expect(global.fetch).toHaveBeenCalledWith(`/api/rolling-stock/${stockId}`, {
         method: 'PUT',
@@ -272,7 +272,7 @@ describe('Client Services', () => {
         ok: true
       });
 
-      await services.rollingStockService.resetToHomeYards();
+      await clientServices.rollingStockService.resetToHomeYards();
       
       expect(global.fetch).toHaveBeenCalledWith('/api/rolling-stock/reset', {
         method: 'POST',
@@ -285,17 +285,23 @@ describe('Client Services', () => {
         statusText: 'Internal Server Error'
       });
 
-      await expect(services.rollingStockService.resetToHomeYards())
+      await expect(clientServices.rollingStockService.resetToHomeYards())
         .rejects.toThrow('Failed to reset rolling stock');
     });
   });
 
   describe('LayoutStateService', () => {
     it('gets the layout state', async () => {
-      const mockLayoutState = { 
-        _id: '1', 
-        industries: [], 
-        rollingStock: [] 
+      const mockLayoutState = {
+        rollingStockState: {
+          'rs1': {
+            locationId: 'loc1',
+            industryId: 'ind1',
+            trackId: 'track1',
+            status: 'placed'
+          }
+        },
+        timestamp: Date.now()
       };
       
       (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -303,7 +309,7 @@ describe('Client Services', () => {
         json: async () => mockLayoutState
       });
 
-      const result = await services.layoutStateService.getLayoutState();
+      const result = await clientServices.layoutStateService.getLayoutState();
       
       expect(result).toEqual(mockLayoutState);
       expect(global.fetch).toHaveBeenCalledWith('/api/layout-state');
@@ -315,7 +321,7 @@ describe('Client Services', () => {
         json: async () => ({ exists: false })
       });
 
-      const result = await services.layoutStateService.getLayoutState();
+      const result = await clientServices.layoutStateService.getLayoutState();
       
       expect(result).toBeNull();
     });
@@ -326,14 +332,21 @@ describe('Client Services', () => {
         statusText: 'Not Found'
       });
 
-      await expect(services.layoutStateService.getLayoutState())
+      await expect(clientServices.layoutStateService.getLayoutState())
         .rejects.toThrow('Failed to fetch layout state: Not Found');
     });
 
     it('saves the layout state', async () => {
-      const layoutState = { 
-        industries: [], 
-        rollingStock: [] 
+      const layoutState = {
+        rollingStockState: {
+          'rs1': {
+            locationId: 'loc1',
+            industryId: 'ind1',
+            trackId: 'track1',
+            status: 'placed'
+          }
+        },
+        timestamp: Date.now()
       };
       
       const savedState = { 
@@ -346,7 +359,7 @@ describe('Client Services', () => {
         json: async () => savedState
       });
 
-      const result = await services.layoutStateService.saveLayoutState(layoutState);
+      const result = await clientServices.layoutStateService.saveLayoutState(layoutState);
       
       expect(result).toEqual(savedState);
       expect(global.fetch).toHaveBeenCalledWith('/api/layout-state', {
@@ -359,9 +372,16 @@ describe('Client Services', () => {
     });
 
     it('handles errors when saving layout state', async () => {
-      const layoutState = { 
-        industries: [], 
-        rollingStock: [] 
+      const layoutState = {
+        rollingStockState: {
+          'rs1': {
+            locationId: 'loc1',
+            industryId: 'ind1',
+            trackId: 'track1',
+            status: 'placed'
+          }
+        },
+        timestamp: Date.now()
       };
       
       (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -369,7 +389,7 @@ describe('Client Services', () => {
         statusText: 'Bad Request'
       });
 
-      await expect(services.layoutStateService.saveLayoutState(layoutState))
+      await expect(clientServices.layoutStateService.saveLayoutState(layoutState))
         .rejects.toThrow('Failed to save layout state: Bad Request');
     });
   });

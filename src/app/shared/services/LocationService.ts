@@ -1,76 +1,28 @@
 import { Location } from '@/app/shared/types/models';
+import { BaseEntityService } from './BaseEntityService';
 
-export class LocationService {
+export class LocationService extends BaseEntityService<Location> {
+  constructor() {
+    super('/api/locations', 'location');
+  }
+
   async getAllLocations(): Promise<Location[]> {
-    const response = await fetch('/api/locations');
-    if (!response.ok) {
-      throw new Error('Failed to fetch locations');
-    }
-    return response.json();
+    return this.getAll();
   }
 
   async getLocationById(id: string): Promise<Location> {
-    const response = await fetch(`/api/locations/${id}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch location with id ${id}`);
-    }
-    return response.json();
+    return this.getById(id);
   }
 
   async createLocation(location: Partial<Location>): Promise<Location> {
-    const response = await fetch('/api/locations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(location),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create location');
-    }
-
-    return response.json();
+    return this.create(location);
   }
 
   async updateLocation(id: string, location: Partial<Location>): Promise<Location> {
-    const response = await fetch(`/api/locations/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(location),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || `Failed to update location with id ${id}`);
-    }
-
-    return response.json();
+    return this.update(id, location);
   }
 
   async deleteLocation(id: string): Promise<void> {
-    const response = await fetch(`/api/locations/${id}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-HTTP-Method-Override': 'DELETE'
-      },
-      credentials: 'same-origin'
-    });
-
-    if (!response.ok) {
-      try {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to delete location with id ${id}`);
-      } catch (parseError) {
-        const statusText = response.statusText || 'Unknown error';
-        throw new Error(`Failed to delete location: ${statusText} (${response.status})`);
-      }
-    }
+    return this.legacyDelete(id); // Using legacy delete for backward compatibility
   }
 } 
