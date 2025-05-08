@@ -1,8 +1,7 @@
-import { NextRequest } from 'next/server';
 import { getMongoService } from "@/lib/services/mongodb.client";
 import { RollingStock, Industry, Track } from '@/app/shared/types/models';
 import { IMongoDbService } from '@/lib/services/mongodb.interface';
-import { Collection, ObjectId } from 'mongodb';
+import { Collection, Document, Filter, ObjectId, UpdateFilter } from 'mongodb';
 
 // Create a MongoDB service that will be used throughout this file
 const mongoService = getMongoService();
@@ -14,7 +13,7 @@ const mongoService = getMongoService();
  * 2. Clearing current location and destination data
  * 3. Placing cars back at their home tracks
  */
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     if (typeof mongoService.connect === 'function') {
       await mongoService.connect();
@@ -95,6 +94,25 @@ export async function POST(_request: NextRequest) {
   }
 }
 
+// Helper function that safely handles ID conversion
+function safeObjectId(id: string | ObjectId, mongoService: IMongoDbService): string | ObjectId {
+  if (typeof id !== 'string') {
+    return id;
+  }
+  
+  // Check if the ID is a valid MongoDB ObjectId format
+  if (/^[0-9a-fA-F]{24}$/.test(id)) {
+    try {
+      return mongoService.toObjectId(id);
+    } catch (error) {
+      return id;
+    }
+  }
+  
+  // Return as is if it's not in ObjectId format (e.g., UUID)
+  return id;
+}
+
 async function updateCarLocation(
   car: RollingStock,
   industryId: string,
@@ -103,8 +121,9 @@ async function updateCarLocation(
   mongoService: IMongoDbService
 ) {
   // Update the car with new location
+  const query = { _id: typeof car._id === 'string' ? safeObjectId(car._id, mongoService) : car._id };
   return await collection.updateOne(
-    { _id: typeof car._id === 'string' ? mongoService.toObjectId(car._id) : car._id },
+    query as any,
     { 
       $set: { 
         currentLocation: {
@@ -127,12 +146,13 @@ async function fetchData(rollingStockCollection: Collection, industriesCollectio
 }
 
 async function clearAllPlacedCars(industriesCollection: Collection, allIndustries: Industry[], mongoService: IMongoDbService) {
-  const updatePromises = allIndustries.map(industry => 
-    industriesCollection.updateOne(
-      { _id: typeof industry._id === 'string' ? mongoService.toObjectId(industry._id) : industry._id },
+  const updatePromises = allIndustries.map(industry => {
+    const query = { _id: typeof industry._id === 'string' ? safeObjectId(industry._id, mongoService) : industry._id };
+    return industriesCollection.updateOne(
+      query as any,
       { $set: { "tracks.$[].placedCars": [] } }
-    )
-  );
+    );
+  });
   await Promise.all(updatePromises);
 }
 
@@ -241,13 +261,17 @@ async function addCarToTrack(
   mongoService: IMongoDbService
 ) {
   // Add car to industry's track's placedCars array
+  const query = { 
+    _id: typeof industryId === 'string' ? safeObjectId(industryId, mongoService) : industryId,
+    "tracks._id": typeof trackId === 'string' ? safeObjectId(trackId, mongoService) : trackId
+  };
+  
+  const update = { 
+    $push: { "tracks.$.placedCars": ensureStringId(carId) } 
+  };
+  
   return await industriesCollection.updateOne(
-    { 
-      _id: typeof industryId === 'string' ? mongoService.toObjectId(industryId) : industryId,
-      "tracks._id": typeof trackId === 'string' ? mongoService.toObjectId(trackId) : trackId
-    },
-    { 
-      '$push': { "tracks.$.placedCars": ensureStringId(carId) } as any
-    }
+    query as any,
+    update as any
   );
 }
