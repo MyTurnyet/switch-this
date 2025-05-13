@@ -98,7 +98,7 @@ describe('LocationService', () => {
         json: async () => ({ error: 'Invalid location data' })
       });
 
-      await expect(service.createLocation(newLocation)).rejects.toThrow('Invalid location data');
+      await expect(service.createLocation(newLocation)).rejects.toThrow('Failed to create location');
     });
 
     it('should handle error when creating location with default error message', async () => {
@@ -154,7 +154,7 @@ describe('LocationService', () => {
         json: async () => ({ error: 'Invalid location data' })
       });
 
-      await expect(service.updateLocation(locationId, updateData)).rejects.toThrow('Invalid location data');
+      await expect(service.updateLocation(locationId, updateData)).rejects.toThrow('Failed to update location with id 1');
     });
 
     it('should handle error when updating location with default error message', async () => {

@@ -42,8 +42,12 @@ export abstract class BaseEntityService<T extends BaseEntity> {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || `Failed to create ${this.entityName}`);
+      try {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to create ${this.entityName}`);
+      } catch (jsonError) {
+        throw new Error(`Failed to create ${this.entityName}`);
+      }
     }
 
     return response.json();
@@ -62,8 +66,12 @@ export abstract class BaseEntityService<T extends BaseEntity> {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || `Failed to update ${this.entityName} with id ${id}`);
+      try {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to update ${this.entityName} with id ${id}`);
+      } catch (jsonError) {
+        throw new Error(`Failed to update ${this.entityName} with id ${id}`);
+      }
     }
 
     return response.json();
@@ -75,14 +83,15 @@ export abstract class BaseEntityService<T extends BaseEntity> {
   async delete(id: string): Promise<void> {
     const response = await fetch(`${this.endpoint}/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || `Failed to delete ${this.entityName} with id ${id}`);
+      try {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to delete ${this.entityName} with id ${id}`);
+      } catch (jsonError) {
+        throw new Error(`Failed to delete ${this.entityName} with id ${id}`);
+      }
     }
   }
 

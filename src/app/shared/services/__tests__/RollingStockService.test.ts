@@ -202,9 +202,6 @@ describe('RollingStockService', () => {
       // Verify that fetch was called with the correct parameters
       expect(global.fetch).toHaveBeenCalledWith('/api/rolling-stock/reset', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
       
       // Verify that the expected console messages were logged
@@ -221,7 +218,7 @@ describe('RollingStockService', () => {
       });
       
       // Verify the method throws the expected error
-      await expect(service.resetToHomeYards()).rejects.toThrow('Failed to reset rolling stock to home yards');
+      await expect(service.resetToHomeYards()).rejects.toThrow('Failed to reset rolling stock');
       
       // Verify the error message was logged
       expect(consoleLogSpy).toHaveBeenCalledWith('Starting reset to home yards operation');

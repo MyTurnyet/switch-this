@@ -143,13 +143,10 @@ class RollingStockServiceImpl extends BaseEntityService<RollingStock> implements
   async resetToHomeYards(): Promise<void> {
     const response = await fetch(`${this.endpoint}/reset`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to reset rolling stock to home yards');
+      throw new Error('Failed to reset rolling stock');
     }
   }
 }
@@ -212,4 +209,6 @@ const clientServices: ClientServices = {
   blockService: new BlockServiceClass(),
 };
 
+// Export both as default and named for backward compatibility
+export const services = clientServices;
 export default clientServices; 

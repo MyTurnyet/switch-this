@@ -28,15 +28,17 @@ export class RollingStockService {
     try {
       const response = await fetch('/api/rolling-stock/reset', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Reset API returned error:', errorData);
-        throw new Error('Failed to reset rolling stock to home yards');
+        try {
+          const errorData = await response.json();
+          console.error('Reset API returned error:', errorData);
+          throw new Error('Failed to reset rolling stock');
+        } catch (jsonError) {
+          // If JSON parsing fails, use a generic error
+          throw new Error('Failed to reset rolling stock');
+        }
       }
       
       console.log('Reset operation completed successfully');
