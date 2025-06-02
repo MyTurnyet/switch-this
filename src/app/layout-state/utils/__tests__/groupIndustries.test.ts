@@ -1,11 +1,11 @@
 import { groupIndustriesByLocationAndBlock, groupIndustriesByBlockAndLocation } from '../groupIndustries';
-import { Location, Industry, IndustryType } from '@/app/shared/types/models';
+import { Location, Industry, IndustryType, LocationType } from '@/app/shared/types/models';
 
 describe('groupIndustriesByLocationAndBlock', () => {
   it('groups industries by location and block', () => {
     const locations: Location[] = [
-      { _id: '1', stationName: 'Station A', block: 'Block 1', ownerId: 'owner1' },
-      { _id: '2', stationName: 'Station B', block: 'Block 2', ownerId: 'owner1' }
+      { _id: '1', stationName: 'Station A', block: 'Block 1', ownerId: 'owner1', blockId: 'block1', locationType: LocationType.ON_LAYOUT },
+      { _id: '2', stationName: 'Station B', block: 'Block 2', ownerId: 'owner1', blockId: 'block2', locationType: LocationType.ON_LAYOUT }
     ];
 
     const industries: Industry[] = [
@@ -20,7 +20,7 @@ describe('groupIndustriesByLocationAndBlock', () => {
       '1': {
         locationName: 'Station A',
         blocks: {
-          'Block 1': [
+          'block1': [
             { _id: '1', name: 'Industry 1', locationId: '1', blockName: 'Block 1', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' },
             { _id: '2', name: 'Industry 2', locationId: '1', blockName: 'Block 1', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' }
           ]
@@ -29,7 +29,7 @@ describe('groupIndustriesByLocationAndBlock', () => {
       '2': {
         locationName: 'Station B',
         blocks: {
-          'Block 2': [
+          'block2': [
             { _id: '3', name: 'Industry 3', locationId: '2', blockName: 'Block 2', industryType: IndustryType.FREIGHT, tracks: [], ownerId: 'owner1', description: '' }
           ]
         }
@@ -56,9 +56,9 @@ describe('groupIndustriesByLocationAndBlock', () => {
 describe('groupIndustriesByBlockAndLocation', () => {
   it('groups industries by block and then by location', () => {
     const locations: Location[] = [
-      { _id: '1', stationName: 'Station A', block: 'Block 1', ownerId: 'owner1' },
-      { _id: '2', stationName: 'Station B', block: 'Block 2', ownerId: 'owner1' },
-      { _id: '3', stationName: 'Station C', block: 'Block 1', ownerId: 'owner1' }
+      { _id: '1', stationName: 'Station A', block: 'Block 1', ownerId: 'owner1', blockId: 'block1', locationType: LocationType.ON_LAYOUT },
+      { _id: '2', stationName: 'Station B', block: 'Block 2', ownerId: 'owner1', blockId: 'block2', locationType: LocationType.ON_LAYOUT },
+      { _id: '3', stationName: 'Station C', block: 'Block 1', ownerId: 'owner1', blockId: 'block1', locationType: LocationType.ON_LAYOUT }
     ];
 
     const industries: Industry[] = [
@@ -71,8 +71,8 @@ describe('groupIndustriesByBlockAndLocation', () => {
     const result = groupIndustriesByBlockAndLocation(industries, locations);
 
     expect(result).toEqual({
-      'Block 1': {
-        blockName: 'Block 1',
+      'block1': {
+        blockName: 'block1',
         locations: {
           '1': {
             locationName: 'Station A',
@@ -89,8 +89,8 @@ describe('groupIndustriesByBlockAndLocation', () => {
           }
         }
       },
-      'Block 2': {
-        blockName: 'Block 2',
+      'block2': {
+        blockName: 'block2',
         locations: {
           '2': {
             locationName: 'Station B',

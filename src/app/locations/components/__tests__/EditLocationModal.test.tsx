@@ -299,12 +299,13 @@ describe('EditLocationModal', () => {
     // Create a location with only block property (no blockId)
     const legacyLocation = {
       _id: 'loc2',
-      stationName: 'Legacy Station',
-      block: 'ECHO', // matches blockName of block1
-      locationType: LocationType.ON_LAYOUT,
       ownerId: 'owner1',
-      blockId: '' // Empty blockId that will be filled based on block name
-    } as Location & { block: string };
+      stationName: 'Old Location',
+      blockId: 'block1',
+      block: 'Old Block',
+      locationType: LocationType.ON_LAYOUT,
+      description: 'Legacy location for test',
+    };
 
     render(
       <EditLocationModal

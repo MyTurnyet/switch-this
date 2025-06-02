@@ -1,10 +1,10 @@
 import { LayoutDataCache } from '../LayoutDataCache';
-import { Location, Industry, TrainRoute, RollingStock, IndustryType } from '@/app/shared/types/models';
+import { Location, Industry, TrainRoute, RollingStock, IndustryType, LocationType } from '@/app/shared/types/models';
 
 describe('LayoutDataCache', () => {
   let cache: LayoutDataCache;
   const mockLocations: Location[] = [
-    { _id: '1', stationName: 'Location 1', block: 'Block 1', ownerId: 'Owner 1' }
+    { _id: '1', stationName: 'Location 1', block: 'Block 1', ownerId: 'Owner 1', blockId: 'block1', locationType: LocationType.ON_LAYOUT }
   ];
   const mockIndustries: Industry[] = [
     { 
@@ -19,14 +19,17 @@ describe('LayoutDataCache', () => {
     }
   ];
   const mockTrainRoutes: TrainRoute[] = [
-    { 
-      _id: '1', 
-      name: 'Route 1', 
+    {
+      _id: '1',
+      name: 'Route 1',
+      routeNumber: '100',
+      routeType: 'MIXED',
+      originatingYardId: 'yard1',
+      terminatingYardId: 'yard2',
+      stations: ['Location 1', 'Location 2'],
       description: '',
-      startLocationId: 'Location 1',
-      endLocationId: 'Location 2',
-      ownerId: 'Owner 1'
-    }
+      ownerId: 'Owner 1',
+    },
   ];
   const mockRollingStock: RollingStock[] = [
     { _id: '1', roadName: 'BNSF', roadNumber: '1234', aarType: 'XM', description: 'Boxcar', color: 'RED', note: '', homeYard: '1', ownerId: 'owner1' }

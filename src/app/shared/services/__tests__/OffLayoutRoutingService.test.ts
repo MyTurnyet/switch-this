@@ -6,29 +6,33 @@ describe('OffLayoutRoutingService', () => {
   const mockLocations: Location[] = [
     {
       _id: 'loc1',
-      stationName: 'Echo Lake, WA',
-      block: 'ECHO',
+      stationName: 'Location 1',
+      block: 'Block 1',
+      blockId: 'block1',
       locationType: LocationType.ON_LAYOUT,
       ownerId: 'owner1'
     },
     {
       _id: 'loc2',
-      stationName: 'Chicago, IL',
-      block: 'EAST',
+      stationName: 'Location 2',
+      block: 'Block 2',
+      blockId: 'block2',
       locationType: LocationType.OFF_LAYOUT,
       ownerId: 'owner1'
     },
     {
       _id: 'loc3',
-      stationName: 'Echo Lake Yard',
-      block: 'ECHO',
+      stationName: 'Location 3',
+      block: 'Block 3',
+      blockId: 'block3',
       locationType: LocationType.FIDDLE_YARD,
       ownerId: 'owner1'
     },
     {
       _id: 'loc4',
-      stationName: 'Interbay Yard',
-      block: 'SEA',
+      stationName: 'Location 4',
+      block: 'Block 4',
+      blockId: 'block4',
       locationType: LocationType.FIDDLE_YARD,
       ownerId: 'owner1'
     }
@@ -142,6 +146,7 @@ describe('OffLayoutRoutingService', () => {
           _id: 'test1',
           stationName: 'Test Location',
           block: 'TEST',
+          blockId: 'blockTest',
           locationType: LocationType.ON_LAYOUT,
           ownerId: 'owner1'
         },

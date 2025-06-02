@@ -40,8 +40,8 @@ describe('EditTrainRouteModal', () => {
   };
 
   const mockLocations: Location[] = [
-    { _id: '201', stationName: 'Station A', block: 'A', ownerId: 'owner1', locationType: LocationType.ON_LAYOUT },
-    { _id: '202', stationName: 'Station B', block: 'B', ownerId: 'owner1', locationType: LocationType.ON_LAYOUT }
+    { _id: '201', stationName: 'Station A', block: 'A', ownerId: 'owner1', locationType: LocationType.ON_LAYOUT, blockId: 'blockA' },
+    { _id: '202', stationName: 'Station B', block: 'B', ownerId: 'owner1', locationType: LocationType.ON_LAYOUT, blockId: 'blockB' }
   ];
 
   const mockIndustries: Industry[] = [

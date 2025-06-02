@@ -8,23 +8,17 @@ describe('layoutStateManager', () => {
       name: 'BNSF Yard',
       locationId: 'loc1',
       blockName: 'Block1',
-      industryType: 'YARD',
+      industryType: IndustryType.YARD,
       tracks: [
         {
           _id: 'track1',
           name: 'Track 1',
           length: 100,
-          capacity: 4,
-          maxCars: 4,
-          placedCars: []
-        },
-        {
-          _id: 'track2',
-          name: 'Track 2',
-          length: 100,
           capacity: 5,
           maxCars: 5,
-          placedCars: ['car3']
+          placedCars: [],
+          acceptedCarTypes: [],
+          ownerId: 'owner1',
         }
       ],
       ownerId: 'owner1'
@@ -34,15 +28,17 @@ describe('layoutStateManager', () => {
       name: 'UP Yard',
       locationId: 'loc2',
       blockName: 'Block2',
-      industryType: 'YARD',
+      industryType: IndustryType.YARD,
       tracks: [
         {
-          _id: 'track3',
-          name: 'Track 3',
+          _id: 'track2',
+          name: 'Track 2',
           length: 100,
-          capacity: 3,
-          maxCars: 3,
-          placedCars: ['car4', 'car5']
+          capacity: 5,
+          maxCars: 5,
+          placedCars: ['car3'],
+          acceptedCarTypes: [],
+          ownerId: 'owner1',
         }
       ],
       ownerId: 'owner1'
@@ -55,15 +51,17 @@ describe('layoutStateManager', () => {
       name: 'Factory',
       locationId: 'loc3',
       blockName: 'Block3',
-      industryType: 'FREIGHT',
+      industryType: IndustryType.FREIGHT,
       tracks: [
         {
           _id: 'track4',
-          name: 'Loading Dock',
-          length: 50,
-          capacity: 2,
-          maxCars: 2,
-          placedCars: []
+          name: 'Track 4',
+          length: 100,
+          capacity: 5,
+          maxCars: 5,
+          placedCars: [],
+          acceptedCarTypes: [],
+          ownerId: 'owner1',
         }
       ],
       ownerId: 'owner1'

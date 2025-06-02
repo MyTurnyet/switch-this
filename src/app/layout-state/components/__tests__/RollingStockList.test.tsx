@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import RollingStockList from '../RollingStockList';
 import { RollingStock, Industry } from '@/app/shared/types/models';
+import { IndustryType } from '@/app/shared/types/models';
 
 describe('RollingStockList', () => {
   const mockRollingStock: RollingStock[] = [
@@ -43,15 +44,17 @@ describe('RollingStockList', () => {
       locationId: 'loc1',
       blockName: 'Yard',
       description: 'Main yard',
-      industryType: 'YARD',
+      industryType: IndustryType.YARD,
       tracks: [
         {
           _id: 'track1',
           name: 'Track 1',
           length: 100,
-          capacity: 4,
-          maxCars: 4,
-          placedCars: ['1']
+          capacity: 5,
+          maxCars: 5,
+          placedCars: ['1'],
+          acceptedCarTypes: [],
+          ownerId: 'owner1',
         }
       ],
       ownerId: 'owner1'
@@ -62,15 +65,17 @@ describe('RollingStockList', () => {
       locationId: 'loc2',
       blockName: 'Yard',
       description: 'Secondary yard',
-      industryType: 'YARD',
+      industryType: IndustryType.YARD,
       tracks: [
         {
           _id: 'track2',
           name: 'Track 2',
           length: 100,
-          capacity: 4,
-          maxCars: 4,
-          placedCars: []
+          capacity: 5,
+          maxCars: 5,
+          placedCars: [],
+          acceptedCarTypes: [],
+          ownerId: 'owner1',
         }
       ],
       ownerId: 'owner1'
@@ -81,15 +86,17 @@ describe('RollingStockList', () => {
       locationId: 'loc3',
       blockName: 'Industrial',
       description: 'Manufacturing plant',
-      industryType: 'FREIGHT',
+      industryType: IndustryType.FREIGHT,
       tracks: [
         {
           _id: 'track3',
-          name: 'Loading Dock',
-          length: 50,
-          capacity: 2,
-          maxCars: 2,
-          placedCars: ['2']
+          name: 'Track 3',
+          length: 100,
+          capacity: 5,
+          maxCars: 5,
+          placedCars: ['2'],
+          acceptedCarTypes: [],
+          ownerId: 'owner1',
         }
       ],
       ownerId: 'owner1'
@@ -124,7 +131,7 @@ describe('RollingStockList', () => {
 
     // Check for current locations
     expect(screen.getByText('BNSF Yard - Track 1')).toBeInTheDocument();
-    expect(screen.getByText('Factory - Loading Dock')).toBeInTheDocument();
+    expect(screen.getByText('Factory - Track 3')).toBeInTheDocument();
   });
 
   it('renders empty state when no rolling stock is provided', () => {

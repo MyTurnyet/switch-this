@@ -5,14 +5,14 @@ import { render, screen } from '@testing-library/react';
 jest.mock('../dropdown', () => {
   const React = require('react');
   
-  const Dropdown = ({ trigger, children, className }) => (
+  const Dropdown = ({ trigger, children, className }: { trigger: React.ReactNode, children: React.ReactNode, className?: string }) => (
     <div data-testid="dropdown-container" className={className || ''}>
       <div data-testid="dropdown-trigger">{trigger}</div>
       <div data-testid="dropdown-content">{children}</div>
     </div>
   );
 
-  const DropdownItem = ({ children, onClick, disabled, icon, className }) => (
+  const DropdownItem = ({ children, onClick, disabled, icon, className }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, icon?: React.ReactNode, className?: string }) => (
     <button 
       data-testid="dropdown-item"
       onClick={onClick} 
