@@ -1,29 +1,27 @@
-import { NextResponse } from 'next/server';
-import { getMongoService } from '@/lib/services/mongodb.client';
+// Helper to create a response with CORS headers
+function createResponse(body: unknown, status = 200) {
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-HTTP-Method-Override, X-Requested-With'
+      }
+    }
+  );
+}
 
 export async function GET() {
-  const mongoService = getMongoService();
-  
-  try {
-    // Only call connect if the method exists
-    if (typeof mongoService.connect === 'function') {
-      await mongoService.connect();
-    }
-    
-    const collection = mongoService.getTrainRoutesCollection();
-    const trainRoutes = await collection.find().toArray();
-    
-    return NextResponse.json(trainRoutes);
-  } catch (error) {
-    console.error('Error fetching train routes:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch train routes' },
-      { status: 500 }
-    );
-  } finally {
-    // Only call close if the method exists
-    if (typeof mongoService.close === 'function') {
-      await mongoService.close();
-    }
-  }
+  return createResponse({ error: 'Not implemented' }, 501);
+}
+
+export async function POST() {
+  return createResponse({ error: 'Not implemented' }, 501);
+}
+
+export function OPTIONS() {
+  return createResponse({}, 204);
 } 

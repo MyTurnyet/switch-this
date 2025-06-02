@@ -11,10 +11,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --coverage --ci",
-    "test:e2e": "NODE_ENV=test USE_FAKE_MONGO=true playwright test",
-    "test:e2e:ui": "NODE_ENV=test USE_FAKE_MONGO=true playwright test --ui",
-    "test:e2e:debug": "NODE_ENV=test USE_FAKE_MONGO=true playwright test --debug",
-    "test:e2e:report": "playwright show-report",
+    "tsc": "tsc",
     "prepare": "husky"
   },
   "dependencies": {
