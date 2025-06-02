@@ -46,15 +46,15 @@ import { ObjectId } from 'mongodb';
 
 // Create mocks for collections
 const mockSwitchlistCollection = {
-  find: jest.fn(),
-  findOne: jest.fn(),
-  insertOne: jest.fn(),
-  updateOne: jest.fn(),
-  deleteOne: jest.fn()
+  find: jest.fn() as jest.Mock<any, any>,
+  findOne: jest.fn() as jest.Mock<any, any>,
+  insertOne: jest.fn() as jest.Mock<any, any>,
+  updateOne: jest.fn() as jest.Mock<any, any>,
+  deleteOne: jest.fn() as jest.Mock<any, any>
 };
 
 const mockTrainRoutesCollection = {
-  findOne: jest.fn()
+  findOne: jest.fn() as jest.Mock<any, any>
 };
 
 // Define mockMongoService

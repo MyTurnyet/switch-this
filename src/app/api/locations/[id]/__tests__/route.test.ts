@@ -106,19 +106,19 @@ describe('Location ID API', () => {
     jest.spyOn(industriesCollection, 'countDocuments').mockReset();
     
     // Set default mock responses
-    jest.spyOn(locationsCollection, 'findOne').mockResolvedValue(mockLocation);
+    jest.spyOn(locationsCollection, 'findOne').mockResolvedValue(mockLocation as any);
     jest.spyOn(locationsCollection, 'updateOne').mockResolvedValue({
       matchedCount: 1,
       modifiedCount: 1,
       acknowledged: true,
       upsertedCount: 0,
       upsertedId: null
-    } as unknown as UpdateResult);
+    } as any);
     jest.spyOn(locationsCollection, 'deleteOne').mockResolvedValue({
       deletedCount: 1,
       acknowledged: true
-    } as unknown as DeleteResult);
-    jest.spyOn(industriesCollection, 'countDocuments').mockResolvedValue(0);
+    } as any);
+    jest.spyOn(industriesCollection, 'countDocuments').mockResolvedValue(0 as any);
   });
 
   describe('GET', () => {

@@ -35,14 +35,14 @@ class MockObjectId {
 
 // Create mock collections
 const rollingStockCollection = {
-  find: jest.fn(),
-  updateOne: jest.fn(),
+  find: jest.fn() as jest.Mock<any, any>,
+  updateOne: jest.fn() as jest.Mock<any, any>,
 };
 
 const industriesCollection = {
-  find: jest.fn(),
-  updateMany: jest.fn(),
-  updateOne: jest.fn(),
+  find: jest.fn() as jest.Mock<any, any>,
+  updateMany: jest.fn() as jest.Mock<any, any>,
+  updateOne: jest.fn() as jest.Mock<any, any>,
 };
 
 // Create mockMongoService before it's used

@@ -23,10 +23,10 @@ global.Response = jest.fn().mockImplementation((body, options) => {
 
 // Create mock collections
 const mockCollection = {
-  find: jest.fn(),
-  findOne: jest.fn(),
-  insertOne: jest.fn(),
-  deleteOne: jest.fn()
+  find: jest.fn() as jest.Mock<any, any>,
+  findOne: jest.fn() as jest.Mock<any, any>,
+  insertOne: jest.fn() as jest.Mock<any, any>,
+  deleteOne: jest.fn() as jest.Mock<any, any>
 };
 
 // Set up mock implementation for find

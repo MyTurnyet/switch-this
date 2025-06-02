@@ -1,15 +1,15 @@
 import { jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
+// import { FakeMongoDbService } from '@/test/utils/mongodb-test-utils';
 
 // Create a fake MongoDB service instance
-const fakeMongoService = new FakeMongoDbService();
+// const fakeMongoService = new FakeMongoDbService();
 
 // Define mocks for MongoDB collections
 const mockCollection = {
-  findOne: jest.fn().mockResolvedValue({ _id: '507f1f77bcf86cd799439011' }),
-  updateOne: jest.fn().mockResolvedValue({ matchedCount: 1 })
+  findOne: jest.fn() as jest.Mock<any, any>,
+  updateOne: jest.fn() as jest.Mock<any, any>
 };
 
 // Mock the MongoDB service module
@@ -92,6 +92,8 @@ describe('Rolling Stock API - PUT', () => {
     };
 
     mockRequestJson.mockResolvedValue(mockRollingStockData);
+    mockCollection.findOne.mockResolvedValueOnce({ _id: mockParams.params.id, ...mockRollingStockData });
+    mockCollection.updateOne.mockResolvedValueOnce({ matchedCount: 1 });
 
     const response = await PUT(mockRequest, mockParams) as MockResponse;
 
@@ -137,6 +139,8 @@ describe('Rolling Stock API - PUT', () => {
     };
 
     mockRequestJson.mockResolvedValue(mockRollingStockData);
+    mockCollection.findOne.mockResolvedValueOnce({ _id: mockParams.params.id, ...mockRollingStockData });
+    mockCollection.updateOne.mockResolvedValueOnce({ matchedCount: 1 });
 
     const response = await PUT(mockRequest, mockParams) as MockResponse;
 
@@ -171,6 +175,8 @@ describe('Rolling Stock API - PUT', () => {
     };
 
     mockRequestJson.mockResolvedValue(mockRollingStockData);
+    mockCollection.findOne.mockResolvedValueOnce({ _id: mockParams.params.id, ...mockRollingStockData });
+    mockCollection.updateOne.mockResolvedValueOnce({ matchedCount: 1 });
 
     const response = await PUT(mockRequest, mockParams) as MockResponse;
 
