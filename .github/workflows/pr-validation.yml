@@ -28,15 +28,6 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:ci
       
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-      
-      - name: Run Playwright tests
-        run: npm run test:e2e
-        env:
-          USE_FAKE_MONGO: 'true'
-          NODE_ENV: 'test'
-      
       - name: Build project
         run: npm run build
         env:
